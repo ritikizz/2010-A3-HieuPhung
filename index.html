@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Album Ảnh Lưu Trữ - Xác Thực Bảo Mật</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #0f1115;
+      color: #f1f5f9;
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    /* ===== SECURITY GATE ===== */
+    .gate-wrapper {
+      max-width: 640px;
+      margin: 16px auto;
+      background: #171a21;
+      border: 1px solid #262b36;
+      border-radius: 16px;
+      padding: 28px 24px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .gate-header {
+      text-align: center;
+      margin-bottom: 24px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid #262b36;
+    }
+
+    .gate-header h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      color: #f8fafc;
+    }
+
+    .gate-header p {
+      font-size: 0.92rem;
+      color: #94a3b8;
+    }
+
+    .question-box {
+      background: #1d212b;
+      border: 1px solid #2a303d;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .question-title {
+      font-size: 0.98rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #e2e8f0;
+      display: block;
+    }
+
+    .text-input {
+      width: 100%;
+      padding: 11px 14px;
+      background: #12151b;
+      border: 1px solid #333a4a;
+      border-radius: 8px;
+      color: #f8fafc;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .text-input:focus {
+      border-color: #3b82f6;
+    }
+
+    /* Sliders (Câu 2) */
+    .date-preview {
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #60a5fa;
+      background: #12151b;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      border: 1px solid #2a303d;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 62px 1fr 48px;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: #cbd5e1;
+    }
+
+    .slider-row input[type="range"] {
+      width: 100%;
+      accent-color: #3b82f6;
+      cursor: pointer;
+    }
+
+    .slider-val {
+      text-align: right;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+
+    /* Radio options (Câu 4) */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .option-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #12151b;
+      border: 1px solid #2e3442;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.93rem;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .option-label:hover {
+      border-color: #475569;
+      background: #171b24;
+    }
+
+    .option-label input[type="radio"] {
+      accent-color: #3b82f6;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    /* Agreement buttons (Câu 5) */
+    .agree-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .agree-btn {
+      padding: 11px 14px;
+      border-radius: 8px;
+      border: 1px solid #333a4a;
+      background: #12151b;
+      color: #cbd5e1;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .agree-btn:hover {
+      border-color: #64748b;
+    }
+
+    .agree-btn.selected-yes {
+      background: #16a34a;
+      border-color: #22c55e;
+      color: #fff;
+    }
+
+    .agree-btn.selected-no {
+      background: #dc2626;
+      border-color: #ef4444;
+      color: #fff;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 13px;
+      margin-top: 8px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .status-banner {
+      display: none;
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .status-banner.error {
+      display: block;
+      background: rgba(220, 38, 38, 0.15);
+      border: 1px solid #ef4444;
+      color: #fca5a5;
+    }
+
+    .status-banner.success {
+      display: block;
+      background: rgba(22, 163, 74, 0.16);
+      border: 1px solid #22c55e;
+      color: #86efac;
+    }
+
+    .countdown-num {
+      font-weight: 700;
+      color: #fff;
+      font-size: 1.05rem;
+    }
+
+    /* ===== ALBUM ===== */
+    #albumContainer {
+      display: none;
+    }
+
+    header.album-header {
+      max-width: 1280px;
+      margin: 0 auto 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 1px solid #262a34;
+      padding-bottom: 16px;
+    }
+
+    header.album-header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .count-badge {
+      background: #1e222b;
+      color: #94a3b8;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.875rem;
+    }
+
+    .gallery {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .photo-card {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      background: #1a1d24;
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .photo-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+
+    .photo-card:hover img {
+      transform: scale(1.04);
+    }
+
+    .photo-index {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 2px 7px;
+      border-radius: 6px;
+      pointer-events: none;
+    }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .lightbox.open {
+      display: flex;
+    }
+
+    .lightbox-img {
+      max-width: 92vw;
+      max-height: 84vh;
+      object-fit: contain;
+      border-radius: 6px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      user-select: none;
+    }
+
+    .lb-btn {
+      position: fixed;
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      user-select: none;
+    }
+
+    .lb-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .lb-close {
+      top: 16px;
+      right: 16px;
+    }
+
+    .lb-prev {
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .lb-next {
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .lb-toolbar {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(20, 22, 28, 0.85);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+    }
+
+    .lb-toolbar a {
+      color: #60a5fa;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .lb-toolbar a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 600px) {
+      .gate-wrapper {
+        padding: 20px 14px;
+      }
+      .gallery {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .lb-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MÀN HÌNH BẢO MẬT -->
+  <section class="gate-wrapper" id="securityGate">
+    <div class="gate-header">
+      <h1>Xác Thực Bảo Mật</h1>
+      <p>Vui lòng trả lời đúng cả 5/5 câu hỏi dưới đây để mở khóa Album ảnh.</p>
+    </div>
+
+    <form id="securityForm" autocomplete="off">
+      <!-- Câu 1 -->
+      <div class="question-box">
+        <label class="question-title" for="q1">Câu 1. Họ tên thầy Hưng là gì?</label>
+        <input
+          type="text"
+          id="q1"
+          class="text-input"
+          placeholder="Nhập họ và tên đầy đủ..."
+          required
+        />
+      </div>
+
+      <!-- Câu 2 -->
+      <div class="question-box">
+        <span class="question-title">Câu 2. Ngày tháng năm sinh của thầy Hưng?</span>
+        <div class="date-preview" id="datePreview">15 / 06 / 1985</div>
+        <div class="slider-group">
+          <div class="slider-row">
+            <label for="dobDay">Ngày</label>
+            <input type="range" id="dobDay" min="1" max="30" value="15" />
+            <span class="slider-val" id="dobDayVal">15</span>
+          </div>
+          <div class="slider-row">
+            <label for="dobMonth">Tháng</label>
+            <input type="range" id="dobMonth" min="1" max="12" value="6" />
+            <span class="slider-val" id="dobMonthVal">06</span>
+          </div>
+          <div class="slider-row">
+            <label for="dobYear">Năm</label>
+            <input type="range" id="dobYear" min="1960" max="2005" value="1985" />
+            <span class="slider-val" id="dobYearVal">1985</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Câu 3 -->
+      <div class="question-box">
+        <label class="question-title" for="q3">Câu 3. Thầy Hưng chủ nhiệm lớp nào trong năm học 2025-2026?</label>
+        <input
+          type="text"
+          id="q3"
+          class="text-input"
+          placeholder="Nhập tên lớp..."
+          required
+        />
+      </div>
+
+      <!-- Câu 4 -->
+      <div class="question-box">
+        <span class="question-title">Câu 4. Thầy Hưng dạy chính môn gì?</span>
+        <div class="options-grid">
+          <label class="option-label">
+            <input type="radio" name="q4" value="ngu_van" /> Ngữ văn
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q4" value="toan" /> Toán
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q4" value="ngoai_ngu" /> Ngoại ngữ
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q4" value="lich_su" /> Lịch sử
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q4" value="gdtc" /> Giáo dục thể chất
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q4" value="gdqp" /> Giáo dục quốc phòng và an ninh
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q4" value="hdtn" /> Hoạt động trải nghiệm, hướng nghiệp
+          </label>
+          <label class="option-label">
+            <input type="radio" name="q4" value="gddp" /> Giáo dục của địa phương
+          </label>
+        </div>
+      </div>
+
+      <!-- Câu 5 -->
+      <div class="question-box">
+        <span class="question-title">Câu 5. Phải gọi thầy Hưng là Hưng Bắc Gấu mới được truy cập.</span>
+        <div class="agree-group">
+          <button type="button" class="agree-btn" id="btnAgree">Đồng ý</button>
+          <button type="button" class="agree-btn" id="btnDisagree">Không đồng ý</button>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">Xác nhận &amp; Mở Album</button>
+
+      <div class="status-banner" id="statusBanner"></div>
+    </form>
+  </section>
+
+  <!-- NỘI DUNG ALBUM (CHỈ HIỂN THỊ KHI PASS 5/5) -->
+  <div id="albumContainer">
+    <header class="album-header">
+      <h1>Album Ảnh Lưu Trữ</h1>
+      <span class="count-badge" id="photoCount"></span>
+    </header>
+
+    <main class="gallery" id="gallery"></main>
+
+    <div class="lightbox" id="lightbox" aria-hidden="true">
+      <button class="lb-btn lb-close" id="lbClose" title="Đóng (Esc)">&times;</button>
+      <button class="lb-btn lb-prev" id="lbPrev" title="Ảnh trước (←)">&#10094;</button>
+      <img class="lightbox-img" id="lbImg" src="" alt="Xem ảnh phóng to" />
+      <button class="lb-btn lb-next" id="lbNext" title="Ảnh tiếp (→)">&#10095;</button>
+      <div class="lb-toolbar">
+        <span id="lbCounter">1 / 46</span>
+        <a id="lbOriginal" href="#" target="_blank" rel="noopener noreferrer">Mở ảnh gốc ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== XỬ LÝ THANH TRƯỢT NGÀY THÁNG NĂM HỢP LỆ =====
+    const dobDay = document.getElementById("dobDay");
+    const dobMonth = document.getElementById("dobMonth");
+    const dobYear = document.getElementById("dobYear");
+    const dobDayVal = document.getElementById("dobDayVal");
+    const dobMonthVal = document.getElementById("dobMonthVal");
+    const dobYearVal = document.getElementById("dobYearVal");
+    const datePreview = document.getElementById("datePreview");
+
+    let validDay = 15;
+    let validMonth = 6;
+    let validYear = 1985;
+
+    function pad2(n) {
+      return String(n).padStart(2, "0");
+    }
+
+    function getDaysInMonth(month, year) {
+      return new Date(year, month, 0).getDate();
+    }
+
+    function syncDaySliderLimit() {
+      const maxDays = getDaysInMonth(validMonth, validYear);
+      dobDay.max = maxDays;
+      if (validDay > maxDays) {
+        validDay = maxDays;
+        dobDay.value = validDay;
+      }
+    }
+
+    function renderDate() {
+      syncDaySliderLimit();
+      dobDay.value = validDay;
+      dobMonth.value = validMonth;
+      dobYear.value = validYear;
+      dobDayVal.textContent = pad2(validDay);
+      dobMonthVal.textContent = pad2(validMonth);
+      dobYearVal.textContent = validYear;
+      datePreview.textContent = `${pad2(validDay)} / ${pad2(validMonth)} / ${validYear}`;
+    }
+
+    // Khi kéo thanh NGÀY: không bao giờ vượt quá số ngày thực tế của tháng/năm đang chọn
+    dobDay.addEventListener("input", () => {
+      const maxDays = getDaysInMonth(validMonth, validYear);
+      const nextDay = parseInt(dobDay.value, 10);
+      validDay = Math.min(nextDay, maxDays);
+      renderDate();
+    });
+
+    // Khi kéo thanh THÁNG: không cho chọn tháng không có ngày hiện tại (vd: ngày 31 không chọn được tháng 2,4,6,9,11)
+    dobMonth.addEventListener("input", () => {
+      const targetMonth = parseInt(dobMonth.value, 10);
+      if (validDay <= getDaysInMonth(targetMonth, validYear)) {
+        validMonth = targetMonth;
+      } else {
+        // Tự động nhảy qua tháng hợp lệ tiếp theo theo hướng kéo; nếu không có thì giữ nguyên tháng cũ
+        const step = targetMonth > validMonth ? 1 : -1;
+        let candidate = targetMonth + step;
+        let found = null;
+        while (candidate >= 1 && candidate <= 12) {
+          if (validDay <= getDaysInMonth(candidate, validYear)) {
+            found = candidate;
+            break;
+          }
+          candidate += step;
+        }
+        if (found !== null) {
+          validMonth = found;
+        }
+      }
+      renderDate();
+    });
+
+    // Khi kéo thanh NĂM: nếu đang ở 29/02 thì chỉ cho phép chọn năm nhuận
+    dobYear.addEventListener("input", () => {
+      const targetYear = parseInt(dobYear.value, 10);
+      const minY = parseInt(dobYear.min, 10);
+      const maxY = parseInt(dobYear.max, 10);
+
+      if (validDay <= getDaysInMonth(validMonth, targetYear)) {
+        validYear = targetYear;
+      } else {
+        const step = targetYear > validYear ? 1 : -1;
+        let candidate = targetYear + step;
+        let found = null;
+        while (candidate >= minY && candidate <= maxY) {
+          if (validDay <= getDaysInMonth(validMonth, candidate)) {
+            found = candidate;
+            break;
+          }
+          candidate += step;
+        }
+        if (found !== null) {
+          validYear = found;
+        }
+      }
+      renderDate();
+    });
+
+    renderDate();
+
+    // ===== NÚT CÂU 5 =====
+    let q5Answer = null;
+    const btnAgree = document.getElementById("btnAgree");
+    const btnDisagree = document.getElementById("btnDisagree");
+
+    btnAgree.addEventListener("click", () => {
+      q5Answer = "yes";
+      btnAgree.classList.add("selected-yes");
+      btnDisagree.classList.remove("selected-no");
+    });
+
+    btnDisagree.addEventListener("click", () => {
+      q5Answer = "no";
+      btnDisagree.classList.add("selected-no");
+      btnAgree.classList.remove("selected-yes");
+    });
+
+    // Chuẩn hóa tiếng Việt không dấu, không phân biệt hoa thường
+    function normalizeText(str) {
+      return str
+        .trim()
+        .replace(/\s+/g, " ")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "D")
+        .toLowerCase();
+    }
+
+    const securityForm = document.getElementById("securityForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const statusBanner = document.getElementById("statusBanner");
+
+    securityForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      let score = 0;
+
+      // Câu 1: Nguyễn Tấn Hưng
+      const ans1 = normalizeText(document.getElementById("q1").value);
+      if (ans1 === "nguyen tan hung") score++;
+
+      // Câu 2: 02/11/1980
+      if (validDay === 2 && validMonth === 11 && validYear === 1980) score++;
+
+      // Câu 3: 10A3 / 10a3 / 103
+      const ans3 = document.getElementById("q3").value.trim().replace(/\s+/g, "").toLowerCase();
+      if (ans3 === "10a3" || ans3 === "103") score++;
+
+      // Câu 4: Giáo dục quốc phòng và an ninh
+      const q4Selected = document.querySelector('input[name="q4"]:checked');
+      if (q4Selected && q4Selected.value === "gdqp") score++;
+
+      // Câu 5: Đồng ý
+      if (q5Answer === "yes") score++;
+
+      submitBtn.disabled = true;
+
+      if (score === 5) {
+        let secondsLeft = 3;
+        statusBanner.className = "status-banner success";
+        statusBanner.innerHTML = `Xác thực thành công, mở Album ảnh sau <span class="countdown-num">${secondsLeft}</span> giây!`;
+
+        const timer = setInterval(() => {
+          secondsLeft--;
+          if (secondsLeft > 0) {
+            statusBanner.innerHTML = `Xác thực thành công, mở Album ảnh sau <span class="countdown-num">${secondsLeft}</span> giây!`;
+          } else {
+            clearInterval(timer);
+            document.getElementById("securityGate").style.display = "none";
+            document.getElementById("albumContainer").style.display = "block";
+            document.title = "Album Ảnh (46 ảnh)";
+            initGallery();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+        }, 1000);
+      } else {
+        let secondsLeft = 3;
+        statusBanner.className = "status-banner error";
+        statusBanner.innerHTML = `Xác thực bảo mật thất bại, vui lòng thực hiện lại từ đầu!<br/>Tự động tải lại trang sau <span class="countdown-num">${secondsLeft}</span> giây...`;
+
+        const timer = setInterval(() => {
+          secondsLeft--;
+          if (secondsLeft > 0) {
+            statusBanner.innerHTML = `Xác thực bảo mật thất bại, vui lòng thực hiện lại từ đầu!<br/>Tự động tải lại trang sau <span class="countdown-num">${secondsLeft}</span> giây...`;
+          } else {
+            clearInterval(timer);
+            window.location.reload();
+          }
+        }, 1000);
+      }
+    });
+
+    // ===== DỮ LIỆU & XỬ LÝ ALBUM 46 ẢNH =====
+    const images = [
+      "https://i.ibb.co/Q371rkvY/1795096808676-1047622583193778454-1047622583193778454-925a2807021e4785847af3602efd1452.jpg",
+      "https://i.ibb.co/kszq6rjn/1795096808715-1047622583193778454-1047622583193778454-9d862968c254ee99fbd779c316b2f616.jpg",
+      "https://i.ibb.co/jPx2vXtH/1795096808734-1047622583193778454-1047622583193778454-a7e4436e5e23831df6d99cfa54db8b93.jpg",
+      "https://i.ibb.co/JWc1S64n/1795096808751-1047622583193778454-1047622583193778454-3974983bf3013c111b00589d11ece0be.jpg",
+      "https://i.ibb.co/Y4H1gSfd/1795096808767-1047622583193778454-1047622583193778454-6a906232905504484cc247d7f4db74ca.jpg",
+      "https://i.ibb.co/ycJfpDXn/1795096808782-1047622583193778454-1047622583193778454-e4a4848352d278d78d0227e1216d15fd.jpg",
+      "https://i.ibb.co/Y4YKLFnX/1795096808798-1047622583193778454-1047622583193778454-111193186a056ed0762905af4ade343b.jpg",
+      "https://i.ibb.co/YBfdk8BY/1795096808814-1047622583193778454-1047622583193778454-87930a112145696e43a03156da90fc91.jpg",
+      "https://i.ibb.co/GfQDZ35H/1795096808829-1047622583193778454-1047622583193778454-c41c88b09cbbfbb3017f8f8261a1b978.jpg",
+      "https://i.ibb.co/qLKv8RHK/1795096808844-1047622583193778454-1047622583193778454-d6f5a605b3282442a85ebe41d41e7c6d.jpg",
+      "https://i.ibb.co/qFpW0H7p/1795096808856-1047622583193778454-1047622583193778454-0e26613ce4218a22b13c4aade2580d07.jpg",
+      "https://i.ibb.co/wN17Q9kR/1795096808872-1047622583193778454-1047622583193778454-2e5ccf0a57e839a45a73cfe018eac1b2.jpg",
+      "https://i.ibb.co/NdxRsgsL/1795096808887-1047622583193778454-1047622583193778454-9bcb0c4d8894dd2dbffbf24b5f1913b9.jpg",
+      "https://i.ibb.co/jkgs0mBc/1795096808901-1047622583193778454-1047622583193778454-830bb505f22ec61b198770685f2912d9.jpg",
+      "https://i.ibb.co/Ngt9bWsC/1795096808916-1047622583193778454-1047622583193778454-4265794317e42c12c63b534bcd935991.jpg",
+      "https://i.ibb.co/5gy0yn3v/1795096808927-1047622583193778454-1047622583193778454-b133a8553fac804a9dc607439ec64215.jpg",
+      "https://i.ibb.co/GvLJ2GgM/1795096808939-1047622583193778454-1047622583193778454-4e986a5d27e74ecb2b47ac5d518b6af1.jpg",
+      "https://i.ibb.co/DDVtpRr3/1795096808954-1047622583193778454-1047622583193778454-d6f7087903ebe46e66efea102340074f.jpg",
+      "https://i.ibb.co/HL4pM1K2/1795096808968-1047622583193778454-1047622583193778454-e29e3b12e7ea03e2af1864ab59ca147a.jpg",
+      "https://i.ibb.co/LDHc5xGR/1795096808978-1047622583193778454-1047622583193778454-682eb08c5579d59d5ed577b793e1dde8.jpg",
+      "https://i.ibb.co/7t17PbMH/1795096808990-1047622583193778454-1047622583193778454-e5c0551de2d3d49e2168d9fda0a81d12.jpg",
+      "https://i.ibb.co/vv1pW1MT/1795096809004-1047622583193778454-1047622583193778454-de2b022911dc39b4260a64ef72ac319e.jpg",
+      "https://i.ibb.co/XxqtKNpy/1795096809025-1047622583193778454-1047622583193778454-f86d45e1e00e104a22de28eb106bbde5.jpg",
+      "https://i.ibb.co/0yvRJsD0/1795096809038-1047622583193778454-1047622583193778454-8f2f1d4502736e74590dcf8c26b62dc2.jpg",
+      "https://i.ibb.co/N2KSrBTj/1795096809053-1047622583193778454-1047622583193778454-abdef3caddf0088241d47d0e65989ed4.jpg",
+      "https://i.ibb.co/FLm5LKmh/1795096809067-1047622583193778454-1047622583193778454-7f57b7663fbf1bacd68bc8ca16db0e73.jpg",
+      "https://i.ibb.co/sJ6Z30xV/1795096809081-1047622583193778454-1047622583193778454-b64a3d3d666d4d23a7aa0868ea2dfe0c.jpg",
+      "https://i.ibb.co/1YV9M1qD/1795096809097-1047622583193778454-1047622583193778454-c5ad2c974352caaa5b84d0176d781787.jpg",
+      "https://i.ibb.co/b5fbvsf1/1795096809111-1047622583193778454-1047622583193778454-ad811d64334613e6f9a01a324123892a.jpg",
+      "https://i.ibb.co/4gnHDNBC/1795096809124-1047622583193778454-1047622583193778454-f377dd5bc9b09c46fcd642d7c4d1d850.jpg",
+      "https://i.ibb.co/7JNyBwg1/1795096809137-1047622583193778454-1047622583193778454-01226d3e90117c4e7d910b3e05db2425.jpg",
+      "https://i.ibb.co/kVSJVqFj/1795096809150-1047622583193778454-1047622583193778454-249c9fae32bdc6a4c0e52a0b767f0617.jpg",
+      "https://i.ibb.co/0R5SQ61b/1795096809163-1047622583193778454-1047622583193778454-45ec4f215c353acb360776a644d1fd88.jpg",
+      "https://i.ibb.co/s9C9QNfx/1795096809179-1047622583193778454-1047622583193778454-b2ea44e5d6cf5caa93abf977f0fdb3d9.jpg",
+      "https://i.ibb.co/Ld9BGZwk/1795096809193-1047622583193778454-1047622583193778454-d16205836d70d9cfdca285e7b9159faf.jpg",
+      "https://i.ibb.co/r2RWyBQr/1795096809205-1047622583193778454-1047622583193778454-2c34dc6c822bb21909db2fdfa85383e4.jpg",
+      "https://i.ibb.co/5hQYfK4h/1795096809220-1047622583193778454-1047622583193778454-1671531bbbe225e04ecf4f26523f982c.jpg",
+      "https://i.ibb.co/23NYn24X/1795096809232-1047622583193778454-1047622583193778454-0e669268035f07ffe207a8668d0e9788.jpg",
+      "https://i.ibb.co/7JMP41cz/1795096809244-1047622583193778454-1047622583193778454-58fad9b548d7f6ad9969673bd7b0a2db.jpg",
+      "https://i.ibb.co/TML8xzpr/1795096809259-1047622583193778454-1047622583193778454-36f8f8cc1ed9462e3104919530bec89c.jpg",
+      "https://i.ibb.co/hJfRnx7Y/1795096809272-1047622583193778454-1047622583193778454-c11ba46255f71e988896ddf076dd6002.jpg",
+      "https://i.ibb.co/nMLJ3f0P/1795096809284-1047622583193778454-1047622583193778454-9ee8b21f62c873cbc8dbb4455ad65387.jpg",
+      "https://i.ibb.co/HD1zNrZs/1795096809298-1047622583193778454-1047622583193778454-e2497a89913afb74a0561174d792948b.jpg",
+      "https://i.ibb.co/Gvyd8f08/1795096809312-1047622583193778454-1047622583193778454-e27aff8a268c182c7f2fe4717c609406.jpg",
+      "https://i.ibb.co/Xf5r7Knr/1795096809323-1047622583193778454-1047622583193778454-db1fe628e12312019741364f2ed443a6.jpg",
+      "https://i.ibb.co/bj61BJ29/1795096809337-1047622583193778454-1047622583193778454-af7082de9ec7a4ae1af7701f116272df.jpg"
+    ];
+
+    const gallery = document.getElementById("gallery");
+    const photoCount = document.getElementById("photoCount");
+    const lightbox = document.getElementById("lightbox");
+    const lbImg = document.getElementById("lbImg");
+    const lbCounter = document.getElementById("lbCounter");
+    const lbOriginal = document.getElementById("lbOriginal");
+
+    let currentIndex = 0;
+    let galleryInitialized = false;
+
+    function initGallery() {
+      if (galleryInitialized) return;
+      galleryInitialized = true;
+      photoCount.textContent = `${images.length} ảnh`;
+
+      images.forEach((src, index) => {
+        const card = document.createElement("div");
+        card.className = "photo-card";
+        card.innerHTML = `
+          <img src="${src}" alt="Ảnh ${index + 1}" loading="lazy" />
+          <span class="photo-index">#${index + 1}</span>
+        `;
+        card.addEventListener("click", () => openLightbox(index));
+        gallery.appendChild(card);
+      });
+    }
+
+    function openLightbox(index) {
+      currentIndex = index;
+      updateLightbox();
+      lightbox.classList.add("open");
+      lightbox.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove("open");
+      lightbox.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    function updateLightbox() {
+      const src = images[currentIndex];
+      lbImg.src = src;
+      lbCounter.textContent = `${currentIndex + 1} / ${images.length}`;
+      lbOriginal.href = src;
+    }
+
+    function showPrev() {
+      currentIndex = (currentIndex - 1 + images.length) % images.length;
+      updateLightbox();
+    }
+
+    function showNext() {
+      currentIndex = (currentIndex + 1) % images.length;
+      updateLightbox();
+    }
+
+    document.getElementById("lbClose").addEventListener("click", closeLightbox);
+    document.getElementById("lbPrev").addEventListener("click", showPrev);
+    document.getElementById("lbNext").addEventListener("click", showNext);
+
+    lightbox.addEventListener("click", (e) => {
+      if (e.target === lightbox) closeLightbox();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (!lightbox.classList.contains("open")) return;
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") showPrev();
+      if (e.key === "ArrowRight") showNext();
+    });
+
+    let touchStartX = 0;
+    lightbox.addEventListener("touchstart", (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    lightbox.addEventListener("touchend", (e) => {
+      const diff = e.changedTouches[0].screenX - touchStartX;
+      if (Math.abs(diff) > 50) {
+        diff > 0 ? showPrev() : showNext();
+      }
+    }, { passive: true });
+  </script>
+</body>
+</html>
