@@ -263,12 +263,36 @@
       font-weight: 600;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     .count-badge {
       background: #1e222b;
       color: #94a3b8;
-      padding: 6px 12px;
+      padding: 7px 13px;
       border-radius: 999px;
       font-size: 0.875rem;
+    }
+
+    .home-btn {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #334155;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .home-btn:hover {
+      background: #334155;
+      border-color: #475569;
     }
 
     .gallery {
@@ -524,11 +548,14 @@
     </form>
   </section>
 
-  <!-- NỘI DUNG ALBUM (CHỈ HIỂN THỊ KHI PASS 5/5) -->
+  <!-- NỘI DUNG ALBUM -->
   <div id="albumContainer">
     <header class="album-header">
       <h1>Album Ảnh Lưu Trữ</h1>
-      <span class="count-badge" id="photoCount"></span>
+      <div class="header-actions">
+        <span class="count-badge" id="photoCount"></span>
+        <button type="button" class="home-btn" id="backHomeBtn">Quay về trang chủ</button>
+      </div>
     </header>
 
     <main class="gallery" id="gallery"></main>
@@ -539,207 +566,19 @@
       <img class="lightbox-img" id="lbImg" src="" alt="Xem ảnh phóng to" />
       <button class="lb-btn lb-next" id="lbNext" title="Ảnh tiếp (→)">&#10095;</button>
       <div class="lb-toolbar">
-        <span id="lbCounter">1 / 46</span>
+        <span id="lbCounter">1 / 48</span>
         <a id="lbOriginal" href="#" target="_blank" rel="noopener noreferrer">Mở ảnh gốc ↗</a>
       </div>
     </div>
   </div>
 
   <script>
-    // ===== XỬ LÝ THANH TRƯỢT NGÀY THÁNG NĂM HỢP LỆ =====
-    const dobDay = document.getElementById("dobDay");
-    const dobMonth = document.getElementById("dobMonth");
-    const dobYear = document.getElementById("dobYear");
-    const dobDayVal = document.getElementById("dobDayVal");
-    const dobMonthVal = document.getElementById("dobMonthVal");
-    const dobYearVal = document.getElementById("dobYearVal");
-    const datePreview = document.getElementById("datePreview");
+    // ===== CẤU HÌNH GHI NHỚ TRÌNH DUYỆT (5 PHÚT) =====
+    const AUTH_STORAGE_KEY = "album_auth_expires_at";
+    const AUTH_DURATION_MS = 5 * 60 * 1000; // 5 phút (đổi số 5 thành số phút bạn muốn)
+    let sessionExpireTimer = null;
 
-    let validDay = 15;
-    let validMonth = 6;
-    let validYear = 1985;
-
-    function pad2(n) {
-      return String(n).padStart(2, "0");
-    }
-
-    function getDaysInMonth(month, year) {
-      return new Date(year, month, 0).getDate();
-    }
-
-    function syncDaySliderLimit() {
-      const maxDays = getDaysInMonth(validMonth, validYear);
-      dobDay.max = maxDays;
-      if (validDay > maxDays) {
-        validDay = maxDays;
-        dobDay.value = validDay;
-      }
-    }
-
-    function renderDate() {
-      syncDaySliderLimit();
-      dobDay.value = validDay;
-      dobMonth.value = validMonth;
-      dobYear.value = validYear;
-      dobDayVal.textContent = pad2(validDay);
-      dobMonthVal.textContent = pad2(validMonth);
-      dobYearVal.textContent = validYear;
-      datePreview.textContent = `${pad2(validDay)} / ${pad2(validMonth)} / ${validYear}`;
-    }
-
-    // Khi kéo thanh NGÀY: không bao giờ vượt quá số ngày thực tế của tháng/năm đang chọn
-    dobDay.addEventListener("input", () => {
-      const maxDays = getDaysInMonth(validMonth, validYear);
-      const nextDay = parseInt(dobDay.value, 10);
-      validDay = Math.min(nextDay, maxDays);
-      renderDate();
-    });
-
-    // Khi kéo thanh THÁNG: không cho chọn tháng không có ngày hiện tại (vd: ngày 31 không chọn được tháng 2,4,6,9,11)
-    dobMonth.addEventListener("input", () => {
-      const targetMonth = parseInt(dobMonth.value, 10);
-      if (validDay <= getDaysInMonth(targetMonth, validYear)) {
-        validMonth = targetMonth;
-      } else {
-        // Tự động nhảy qua tháng hợp lệ tiếp theo theo hướng kéo; nếu không có thì giữ nguyên tháng cũ
-        const step = targetMonth > validMonth ? 1 : -1;
-        let candidate = targetMonth + step;
-        let found = null;
-        while (candidate >= 1 && candidate <= 12) {
-          if (validDay <= getDaysInMonth(candidate, validYear)) {
-            found = candidate;
-            break;
-          }
-          candidate += step;
-        }
-        if (found !== null) {
-          validMonth = found;
-        }
-      }
-      renderDate();
-    });
-
-    // Khi kéo thanh NĂM: nếu đang ở 29/02 thì chỉ cho phép chọn năm nhuận
-    dobYear.addEventListener("input", () => {
-      const targetYear = parseInt(dobYear.value, 10);
-      const minY = parseInt(dobYear.min, 10);
-      const maxY = parseInt(dobYear.max, 10);
-
-      if (validDay <= getDaysInMonth(validMonth, targetYear)) {
-        validYear = targetYear;
-      } else {
-        const step = targetYear > validYear ? 1 : -1;
-        let candidate = targetYear + step;
-        let found = null;
-        while (candidate >= minY && candidate <= maxY) {
-          if (validDay <= getDaysInMonth(validMonth, candidate)) {
-            found = candidate;
-            break;
-          }
-          candidate += step;
-        }
-        if (found !== null) {
-          validYear = found;
-        }
-      }
-      renderDate();
-    });
-
-    renderDate();
-
-    // ===== NÚT CÂU 5 =====
-    let q5Answer = null;
-    const btnAgree = document.getElementById("btnAgree");
-    const btnDisagree = document.getElementById("btnDisagree");
-
-    btnAgree.addEventListener("click", () => {
-      q5Answer = "yes";
-      btnAgree.classList.add("selected-yes");
-      btnDisagree.classList.remove("selected-no");
-    });
-
-    btnDisagree.addEventListener("click", () => {
-      q5Answer = "no";
-      btnDisagree.classList.add("selected-no");
-      btnAgree.classList.remove("selected-yes");
-    });
-
-    // Chuẩn hóa tiếng Việt không dấu, không phân biệt hoa thường
-    function normalizeText(str) {
-      return str
-        .trim()
-        .replace(/\s+/g, " ")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/đ/g, "d")
-        .replace(/Đ/g, "D")
-        .toLowerCase();
-    }
-
-    const securityForm = document.getElementById("securityForm");
-    const submitBtn = document.getElementById("submitBtn");
-    const statusBanner = document.getElementById("statusBanner");
-
-    securityForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      let score = 0;
-
-      // Câu 1: Nguyễn Tấn Hưng
-      const ans1 = normalizeText(document.getElementById("q1").value);
-      if (ans1 === "nguyen tan hung") score++;
-
-      // Câu 2: 02/11/1980
-      if (validDay === 2 && validMonth === 11 && validYear === 1980) score++;
-
-      // Câu 3: 10A3 / 10a3 / 103
-      const ans3 = document.getElementById("q3").value.trim().replace(/\s+/g, "").toLowerCase();
-      if (ans3 === "10a3" || ans3 === "103") score++;
-
-      // Câu 4: Giáo dục quốc phòng và an ninh
-      const q4Selected = document.querySelector('input[name="q4"]:checked');
-      if (q4Selected && q4Selected.value === "gdqp") score++;
-
-      // Câu 5: Đồng ý
-      if (q5Answer === "yes") score++;
-
-      submitBtn.disabled = true;
-
-      if (score === 5) {
-        let secondsLeft = 3;
-        statusBanner.className = "status-banner success";
-        statusBanner.innerHTML = `Xác thực thành công, mở Album ảnh sau <span class="countdown-num">${secondsLeft}</span> giây!`;
-
-        const timer = setInterval(() => {
-          secondsLeft--;
-          if (secondsLeft > 0) {
-            statusBanner.innerHTML = `Xác thực thành công, mở Album ảnh sau <span class="countdown-num">${secondsLeft}</span> giây!`;
-          } else {
-            clearInterval(timer);
-            document.getElementById("securityGate").style.display = "none";
-            document.getElementById("albumContainer").style.display = "block";
-            document.title = "Album Ảnh (46 ảnh)";
-            initGallery();
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }
-        }, 1000);
-      } else {
-        let secondsLeft = 3;
-        statusBanner.className = "status-banner error";
-        statusBanner.innerHTML = `Xác thực bảo mật thất bại, vui lòng thực hiện lại từ đầu!<br/>Tự động tải lại trang sau <span class="countdown-num">${secondsLeft}</span> giây...`;
-
-        const timer = setInterval(() => {
-          secondsLeft--;
-          if (secondsLeft > 0) {
-            statusBanner.innerHTML = `Xác thực bảo mật thất bại, vui lòng thực hiện lại từ đầu!<br/>Tự động tải lại trang sau <span class="countdown-num">${secondsLeft}</span> giây...`;
-          } else {
-            clearInterval(timer);
-            window.location.reload();
-          }
-        }, 1000);
-      }
-    });
-
-    // ===== DỮ LIỆU & XỬ LÝ ALBUM 46 ẢNH =====
+    // ===== DỮ LIỆU 48 ẢNH =====
     const images = [
       "https://i.ibb.co/Q371rkvY/1795096808676-1047622583193778454-1047622583193778454-925a2807021e4785847af3602efd1452.jpg",
       "https://i.ibb.co/kszq6rjn/1795096808715-1047622583193778454-1047622583193778454-9d862968c254ee99fbd779c316b2f616.jpg",
@@ -818,6 +657,228 @@
       });
     }
 
+    function openAlbum(expiresAt) {
+      document.getElementById("securityGate").style.display = "none";
+      document.getElementById("albumContainer").style.display = "block";
+      document.title = `Album Ảnh (${images.length} ảnh)`;
+      initGallery();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      // Hết 5 phút tự động khóa và đưa về màn hình xác thực
+      if (sessionExpireTimer) clearTimeout(sessionExpireTimer);
+      const remaining = expiresAt - Date.now();
+      if (remaining > 0) {
+        sessionExpireTimer = setTimeout(() => {
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+          window.location.reload();
+        }, remaining);
+      }
+    }
+
+    // Nút Quay về trang chủ (xóa phiên ghi nhớ và về trang xác minh ngay lập tức)
+    document.getElementById("backHomeBtn").addEventListener("click", () => {
+      if (sessionExpireTimer) clearTimeout(sessionExpireTimer);
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      window.location.reload();
+    });
+
+    // Kiểm tra trạng thái ghi nhớ khi mở trang hoặc nhấn F5
+    (function checkSavedSession() {
+      const savedExpires = parseInt(localStorage.getItem(AUTH_STORAGE_KEY), 10);
+      if (savedExpires && Date.now() < savedExpires) {
+        openAlbum(savedExpires);
+      } else {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+      }
+    })();
+
+    // ===== XỬ LÝ THANH TRƯỢT NGÀY THÁNG NĂM HỢP LỆ =====
+    const dobDay = document.getElementById("dobDay");
+    const dobMonth = document.getElementById("dobMonth");
+    const dobYear = document.getElementById("dobYear");
+    const dobDayVal = document.getElementById("dobDayVal");
+    const dobMonthVal = document.getElementById("dobMonthVal");
+    const dobYearVal = document.getElementById("dobYearVal");
+    const datePreview = document.getElementById("datePreview");
+
+    let validDay = 15;
+    let validMonth = 6;
+    let validYear = 1985;
+
+    function pad2(n) {
+      return String(n).padStart(2, "0");
+    }
+
+    function getDaysInMonth(month, year) {
+      return new Date(year, month, 0).getDate();
+    }
+
+    function syncDaySliderLimit() {
+      const maxDays = getDaysInMonth(validMonth, validYear);
+      dobDay.max = maxDays;
+      if (validDay > maxDays) {
+        validDay = maxDays;
+        dobDay.value = validDay;
+      }
+    }
+
+    function renderDate() {
+      syncDaySliderLimit();
+      dobDay.value = validDay;
+      dobMonth.value = validMonth;
+      dobYear.value = validYear;
+      dobDayVal.textContent = pad2(validDay);
+      dobMonthVal.textContent = pad2(validMonth);
+      dobYearVal.textContent = validYear;
+      datePreview.textContent = `${pad2(validDay)} / ${pad2(validMonth)} / ${validYear}`;
+    }
+
+    dobDay.addEventListener("input", () => {
+      const maxDays = getDaysInMonth(validMonth, validYear);
+      const nextDay = parseInt(dobDay.value, 10);
+      validDay = Math.min(nextDay, maxDays);
+      renderDate();
+    });
+
+    dobMonth.addEventListener("input", () => {
+      const targetMonth = parseInt(dobMonth.value, 10);
+      if (validDay <= getDaysInMonth(targetMonth, validYear)) {
+        validMonth = targetMonth;
+      } else {
+        const step = targetMonth > validMonth ? 1 : -1;
+        let candidate = targetMonth + step;
+        let found = null;
+        while (candidate >= 1 && candidate <= 12) {
+          if (validDay <= getDaysInMonth(candidate, validYear)) {
+            found = candidate;
+            break;
+          }
+          candidate += step;
+        }
+        if (found !== null) {
+          validMonth = found;
+        }
+      }
+      renderDate();
+    });
+
+    dobYear.addEventListener("input", () => {
+      const targetYear = parseInt(dobYear.value, 10);
+      const minY = parseInt(dobYear.min, 10);
+      const maxY = parseInt(dobYear.max, 10);
+
+      if (validDay <= getDaysInMonth(validMonth, targetYear)) {
+        validYear = targetYear;
+      } else {
+        const step = targetYear > validYear ? 1 : -1;
+        let candidate = targetYear + step;
+        let found = null;
+        while (candidate >= minY && candidate <= maxY) {
+          if (validDay <= getDaysInMonth(validMonth, candidate)) {
+            found = candidate;
+            break;
+          }
+          candidate += step;
+        }
+        if (found !== null) {
+          validYear = found;
+        }
+      }
+      renderDate();
+    });
+
+    renderDate();
+
+    // ===== NÚT CÂU 5 =====
+    let q5Answer = null;
+    const btnAgree = document.getElementById("btnAgree");
+    const btnDisagree = document.getElementById("btnDisagree");
+
+    btnAgree.addEventListener("click", () => {
+      q5Answer = "yes";
+      btnAgree.classList.add("selected-yes");
+      btnDisagree.classList.remove("selected-no");
+    });
+
+    btnDisagree.addEventListener("click", () => {
+      q5Answer = "no";
+      btnDisagree.classList.add("selected-no");
+      btnAgree.classList.remove("selected-yes");
+    });
+
+    function normalizeText(str) {
+      return str
+        .trim()
+        .replace(/\s+/g, " ")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "D")
+        .toLowerCase();
+    }
+
+    const securityForm = document.getElementById("securityForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const statusBanner = document.getElementById("statusBanner");
+
+    securityForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      let score = 0;
+
+      // Câu 1: Nguyễn Tấn Hưng
+      const ans1 = normalizeText(document.getElementById("q1").value);
+      if (ans1 === "nguyen tan hung") score++;
+
+      // Câu 2: 02/11/1980
+      if (validDay === 2 && validMonth === 11 && validYear === 1980) score++;
+
+      // Câu 3: 10A3 / 10a3 / 103
+      const ans3 = document.getElementById("q3").value.trim().replace(/\s+/g, "").toLowerCase();
+      if (ans3 === "10a3" || ans3 === "103") score++;
+
+      // Câu 4: Giáo dục quốc phòng và an ninh
+      const q4Selected = document.querySelector('input[name="q4"]:checked');
+      if (q4Selected && q4Selected.value === "gdqp") score++;
+
+      // Câu 5: Đồng ý
+      if (q5Answer === "yes") score++;
+
+      submitBtn.disabled = true;
+
+      if (score === 5) {
+        let secondsLeft = 3;
+        statusBanner.className = "status-banner success";
+        statusBanner.innerHTML = `Xác thực thành công, mở Album ảnh sau <span class="countdown-num">${secondsLeft}</span> giây!`;
+
+        const timer = setInterval(() => {
+          secondsLeft--;
+          if (secondsLeft > 0) {
+            statusBanner.innerHTML = `Xác thực thành công, mở Album ảnh sau <span class="countdown-num">${secondsLeft}</span> giây!`;
+          } else {
+            clearInterval(timer);
+            const expiresAt = Date.now() + AUTH_DURATION_MS;
+            localStorage.setItem(AUTH_STORAGE_KEY, String(expiresAt));
+            openAlbum(expiresAt);
+          }
+        }, 1000);
+      } else {
+        let secondsLeft = 3;
+        statusBanner.className = "status-banner error";
+        statusBanner.innerHTML = `Xác thực bảo mật thất bại, vui lòng thực hiện lại từ đầu!<br/>Tự động tải lại trang sau <span class="countdown-num">${secondsLeft}</span> giây...`;
+
+        const timer = setInterval(() => {
+          secondsLeft--;
+          if (secondsLeft > 0) {
+            statusBanner.innerHTML = `Xác thực bảo mật thất bại, vui lòng thực hiện lại từ đầu!<br/>Tự động tải lại trang sau <span class="countdown-num">${secondsLeft}</span> giây...`;
+          } else {
+            clearInterval(timer);
+            window.location.reload();
+          }
+        }, 1000);
+      }
+    });
+
+    // ===== LIGHTBOX =====
     function openLightbox(index) {
       currentIndex = index;
       updateLightbox();
