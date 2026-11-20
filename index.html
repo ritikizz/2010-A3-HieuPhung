@@ -260,6 +260,38 @@
       cursor: not-allowed;
     }
 
+    .extract-box {
+      background: #12151b;
+      border: 1px dashed #334155;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    .extract-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .extract-btn {
+      padding: 8px 16px;
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .extract-btn:hover {
+      background: #0369a1;
+    }
+
     .status-banner {
       display: none;
       margin-top: 14px;
@@ -1354,6 +1386,10 @@
       outline: none;
     }
 
+    .select-input:focus, .textarea-input:focus {
+      border-color: #3b82f6;
+    }
+
     .textarea-input {
       resize: vertical;
       min-height: 78px;
@@ -1500,7 +1536,7 @@
     <button type="button" class="subtle-admin-link" id="bannedAdminBtn">Đăng nhập Quản trị viên</button>
   </section>
 
-  <!-- MÀN HÌNH BỊ KHÓA 6 GIỜ DO NHẬP SAI MẬT KHẨU 3 LẦN (GIỐNG MÀN HÌNH BỊ CHẶN + ĐẾM NGƯỢC) -->
+  <!-- MÀN HÌNH BỊ KHÓA 6 GIỜ DO NHẬP SAI MẬT KHẨU 3 LẦN -->
   <section class="center-screen danger-screen" id="pinLockedScreen" style="display: none;">
     <div class="status-icon">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -1683,11 +1719,34 @@
           <button type="button" class="admin-tab" data-tab="tabSettings">Cài đặt</button>
         </div>
 
+        <!-- Tab 1: Đăng bài (Hỗ trợ tách link & đăng nhiều bài cùng lúc) -->
         <div class="admin-panel active" id="tabPost">
+          <div class="extract-box">
+            <label for="rawUploadText" style="display:block;font-size:0.86rem;color:#93c5fd;margin-bottom:6px;font-weight:600;">
+              Tách nhanh link từ kết quả upload (Catbox...)
+            </label>
+            <textarea
+              id="rawUploadText"
+              class="textarea-input"
+              style="min-height: 120px; font-size: 0.84rem;"
+              placeholder="Dán nguyên đoạn kết quả từ web upload (gồm tên file, dung lượng, link https://...) vào đây rồi bấm Tách link..."
+            ></textarea>
+            <div class="extract-actions">
+              <span class="form-hint" style="margin-top:0;">Tự động lọc tất cả link bắt đầu bằng https://</span>
+              <button type="button" class="extract-btn" id="extractLinksBtn">Tách link</button>
+            </div>
+          </div>
+
           <form id="newPostForm">
             <div class="form-group">
-              <label for="postUrl">Link ảnh hoặc video (ImgBB, Catbox .mp4, YouTube, Google Drive...)</label>
-              <input type="url" id="postUrl" class="text-input" placeholder="https://..." required />
+              <label for="postUrl">Nhập link (mỗi link 1 dòng để đăng nhiều bài cùng lúc)</label>
+              <textarea
+                id="postUrl"
+                class="textarea-input"
+                style="min-height: 100px; font-size: 0.86rem;"
+                placeholder="https://files.catbox.moe/abc.jpg&#10;https://files.catbox.moe/xyz.mp4"
+                required
+              ></textarea>
             </div>
             <div class="form-group">
               <label for="postType">Loại nội dung</label>
@@ -1699,14 +1758,14 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="postPoster">Link ảnh bìa cho video (không bắt buộc)</label>
+              <label for="postPoster">Ảnh bìa (không bắt buộc — áp dụng cho tất cả link trong đợt đăng này)</label>
               <input type="url" id="postPoster" class="text-input" placeholder="https://i.ibb.co/..." />
             </div>
             <div class="form-group">
-              <label for="postCaption">Mô tả / Caption (không bắt buộc)</label>
+              <label for="postCaption">Caption (không bắt buộc — áp dụng cho tất cả link trong đợt đăng này)</label>
               <textarea id="postCaption" class="textarea-input" placeholder="Viết vài dòng mô tả..."></textarea>
             </div>
-            <button type="submit" class="submit-btn">Đăng bài mới</button>
+            <button type="submit" class="submit-btn" id="submitNewPostBtn">Đăng bài mới</button>
           </form>
         </div>
 
@@ -1808,7 +1867,7 @@
     const AUTH_STORAGE_KEY = "album_auth_expires_at";
     const PIN_FAILS_KEY = "kyuc_a3_pin_fails";
     const PIN_LOCK_UNTIL_KEY = "kyuc_a3_pin_lock_until";
-    const PIN_LOCK_DURATION_MS = 6 * 60 * 60 * 1000; // 6 giờ
+    const PIN_LOCK_DURATION_MS = 6 * 60 * 60 * 1000;
     const LIKED_POSTS_KEY = "album_liked_posts";
     const LIKED_COMMENTS_KEY = "album_liked_comments";
     const VISITOR_ID_KEY = "kyuc_a3_visitor_id";
@@ -1898,7 +1957,7 @@
     const lbZoomPct = document.getElementById("lbZoomPct");
     const lbOriginal = document.getElementById("lbOriginal");
 
-    // ===== TỰ ĐỘNG TẠM DỪNG VIDEO KHI LƯỚT QUA (NHẸ, KHÔNG XÓA DOM) =====
+    // ===== TỰ ĐỘNG TẠM DỪNG VIDEO KHI LƯỚT QUA =====
     const videoAutoPauseObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         const video = entry.target;
@@ -2817,7 +2876,6 @@
 
       updateAnnouncementUI();
 
-      // 1. QTV luôn được vào thẳng
       if (isAdmin) {
         adminMaintenanceBar.classList.toggle("show", Boolean(appSettings.maintenanceMode));
         const wasClosed = !albumOpened;
@@ -2828,7 +2886,6 @@
 
       adminMaintenanceBar.classList.remove("show");
 
-      // 2. Bị chặn do bình luận vi phạm
       if (isCurrentVisitorBanned()) {
         cleanupMediaInContainer(feedEl);
         if (activeDetailPostId) closePostDetailModal();
@@ -2836,7 +2893,6 @@
         return;
       }
 
-      // 3. Tạm đóng Dòng thời gian
       if (appSettings.maintenanceMode) {
         const note = (appSettings.maintenanceNote || "").trim();
         if (note) {
@@ -2849,7 +2905,6 @@
         return;
       }
 
-      // 4. Không đặt mật khẩu 6 số -> mở tự do
       const requiredPin = (appSettings.accessPassword || "").trim();
       if (!/^\d{6}$/.test(requiredPin)) {
         const wasClosed = !albumOpened;
@@ -2858,7 +2913,6 @@
         return;
       }
 
-      // 5. Kiểm tra đang bị khóa 6 giờ do sai quá 3 lần
       const lockUntil = parseInt(localStorage.getItem(PIN_LOCK_UNTIL_KEY), 10) || 0;
       if (lockUntil > Date.now()) {
         cleanupMediaInContainer(feedEl);
@@ -2871,7 +2925,6 @@
         localStorage.removeItem(PIN_FAILS_KEY);
       }
 
-      // 6. Kiểm tra phiên ghi nhớ & token link chia sẻ
       const savedExpires = parseInt(localStorage.getItem(AUTH_STORAGE_KEY), 10) || 0;
       let sharedExpires = 0;
 
@@ -3127,7 +3180,7 @@
       renderFeed();
     });
 
-    // ===== LIGHTBOX ZOOM MƯỢT NHƯ ZALO (FOCAL-POINT PINCH + PAN + CLAMP + SPRING) =====
+    // ===== LIGHTBOX ZOOM MƯỢT NHƯ ZALO =====
     let scale = 1, panX = 0, panY = 0;
     let rafId = null;
 
@@ -3211,14 +3264,12 @@
       zoomToPoint(scale - 0.75, rect.left + rect.width / 2, rect.top + rect.height / 2, true);
     });
 
-    // Zoom con lăn chuột theo vị trí trỏ chuột
     lbStage.addEventListener("wheel", (e) => {
       e.preventDefault();
       const factor = e.deltaY < 0 ? 1.18 : 0.85;
       zoomToPoint(scale * factor, e.clientX, e.clientY, false);
     }, { passive: false });
 
-    // Kéo chuột khi đang phóng to
     let isMouseDragging = false, dragStartX = 0, dragStartY = 0;
     lbStage.addEventListener("mousedown", (e) => {
       if (scale <= 1) return;
@@ -3236,7 +3287,6 @@
     });
     window.addEventListener("mouseup", () => { isMouseDragging = false; });
 
-    // Cảm ứng 2 ngón (Focal-point pinch + simultaneous pan) & 1 ngón mượt như Zalo
     let isPinching = false;
     let pinchStartDist = 0;
     let pinchStartScale = 1;
@@ -3276,7 +3326,6 @@
         const now = Date.now();
         const distTap = Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY);
         if (now - lastTapTime < 280 && distTap < 40) {
-          // Chạm đúp phóng thẳng vào điểm chạm hoặc thu về 100%
           lastTapTime = 0;
           if (scale > 1.05) {
             zoomToPoint(1, t.clientX, t.clientY, true);
@@ -3318,7 +3367,6 @@
 
     lbStage.addEventListener("touchend", (e) => {
       if (e.touches.length === 1) {
-        // Nhấc bớt 1 ngón từ pinch -> chuyển mượt sang kéo 1 ngón không bị giật
         isPinching = false;
         isTouchPanning = true;
         touchPanStartX = e.touches[0].clientX - panX;
@@ -3773,39 +3821,85 @@
       showToast("Đã đăng xuất Quản trị viên.");
     });
 
+    // ===== TÁCH LINK TỰ ĐỘNG TỪ KẾT QUẢ UPLOAD =====
+    document.getElementById("extractLinksBtn").addEventListener("click", () => {
+      const rawText = document.getElementById("rawUploadText").value || "";
+      const matches = rawText.match(/https?:\/\/[^\s"'<>]+/gi) || [];
+      const cleaned = matches
+        .map((u) => u.trim())
+        .filter((u) => /^https?:\/\//i.test(u));
+
+      if (cleaned.length === 0) {
+        showToast("Không tìm thấy đường link https:// nào trong đoạn văn bản.");
+        return;
+      }
+
+      document.getElementById("postUrl").value = cleaned.join("\n");
+      showToast(`Đã tách được ${cleaned.length} link!`);
+    });
+
+    // ===== ĐĂNG 1 HOẶC NHIỀU BÀI CÙNG LÚC =====
     document.getElementById("newPostForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!isAdmin) return;
-      const url = document.getElementById("postUrl").value.trim();
+
+      const rawLinks = document.getElementById("postUrl").value || "";
+      const links = rawLinks
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => /^https?:\/\/\S+$/i.test(line));
+
+      if (links.length === 0) {
+        showToast("Vui lòng nhập ít nhất 1 đường link hợp lệ (bắt đầu bằng https://).");
+        return;
+      }
+
       const type = document.getElementById("postType").value;
       const poster = document.getElementById("postPoster").value.trim();
       const caption = document.getElementById("postCaption").value.trim();
-      if (!url) return;
+      const submitPostBtn = document.getElementById("submitNewPostBtn");
 
-      const allExisting = getAllPosts();
-      const maxExisting = allExisting.reduce((m, p) => Math.max(m, p.postNumber), STATIC_IMAGES.length);
+      submitPostBtn.disabled = true;
+      try {
+        const allExisting = getAllPosts();
+        const maxExisting = allExisting.reduce((m, p) => Math.max(m, p.postNumber), STATIC_IMAGES.length);
 
-      let assignedNumber = Math.max(appSettings.nextPostNumber || 49, maxExisting + 1);
-      await runTransaction(ref(db, "settings/nextPostNumber"), (curr) => {
-        const nextNum = Math.max(curr || 49, maxExisting + 1);
-        assignedNumber = nextNum;
-        return nextNum + 1;
-      });
+        let startNumber = Math.max(appSettings.nextPostNumber || 49, maxExisting + 1);
+        await runTransaction(ref(db, "settings/nextPostNumber"), (curr) => {
+          const nextNum = Math.max(curr || 49, maxExisting + 1);
+          startNumber = nextNum;
+          return nextNum + links.length;
+        });
 
-      await push(ref(db, "posts"), {
-        postNumber: assignedNumber,
-        url,
-        type,
-        poster,
-        caption,
-        createdAt: Date.now()
-      });
+        const now = Date.now();
+        const batchUpdates = {};
+        links.forEach((url, idx) => {
+          const newKey = push(ref(db, "posts")).key;
+          batchUpdates[newKey] = {
+            postNumber: startNumber + idx,
+            url,
+            type,
+            poster,
+            caption,
+            createdAt: now + idx
+          };
+        });
 
-      document.getElementById("newPostForm").reset();
-      adminModal.classList.remove("open");
-      currentPage = 1;
-      showToast(`Đã đăng Bài đăng ${assignedNumber}!`);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+        await update(ref(db, "posts"), batchUpdates);
+
+        document.getElementById("newPostForm").reset();
+        document.getElementById("rawUploadText").value = "";
+        adminModal.classList.remove("open");
+        currentPage = 1;
+        if (links.length === 1) {
+          showToast(`Đã đăng Bài đăng ${startNumber}!`);
+        } else {
+          showToast(`Đã đăng ${links.length} bài (Bài đăng ${startNumber} → ${startNumber + links.length - 1})!`);
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } finally {
+        submitPostBtn.disabled = false;
+      }
     });
 
     document.getElementById("settingsForm").addEventListener("submit", async (e) => {
