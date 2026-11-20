@@ -575,7 +575,7 @@
       height: 15px;
     }
 
-    /* ===== PHÂN TRANG ĐỒNG BỘ, HIỆN ĐẠI ===== */
+    /* ===== PHÂN TRANG ===== */
     .pagination-bar {
       display: flex;
       justify-content: center;
@@ -639,7 +639,7 @@
       gap: 18px;
     }
 
-    /* ===== DẠNG XEM LƯỚI (CHỈ ẢNH & ẢNH) ===== */
+    /* ===== DẠNG XEM LƯỚI ===== */
     .feed.grid-mode {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -656,7 +656,8 @@
       border: 1px solid #232834;
     }
 
-    .grid-tile img {
+    .grid-tile img,
+    .grid-tile video {
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -664,7 +665,13 @@
       transition: transform 0.25s ease;
     }
 
-    .grid-tile:hover img {
+    .grid-tile video {
+      pointer-events: none;
+      background: #12151c;
+    }
+
+    .grid-tile:hover img,
+    .grid-tile:hover video {
       transform: scale(1.04);
     }
 
@@ -685,8 +692,8 @@
       width: 28px;
       height: 28px;
       border-radius: 50%;
-      background: rgba(15, 23, 42, 0.78);
-      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.45);
       color: #fff;
       display: flex;
       align-items: center;
@@ -694,6 +701,7 @@
       font-size: 0.78rem;
       padding-left: 2px;
       pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     }
 
     .grid-hidden-placeholder {
@@ -741,6 +749,12 @@
       border-bottom: 1px solid #222631;
       gap: 10px;
       position: relative;
+    }
+
+    .post-head-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .post-title-row {
@@ -1301,8 +1315,10 @@
 
     .modal-box.post-detail-box {
       max-width: 660px;
-      padding: 14px;
-      background: #0f1115;
+      padding: 0;
+      background: transparent;
+      border: none;
+      box-shadow: none;
     }
 
     .modal-header {
@@ -1325,8 +1341,17 @@
       width: 34px;
       height: 34px;
       border-radius: 50%;
-      font-size: 1.2rem;
+      font-size: 1.25rem;
+      line-height: 1;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      background: #334155;
+      color: #fff;
     }
 
     .admin-tabs {
@@ -1615,7 +1640,6 @@
 
   <!-- NỘI DUNG CHÍNH -->
   <div id="albumContainer">
-    <!-- Banner thông báo nổi của QTV -->
     <div class="announcement-banner" id="announcementBanner">
       <span class="announcement-tag">Thông báo</span>
       <div id="announcementTextDisplay"></div>
@@ -1669,13 +1693,9 @@
     <div class="pagination-bar bottom" id="paginationBottom" style="display: none;"></div>
   </div>
 
-  <!-- MODAL XEM CHI TIẾT BÀI ĐĂNG (KHI BẤM TỪ DẠNG LƯỚI) -->
+  <!-- MODAL XEM CHI TIẾT BÀI ĐĂNG (KHI BẤM TỪ DẠNG LƯỚI - KHÔNG LẶP TIÊU ĐỀ) -->
   <div class="modal-backdrop" id="postDetailModal">
     <div class="modal-box post-detail-box">
-      <div class="modal-header" style="margin-bottom: 10px; padding-bottom: 10px;">
-        <h2 id="postDetailTitle">Chi tiết bài đăng</h2>
-        <button type="button" class="modal-close" id="closePostDetailModal">&times;</button>
-      </div>
       <div id="postDetailBody"></div>
     </div>
   </div>
@@ -1747,7 +1767,6 @@
           <button type="button" class="admin-tab" data-tab="tabSettings">Cài đặt</button>
         </div>
 
-        <!-- Tab 1: Đăng bài -->
         <div class="admin-panel active" id="tabPost">
           <form id="newPostForm">
             <div class="form-group">
@@ -1775,17 +1794,14 @@
           </form>
         </div>
 
-        <!-- Tab 2: Bình luận gần đây -->
         <div class="admin-panel" id="tabComments">
           <div id="recentCommentsList"></div>
         </div>
 
-        <!-- Tab 3: Danh sách đã chặn -->
         <div class="admin-panel" id="tabBanned">
           <div id="bannedUsersList"></div>
         </div>
 
-        <!-- Tab 4: Cài đặt -->
         <div class="admin-panel" id="tabSettings">
           <form id="settingsForm">
             <div class="form-group">
@@ -1881,7 +1897,7 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // ===== MÃ ĐỊNH DANH ẨN CỦA TRÌNH DUYỆT (PHỤC VỤ TÍNH NĂNG CHẶN) =====
+    // ===== MÃ ĐỊNH DANH ẨN CỦA TRÌNH DUYỆT =====
     function getOrCreateVisitorId() {
       let id = localStorage.getItem(VISITOR_ID_KEY);
       if (!id) {
@@ -1944,7 +1960,6 @@
     const viewFeedBtn = document.getElementById("viewFeedBtn");
     const viewGridBtn = document.getElementById("viewGridBtn");
     const postDetailModal = document.getElementById("postDetailModal");
-    const postDetailTitle = document.getElementById("postDetailTitle");
     const postDetailBody = document.getElementById("postDetailBody");
     const adminModal = document.getElementById("adminModal");
     const editPostModal = document.getElementById("editPostModal");
@@ -2355,15 +2370,15 @@
     }, true);
 
     // ===== TẠO THẺ BÀI ĐĂNG (DÙNG CHUNG CHO FEED VÀ MODAL CHI TIẾT TỪ LƯỚI) =====
-    function createPostCard(post, autoOpenComments = false) {
+    function createPostCard(post, isDetailModal = false) {
       const card = document.createElement("article");
       card.className = "post-card";
-      if (!autoOpenComments) card.id = `post-${post.id}`;
+      if (!isDetailModal) card.id = `post-${post.id}`;
 
       const isLiked = likedPosts.has(post.id);
       const likeCount = likesData[post.id] || 0;
       const cCount = countComments(post.id);
-      const isOpen = autoOpenComments || openCommentPosts.has(post.id);
+      const isOpen = isDetailModal || openCommentPosts.has(post.id);
 
       const adminMenuHtml = isAdmin ? `
         <div class="post-menu-wrap">
@@ -2376,6 +2391,10 @@
         </div>
       ` : "";
 
+      const closeModalBtnHtml = isDetailModal
+        ? `<button type="button" class="modal-close" data-close-detail-modal title="Đóng">&times;</button>`
+        : "";
+
       card.innerHTML = `
         <div class="post-head">
           <div>
@@ -2385,7 +2404,10 @@
             </div>
             <div class="post-meta">${formatTime(post.createdAt)}</div>
           </div>
-          ${adminMenuHtml}
+          <div class="post-head-right">
+            ${adminMenuHtml}
+            ${closeModalBtnHtml}
+          </div>
         </div>
         ${post.caption ? `<div class="post-caption">${escapeHtml(post.caption)}</div>` : ""}
         <div class="post-media"></div>
@@ -2480,7 +2502,7 @@
       return card;
     }
 
-    // ===== TẠO Ô LƯỚI (CHỈ HIỆN ẢNH/VIDEO) =====
+    // ===== TẠO Ô LƯỚI (HIỆN ẢNH BÌA CHO CẢ VIDEO TRỰC TIẾP) =====
     function createGridTile(post) {
       const tile = document.createElement("div");
       tile.className = "grid-tile";
@@ -2506,17 +2528,27 @@
             if (img.dataset.fb !== "1") { img.dataset.fb = "1"; img.src = poster; }
           });
           tile.appendChild(img);
-          const badge = document.createElement("div");
-          badge.className = "grid-video-badge";
-          badge.innerHTML = "&#9654;";
-          tile.appendChild(badge);
+        } else if (media.type === "video") {
+          const previewUrl = media.src.includes("#") ? media.src : `${media.src}#t=0.1`;
+          const vid = document.createElement("video");
+          vid.muted = true;
+          vid.playsInline = true;
+          vid.preload = "metadata";
+          vid.src = previewUrl;
+          tile.appendChild(vid);
         } else {
           tile.innerHTML = `
             <div class="grid-video-placeholder">
               <div style="width:44px;height:44px;border-radius:50%;background:rgba(37,99,235,0.25);border:1px solid #3b82f6;display:flex;align-items:center;justify-content:center;padding-left:3px;font-size:1.1rem;">&#9654;</div>
             </div>
           `;
+          return tile;
         }
+
+        const badge = document.createElement("div");
+        badge.className = "grid-video-badge";
+        badge.innerHTML = "&#9654;";
+        tile.appendChild(badge);
       } else {
         const img = document.createElement("img");
         img.src = getOptimizedImageUrl(media.src, 400);
@@ -2537,7 +2569,6 @@
       const post = getPostById(postId);
       if (!post) return;
       activeDetailPostId = postId;
-      postDetailTitle.textContent = `Bài đăng ${post.postNumber}`;
       cleanupMediaInContainer(postDetailBody);
       postDetailBody.innerHTML = "";
       postDetailBody.appendChild(createPostCard(post, true));
@@ -2553,12 +2584,13 @@
       document.body.style.overflow = "";
     }
 
-    document.getElementById("closePostDetailModal").addEventListener("click", closePostDetailModal);
     postDetailModal.addEventListener("click", (e) => {
-      if (e.target === postDetailModal) closePostDetailModal();
+      if (e.target === postDetailModal || e.target.closest("[data-close-detail-modal]")) {
+        closePostDetailModal();
+      }
     });
 
-    // ===== PHÂN TRANG HIỆN ĐẠI =====
+    // ===== PHÂN TRANG =====
     function getPageNumbers(current, total) {
       if (total <= 7) {
         return Array.from({ length: total }, (_, i) => i + 1);
@@ -2612,7 +2644,6 @@
     paginationTop.addEventListener("click", handlePaginationClick);
     paginationBottom.addEventListener("click", handlePaginationClick);
 
-    // Chuyển đổi Bài viết / Lưới
     viewFeedBtn.addEventListener("click", () => {
       if (viewMode === "feed") return;
       viewMode = "feed";
@@ -2675,12 +2706,8 @@
       renderPaginationBar(paginationTop, totalPages);
       renderPaginationBar(paginationBottom, totalPages);
 
-      // Cập nhật nếu modal chi tiết đang mở
-      if (activeDetailPostId) {
-        const currentDetail = getPostById(activeDetailPostId);
-        if (!currentDetail) {
-          closePostDetailModal();
-        }
+      if (activeDetailPostId && !getPostById(activeDetailPostId)) {
+        closePostDetailModal();
       }
     }
 
@@ -2809,7 +2836,6 @@
 
       updateAnnouncementUI();
 
-      // 1. QTV luôn được vào thẳng
       if (isAdmin) {
         adminMaintenanceBar.classList.toggle("show", Boolean(appSettings.maintenanceMode));
         const wasClosed = !albumOpened;
@@ -2820,7 +2846,6 @@
 
       adminMaintenanceBar.classList.remove("show");
 
-      // 2. Kiểm tra bị chặn (Real-time)
       if (isCurrentVisitorBanned()) {
         cleanupMediaInContainer(feedEl);
         if (activeDetailPostId) closePostDetailModal();
@@ -2828,7 +2853,6 @@
         return;
       }
 
-      // 3. Chế độ Tạm đóng (Màu vàng)
       if (appSettings.maintenanceMode) {
         const note = (appSettings.maintenanceNote || "").trim();
         if (note) {
@@ -2841,7 +2865,6 @@
         return;
       }
 
-      // 4. Không khóa dòng thời gian
       if (appSettings.unlockTimeline) {
         const wasClosed = !albumOpened;
         showOnly("album");
@@ -2849,7 +2872,6 @@
         return;
       }
 
-      // 5. Phiên ghi nhớ & link chia sẻ
       const savedExpires = parseInt(localStorage.getItem(AUTH_STORAGE_KEY), 10) || 0;
       let sharedExpires = 0;
 
@@ -3088,9 +3110,8 @@
       }
     });
 
-    // ===== XỬ LÝ TƯƠNG TÁC BÀI VIẾT (DÙNG CHUNG CHO FEED & MODAL CHI TIẾT) =====
+    // ===== XỬ LÝ TƯƠNG TÁC BÀI VIẾT =====
     async function handlePostInteractionClick(e) {
-      // Mở chi tiết bài đăng từ lưới
       const gridTile = e.target.closest("[data-open-post-detail]");
       if (gridTile) {
         openPostDetailModal(gridTile.dataset.openPostDetail);
@@ -3389,7 +3410,6 @@
     postDetailBody.addEventListener("click", handlePostInteractionClick);
     postDetailBody.addEventListener("submit", handlePostInteractionSubmit);
 
-    // Lưu chỉnh sửa caption & poster
     document.getElementById("closeEditPostModal").addEventListener("click", () => {
       editPostModal.classList.remove("open");
       editingPostId = null;
