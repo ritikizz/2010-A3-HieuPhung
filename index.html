@@ -467,8 +467,6 @@
       border: 1px solid #262b36;
       border-radius: 14px;
       overflow: visible;
-      content-visibility: auto;
-      contain-intrinsic-size: auto 480px;
       transition: box-shadow 0.3s, border-color 0.3s;
     }
 
@@ -516,7 +514,6 @@
       margin-top: 2px;
     }
 
-    /* Menu 3 chấm QTV */
     .post-menu-wrap {
       position: relative;
     }
@@ -639,7 +636,6 @@
       border: none;
     }
 
-    /* Ảnh bìa Video + nút Play */
     .video-poster-wrap {
       position: relative;
       width: 100%;
@@ -1593,7 +1589,7 @@
     const AUTH_STORAGE_KEY = "album_auth_expires_at";
     const LIKED_POSTS_KEY = "album_liked_posts";
     const LIKED_COMMENTS_KEY = "album_liked_comments";
-    const BATCH_SIZE = 4; // Tải gọn 4 bài mỗi đợt để giữ RAM & băng thông cực thấp
+    const BATCH_SIZE = 4;
     const BLANK_GIF = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
     const app = initializeApp(firebaseConfig);
@@ -1704,6 +1700,11 @@
     let renderedCount = 0;
     let renderDebounceTimer = null;
 
+    // Hàng đợi tải ảnh bìa video tuần tự từng cái một (chống nghẽn băng thông)
+    const videoThumbQueue = [];
+    let activeThumbVideo = null;
+    let isAnyVideoPlaying = false;
+
     const openCommentPosts = new Set();
     const expandedReplies = new Set();
     const openReplyForms = new Set();
@@ -1719,20 +1720,87 @@
     };
     const sharedToken = urlParams.get("t");
 
-    // ===== NÉN ẢNH CHO FEED (GIẢM 80-90% BĂNG THÔNG & RAM) =====
+    // ===== NÉN ẢNH CHO FEED =====
     function getOptimizedImageUrl(originalUrl) {
       if (!originalUrl || !/^https?:\/\//i.test(originalUrl)) return originalUrl;
       if (originalUrl.includes("i.ytimg.com")) return originalUrl;
       return `https://wsrv.nl/?url=${encodeURIComponent(originalUrl)}&w=900&q=80&output=webp`;
     }
 
-    function buildVideoPreviewSrc(url) {
-      return url.includes("#") ? url : `${url}#t=0.5`;
+    // ===== HÀNG ĐỢI TẢI ẢNH BÌA VIDEO TUẦN TỰ =====
+    function enqueueVideoThumb(videoEl) {
+      if (!videoEl || videoEl.dataset.thumbQueued === "1" || videoEl.dataset.thumbDone === "1") return;
+      videoEl.dataset.thumbQueued = "1";
+      videoThumbQueue.push(videoEl);
+      processVideoThumbQueue();
     }
 
-    function destroyVideoInBox(mediaBox) {
+    function processVideoThumbQueue() {
+      if (isAnyVideoPlaying || activeThumbVideo) return;
+
+      while (videoThumbQueue.length > 0) {
+        const v = videoThumbQueue.shift();
+        if (!v || !document.body.contains(v) || v.dataset.thumbDone === "1") continue;
+
+        activeThumbVideo = v;
+        let finished = false;
+
+        const done = () => {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timeoutId);
+          v.dataset.thumbDone = "1";
+          v.removeEventListener("loadedmetadata", onMeta);
+          v.removeEventListener("seeked", done);
+          v.removeEventListener("loadeddata", onLoadedData);
+          v.removeEventListener("error", done);
+          if (activeThumbVideo === v) activeThumbVideo = null;
+          processVideoThumbQueue();
+        };
+
+        const onMeta = () => {
+          if (!v.paused) { done(); return; }
+          try {
+            if (v.duration && v.duration > 0.25 && v.currentTime === 0) {
+              v.dataset.thumbSeeked = "1";
+              v.currentTime = 0.1;
+            } else {
+              done();
+            }
+          } catch {
+            done();
+          }
+        };
+
+        const onLoadedData = () => {
+          if (v.currentTime > 0 || !v.duration || v.duration <= 0.25) {
+            done();
+          }
+        };
+
+        const timeoutId = setTimeout(done, 4500);
+
+        v.addEventListener("loadedmetadata", onMeta, { once: true });
+        v.addEventListener("seeked", done, { once: true });
+        v.addEventListener("loadeddata", onLoadedData);
+        v.addEventListener("error", done, { once: true });
+
+        if (!v.getAttribute("src")) {
+          v.preload = "metadata";
+          v.src = v.dataset.videoSrc;
+          v.load();
+        } else if (v.readyState >= 1) {
+          onMeta();
+        }
+        break;
+      }
+    }
+
+    function destroyVideoInBox(mediaBox, force = false) {
       const video = mediaBox.querySelector("video");
       if (video) {
+        if (!force && !video.paused && !video.ended) return false;
+        if (activeThumbVideo === video) activeThumbVideo = null;
         video.pause();
         video.removeAttribute("src");
         video.load();
@@ -1743,6 +1811,7 @@
         iframe.src = "about:blank";
         iframe.remove();
       }
+      return true;
     }
 
     function renderPosterPlaceholder(mediaBox, posterUrl, originalMediaSrc, mediaType) {
@@ -1764,7 +1833,7 @@
       }
     }
 
-    // ===== OBSERVER TỐI ƯU RAM CHẶT CHẼ (VÙNG NHÌN 300PX) =====
+    // ===== OBSERVER TỐI ƯU RAM =====
     const mediaMemoryObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         const mediaBox = entry.target;
@@ -1791,27 +1860,35 @@
           return;
         }
 
-        // 2. VIDEO TRỰC TIẾP (KHÔNG CÓ ẢNH BÌA RIÊNG) -> HIỆN KHUNG HÌNH ĐẦU KHI VÀO TẦM NHÌN, XẢ RAM KHI RỜI KHỎI
+        // 2. VIDEO TRỰC TIẾP -> TẢI ẢNH BÌA TUẦN TỰ TỪNG CÁI MỘT
         if (kind === "video-direct") {
           const vSrc = mediaBox.dataset.mediaSrc;
           if (entry.isIntersecting) {
             if (!mediaBox.querySelector("video")) {
-              mediaBox.innerHTML = `<video controls playsinline preload="metadata" src="${escapeHtml(buildVideoPreviewSrc(vSrc))}"></video>`;
+              mediaBox.innerHTML = "";
+              const v = document.createElement("video");
+              v.controls = true;
+              v.playsInline = true;
+              v.preload = "metadata";
+              v.dataset.videoSrc = vSrc;
+              mediaBox.appendChild(v);
+              enqueueVideoThumb(v);
             }
           } else {
             const v = mediaBox.querySelector("video");
-            if (v) {
+            if (v && (v.paused || v.ended)) {
               if (mediaBox.offsetHeight > 180) {
                 mediaBox.style.minHeight = `${mediaBox.offsetHeight}px`;
               }
-              destroyVideoInBox(mediaBox);
-              mediaBox.innerHTML = `<div class="video-placeholder">Cuộn tới để xem video</div>`;
+              if (destroyVideoInBox(mediaBox, false)) {
+                mediaBox.innerHTML = `<div class="video-placeholder">Cuộn tới để xem video</div>`;
+              }
             }
           }
           return;
         }
 
-        // 3. VIDEO CÓ ẢNH BÌA RIÊNG HOẶC YOUTUBE -> HIỆN ẢNH BÌA NHẸ, XẢ TRÌNH PHÁT KHI RỜI KHỎI
+        // 3. VIDEO CÓ ẢNH BÌA RIÊNG HOẶC YOUTUBE
         if (kind === "video-poster" || kind === "iframe-poster") {
           const posterUrl = mediaBox.dataset.posterSrc;
           const mSrc = mediaBox.dataset.mediaSrc;
@@ -1822,10 +1899,12 @@
               renderPosterPlaceholder(mediaBox, posterUrl, mSrc, playType);
             }
           } else {
+            const v = mediaBox.querySelector("video");
+            if (v && !v.paused && !v.ended) return;
             if (mediaBox.offsetHeight > 180) {
               mediaBox.style.minHeight = `${mediaBox.offsetHeight}px`;
             }
-            destroyVideoInBox(mediaBox);
+            destroyVideoInBox(mediaBox, false);
             mediaBox.innerHTML = `<div class="video-placeholder"></div>`;
           }
           return;
@@ -1843,29 +1922,55 @@
               if (mediaBox.offsetHeight > 180) {
                 mediaBox.style.minHeight = `${mediaBox.offsetHeight}px`;
               }
-              destroyVideoInBox(mediaBox);
+              destroyVideoInBox(mediaBox, false);
               mediaBox.innerHTML = `<div class="video-placeholder">Cuộn tới để xem video</div>`;
             }
           }
         }
       });
-    }, { rootMargin: "300px 0px 300px 0px" });
+    }, { rootMargin: "350px 0px 350px 0px" });
 
-    // Chỉ tải thêm 4 bài khi cuộn sát đáy (150px)
     const infiniteScrollObserver = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && renderedCount < currentDisplayPosts.length) {
         appendNextBatch();
       }
     }, { rootMargin: "150px 0px" });
 
-    // Chỉ cho phép 1 video phát cùng lúc để tiết kiệm CPU/RAM
+    // Nếu người dùng bấm vào video trước khi tới lượt trong hàng đợi -> nạp & phát ngay lập tức
+    feedEl.addEventListener("pointerdown", (e) => {
+      const v = e.target.closest("video[data-video-src]");
+      if (v && !v.getAttribute("src")) {
+        v.preload = "auto";
+        v.src = v.dataset.videoSrc;
+        v.dataset.thumbDone = "1";
+        v.load();
+      }
+    });
+
+    // Dồn 100% băng thông cho video đang phát & bật preload="auto" để không bị xoay
     feedEl.addEventListener("play", (e) => {
       if (e.target && e.target.tagName === "VIDEO") {
+        isAnyVideoPlaying = true;
+        e.target.preload = "auto";
+        if (e.target.dataset.thumbSeeked === "1" && e.target.currentTime < 0.25) {
+          e.target.dataset.thumbSeeked = "0";
+          e.target.currentTime = 0;
+        }
         feedEl.querySelectorAll("video").forEach((v) => {
           if (v !== e.target && !v.paused) v.pause();
         });
       }
     }, true);
+
+    function handleVideoStop(e) {
+      if (e.target && e.target.tagName === "VIDEO") {
+        const anyPlaying = Array.from(feedEl.querySelectorAll("video")).some((v) => !v.paused && !v.ended);
+        isAnyVideoPlaying = anyPlaying;
+        if (!isAnyVideoPlaying) processVideoThumbQueue();
+      }
+    }
+    feedEl.addEventListener("pause", handleVideoStop, true);
+    feedEl.addEventListener("ended", handleVideoStop, true);
 
     // ===== TIỆN ÍCH =====
     let toastTimer = null;
@@ -2119,7 +2224,7 @@
       }).join("");
     }
 
-    // ===== TẠO THẺ BÀI ĐĂNG TỐI ƯU =====
+    // ===== TẠO THẺ BÀI ĐĂNG =====
     function createPostCard(post) {
       const card = document.createElement("article");
       card.className = "post-card";
@@ -2225,7 +2330,6 @@
           img.decoding = "async";
           img.dataset.zoomSrc = media.src;
           img.dataset.zoomTitle = `Bài đăng ${post.postNumber}`;
-          // Tự động chuyển về ảnh gốc nếu bản nén gặp lỗi
           img.addEventListener("error", () => {
             if (img.dataset.loaded === "1" && img.dataset.fb !== "1") {
               img.dataset.fb = "1";
@@ -2286,8 +2390,10 @@
         ? Math.max(BATCH_SIZE, Math.min(renderedCount || BATCH_SIZE, currentDisplayPosts.length))
         : BATCH_SIZE;
 
-      // Xả toàn bộ video cũ trước khi vẽ lại
-      feedEl.querySelectorAll(".post-media").forEach((box) => destroyVideoInBox(box));
+      videoThumbQueue.length = 0;
+      activeThumbVideo = null;
+      isAnyVideoPlaying = false;
+      feedEl.querySelectorAll(".post-media").forEach((box) => destroyVideoInBox(box, true));
       mediaMemoryObserver.disconnect();
       infiniteScrollObserver.disconnect();
       feedEl.innerHTML = "";
@@ -2600,7 +2706,7 @@
       scale = 1;
       panX = 0;
       panY = 0;
-      lbImg.src = src; // Tải ảnh gốc nét căng khi phóng to
+      lbImg.src = src;
       lbTitle.textContent = title || "Xem ảnh";
       lbOriginal.href = src;
       applyTransform();
@@ -2624,14 +2730,13 @@
 
     // ===== SỰ KIỆN TRÊN FEED =====
     feedEl.addEventListener("click", async (e) => {
-      // Bấm Play trên ảnh bìa video / YouTube
       const posterWrap = e.target.closest(".video-poster-wrap");
       if (posterWrap) {
         const mediaBox = posterWrap.closest(".post-media");
         const mType = posterWrap.dataset.playMediaType;
         const mSrc = posterWrap.dataset.playMediaSrc;
         if (mType === "video") {
-          mediaBox.innerHTML = `<video controls autoplay playsinline src="${escapeHtml(mSrc)}"></video>`;
+          mediaBox.innerHTML = `<video controls autoplay playsinline preload="auto" src="${escapeHtml(mSrc)}"></video>`;
         } else {
           mediaBox.innerHTML = `<div class="iframe-wrap"><iframe src="${escapeHtml(mSrc)}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
         }
