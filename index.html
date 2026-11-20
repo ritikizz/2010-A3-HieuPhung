@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-  <title>Album Ảnh Lưu Trữ - Xác Thực Bảo Mật</title>
+  <title>Dòng thời gian 10A3 25-26</title>
   <style>
     * {
       box-sizing: border-box;
@@ -51,8 +51,55 @@
       transform: translateX(-50%) translateY(0);
     }
 
+    /* ===== MÀN HÌNH CHỜ & TẠM ĐÓNG ===== */
+    .center-screen {
+      max-width: 520px;
+      margin: 80px auto;
+      background: #171a21;
+      border: 1px solid #262b36;
+      border-radius: 16px;
+      padding: 32px 24px;
+      text-align: center;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .center-screen h1 {
+      font-size: 1.35rem;
+      margin-bottom: 12px;
+      color: #f8fafc;
+      line-height: 1.4;
+    }
+
+    .maintenance-note {
+      margin-top: 14px;
+      padding: 14px 16px;
+      background: #12151b;
+      border: 1px solid #2a303d;
+      border-radius: 10px;
+      color: #cbd5e1;
+      font-size: 0.95rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .subtle-admin-link {
+      margin-top: 22px;
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 0.82rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .subtle-admin-link:hover {
+      color: #94a3b8;
+    }
+
     /* ===== SECURITY GATE ===== */
     .gate-wrapper {
+      display: none;
       max-width: 640px;
       margin: 16px auto;
       background: #171a21;
@@ -270,31 +317,58 @@
       font-size: 1.05rem;
     }
 
-    /* ===== ALBUM FEED ===== */
+    .gate-footer {
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    /* ===== TIMELINE FEED ===== */
     #albumContainer {
       display: none;
       max-width: 660px;
       margin: 0 auto;
     }
 
+    .admin-notice-bar {
+      display: none;
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px solid #eab308;
+      color: #fde047;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.86rem;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .admin-notice-bar.show {
+      display: block;
+    }
+
     header.album-header {
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(15, 17, 21, 0.92);
+      background: rgba(15, 17, 21, 0.94);
       backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-bottom: 1px solid #262a34;
+      padding: 12px 4px;
+      margin-bottom: 18px;
+    }
+
+    .header-top-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       gap: 10px;
-      border-bottom: 1px solid #262a34;
-      padding: 12px 4px;
-      margin-bottom: 20px;
     }
 
     header.album-header h1 {
-      font-size: 1.35rem;
+      font-size: 1.25rem;
       font-weight: 700;
     }
 
@@ -336,24 +410,71 @@
       color: #fff;
     }
 
-    /* ===== POST CARD (VERTICAL FEED) ===== */
+    /* Thanh tìm kiếm theo số bài */
+    .search-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 9px 14px;
+      background: #171a21;
+      border: 1px solid #2e3442;
+      border-radius: 10px;
+      color: #f8fafc;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: #3b82f6;
+    }
+
+    .search-clear-btn {
+      display: none;
+      padding: 8px 12px;
+      background: #222733;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.84rem;
+      cursor: pointer;
+    }
+
+    .search-clear-btn.show {
+      display: inline-block;
+    }
+
+    /* ===== POST CARD ===== */
     .feed {
       display: flex;
       flex-direction: column;
       gap: 20px;
     }
 
+    .empty-feed {
+      text-align: center;
+      padding: 40px 20px;
+      background: #171a21;
+      border: 1px solid #262b36;
+      border-radius: 14px;
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
+
     .post-card {
       background: #171a21;
       border: 1px solid #262b36;
       border-radius: 14px;
-      overflow: hidden;
+      overflow: visible;
       transition: box-shadow 0.3s, border-color 0.3s;
     }
 
     .post-card.highlight {
       border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
     }
 
     .post-head {
@@ -363,21 +484,110 @@
       padding: 12px 16px;
       border-bottom: 1px solid #222631;
       gap: 10px;
+      position: relative;
+    }
+
+    .post-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     .post-title {
-      font-size: 0.92rem;
+      font-size: 0.96rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+
+    .hidden-badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(234, 179, 8, 0.16);
+      border: 1px solid #ca8a04;
+      color: #fde047;
       font-weight: 600;
-      color: #e2e8f0;
     }
 
     .post-meta {
       font-size: 0.78rem;
       color: #64748b;
+      margin-top: 2px;
+    }
+
+    /* Menu 3 chấm QTV */
+    .post-menu-wrap {
+      position: relative;
+    }
+
+    .menu-dots-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      font-size: 1.35rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .menu-dots-btn:hover {
+      background: #222733;
+      color: #fff;
+    }
+
+    .post-dropdown {
+      display: none;
+      position: absolute;
+      top: 38px;
+      right: 0;
+      min-width: 185px;
+      background: #1e222c;
+      border: 1px solid #333b4d;
+      border-radius: 10px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+      padding: 6px;
+      z-index: 300;
+    }
+
+    .post-dropdown.open {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .dropdown-item {
+      background: none;
+      border: none;
+      color: #e2e8f0;
+      text-align: left;
+      padding: 9px 12px;
+      border-radius: 7px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .dropdown-item:hover {
+      background: #2a303f;
+    }
+
+    .dropdown-item.danger {
+      color: #f87171;
+    }
+
+    .dropdown-item.danger:hover {
+      background: rgba(220, 38, 38, 0.16);
     }
 
     .post-caption {
-      padding: 10px 16px 4px;
+      padding: 12px 16px 8px;
       font-size: 0.94rem;
       color: #e2e8f0;
       line-height: 1.5;
@@ -420,6 +630,17 @@
       width: 100%;
       height: 100%;
       border: none;
+    }
+
+    .hidden-media-box {
+      width: 100%;
+      padding: 44px 20px;
+      text-align: center;
+      background: #12151c;
+      color: #94a3b8;
+      font-size: 0.92rem;
+      border-top: 1px dashed #2a303d;
+      border-bottom: 1px dashed #2a303d;
     }
 
     /* Thanh nút Tim - Bình luận - Chia sẻ */
@@ -468,6 +689,8 @@
       border-top: 1px solid #222631;
       background: #13161c;
       padding: 14px 16px;
+      border-bottom-left-radius: 14px;
+      border-bottom-right-radius: 14px;
     }
 
     .comments-section.open {
@@ -540,7 +763,7 @@
 
     .comment-bubble.highlight {
       border-color: #3b82f6;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.45);
     }
 
     .comment-head {
@@ -607,7 +830,6 @@
       color: #ef4444;
     }
 
-    /* Replies */
     .replies-wrap {
       margin-left: 22px;
       padding-left: 12px;
@@ -650,7 +872,7 @@
       font-size: 0.82rem;
     }
 
-    /* ===== LIGHTBOX ZOOM ĐỘC LẬP (KHÔNG ZOOM TRANG WEB) ===== */
+    /* ===== LIGHTBOX ZOOM ĐỘC LẬP ===== */
     .lightbox {
       position: fixed;
       inset: 0;
@@ -778,7 +1000,7 @@
       border-left: 1px solid #334155;
     }
 
-    /* ===== MODAL QUẢN TRỊ VIÊN ===== */
+    /* ===== MODAL QUẢN TRỊ VIÊN & CHỈNH SỬA ===== */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -816,7 +1038,7 @@
     }
 
     .modal-header h2 {
-      font-size: 1.2rem;
+      font-size: 1.15rem;
     }
 
     .modal-close {
@@ -843,7 +1065,7 @@
       border: 1px solid #2e3442;
       color: #94a3b8;
       border-radius: 8px;
-      font-size: 0.86rem;
+      font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
     }
@@ -888,7 +1110,40 @@
 
     .textarea-input {
       resize: vertical;
-      min-height: 76px;
+      min-height: 82px;
+    }
+
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      background: #12151b;
+      border: 1px solid #2b3140;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    .toggle-row strong {
+      display: block;
+      font-size: 0.92rem;
+      color: #f1f5f9;
+      margin-bottom: 2px;
+    }
+
+    .toggle-row span {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+
+    .toggle-row input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #2563eb;
+      flex-shrink: 0;
+      cursor: pointer;
     }
 
     .recent-comment-card {
@@ -955,7 +1210,7 @@
         padding: 20px 14px;
       }
       header.album-header h1 {
-        font-size: 1.15rem;
+        font-size: 1.1rem;
       }
       .action-btn {
         font-size: 0.83rem;
@@ -966,24 +1221,35 @@
 </head>
 <body>
 
-  <!-- THÔNG BÁO NHỎ (TOAST) -->
+  <!-- THÔNG BÁO NHỎ -->
   <div class="toast" id="toast"></div>
+
+  <!-- MÀN HÌNH ĐANG TẢI -->
+  <section class="center-screen" id="loadingScreen">
+    <h1>Dòng thời gian 10A3 25-26</h1>
+    <p style="color: #94a3b8; font-size: 0.92rem;">Đang tải dữ liệu...</p>
+  </section>
+
+  <!-- MÀN HÌNH TẠM ĐÓNG DÒNG THỜI GIAN -->
+  <section class="center-screen" id="maintenanceScreen" style="display: none;">
+    <h1>Xin lỗi, hiện tại bạn không thể truy cập vào website lúc này!</h1>
+    <div class="maintenance-note" id="maintenanceNoteDisplay" style="display: none;"></div>
+    <button type="button" class="subtle-admin-link" id="maintenanceAdminBtn">Đăng nhập Quản trị viên</button>
+  </section>
 
   <!-- MÀN HÌNH BẢO MẬT -->
   <section class="gate-wrapper" id="securityGate">
     <div class="gate-header">
-      <h1>Xác Thực Bảo Mật</h1>
-      <p>Vui lòng trả lời đúng cả 5/5 câu hỏi dưới đây để mở khóa Album ảnh.</p>
+      <h1>Dòng thời gian 10A3 25-26</h1>
+      <p>Vui lòng trả lời đúng cả 5/5 câu hỏi dưới đây để truy cập.</p>
     </div>
 
     <form id="securityForm" autocomplete="off">
-      <!-- Câu 1 -->
       <div class="question-box">
         <label class="question-title" for="q1">Câu 1. Họ tên thầy Hưng là gì?</label>
         <input type="text" id="q1" class="text-input" placeholder="Nhập họ và tên đầy đủ..." required />
       </div>
 
-      <!-- Câu 2 -->
       <div class="question-box">
         <span class="question-title">Câu 2. Ngày tháng năm sinh của thầy Hưng?</span>
         <div class="date-preview" id="datePreview">15 / 06 / 1985</div>
@@ -1006,13 +1272,11 @@
         </div>
       </div>
 
-      <!-- Câu 3 -->
       <div class="question-box">
         <label class="question-title" for="q3">Câu 3. Thầy Hưng chủ nhiệm lớp nào trong năm học 2025-2026?</label>
         <input type="text" id="q3" class="text-input" placeholder="Nhập tên lớp..." required />
       </div>
 
-      <!-- Câu 4 -->
       <div class="question-box">
         <span class="question-title">Câu 4. Thầy Hưng dạy chính môn gì?</span>
         <div class="options-grid">
@@ -1027,7 +1291,6 @@
         </div>
       </div>
 
-      <!-- Câu 5 -->
       <div class="question-box">
         <span class="question-title">Câu 5. Phải gọi thầy Hưng là Hưng Bắc Gấu mới được truy cập.</span>
         <div class="agree-group">
@@ -1036,26 +1299,47 @@
         </div>
       </div>
 
-      <button type="submit" class="submit-btn" id="submitBtn">Xác nhận &amp; Mở Album</button>
+      <button type="submit" class="submit-btn" id="submitBtn">Xác nhận &amp; Truy cập</button>
       <div class="status-banner" id="statusBanner"></div>
     </form>
+
+    <div class="gate-footer">
+      <button type="button" class="subtle-admin-link" id="gateAdminBtn">Đăng nhập Quản trị viên</button>
+    </div>
   </section>
 
-  <!-- NỘI DUNG ALBUM (DẠNG LƯỚT DỌC KIỂU BÀI VIẾT) -->
+  <!-- NỘI DUNG DÒNG THỜI GIAN -->
   <div id="albumContainer">
+    <div class="admin-notice-bar" id="adminMaintenanceBar">
+      Dòng thời gian đang ở chế độ Tạm đóng (chỉ Quản trị viên mới xem được trang này).
+    </div>
+
     <header class="album-header">
-      <h1>Album Ảnh Lưu Trữ</h1>
-      <div class="header-actions">
-        <span class="count-badge" id="photoCount"></span>
-        <button type="button" class="header-btn" id="openAdminBtn">Quản trị</button>
-        <button type="button" class="header-btn" id="backHomeBtn">Quay về trang chủ</button>
+      <div class="header-top-row">
+        <h1>Dòng thời gian 10A3 25-26</h1>
+        <div class="header-actions">
+          <span class="count-badge" id="photoCount"></span>
+          <button type="button" class="header-btn" id="openAdminBtn">Quản trị</button>
+          <button type="button" class="header-btn" id="backHomeBtn">Quay về trang chủ</button>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input
+          type="number"
+          inputmode="numeric"
+          id="postSearchInput"
+          class="search-input"
+          placeholder="Tìm theo số thứ tự bài đăng (ví dụ: 13)..."
+          min="1"
+        />
+        <button type="button" class="search-clear-btn" id="clearSearchBtn">Hiện tất cả</button>
       </div>
     </header>
 
     <main class="feed" id="feed"></main>
   </div>
 
-  <!-- TRÌNH XEM ẢNH PHÓNG TO ĐỘC LẬP -->
+  <!-- TRÌNH XEM ẢNH ZOOM ĐỘC LẬP -->
   <div class="lightbox" id="lightbox" aria-hidden="true">
     <div class="lb-top-bar">
       <span class="lb-title" id="lbTitle">Xem ảnh</span>
@@ -1072,7 +1356,24 @@
     </div>
   </div>
 
-  <!-- MODAL ĐĂNG NHẬP & BẢNG QUẢN TRỊ VIÊN -->
+  <!-- MODAL CHỈNH SỬA CAPTION BÀI VIẾT (QTV) -->
+  <div class="modal-backdrop" id="editPostModal">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2 id="editPostModalTitle">Chỉnh sửa bài viết</h2>
+        <button type="button" class="modal-close" id="closeEditPostModal">&times;</button>
+      </div>
+      <form id="editPostForm">
+        <div class="form-group">
+          <label for="editCaptionInput">Tiêu đề / Caption bài viết</label>
+          <textarea id="editCaptionInput" class="textarea-input" placeholder="Nhập caption cho bài viết..."></textarea>
+        </div>
+        <button type="submit" class="submit-btn">Lưu thay đổi</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL QUẢN TRỊ VIÊN -->
   <div class="modal-backdrop" id="adminModal">
     <div class="modal-box">
       <div class="modal-header">
@@ -1106,7 +1407,7 @@
         <div class="admin-panel active" id="tabPost">
           <form id="newPostForm">
             <div class="form-group">
-              <label for="postUrl">Link ảnh hoặc video (ImgBB, .mp4, YouTube, Google Drive...)</label>
+              <label for="postUrl">Link ảnh hoặc video (ImgBB, Catbox .mp4, YouTube, Google Drive...)</label>
               <input type="url" id="postUrl" class="text-input" placeholder="https://..." required />
             </div>
             <div class="form-group">
@@ -1122,7 +1423,7 @@
               <label for="postCaption">Mô tả / Caption (không bắt buộc)</label>
               <textarea id="postCaption" class="textarea-input" placeholder="Viết vài dòng mô tả..."></textarea>
             </div>
-            <button type="submit" class="submit-btn">Đăng lên Album</button>
+            <button type="submit" class="submit-btn">Đăng lên Dòng thời gian</button>
           </form>
         </div>
 
@@ -1131,13 +1432,35 @@
           <div id="recentCommentsList"></div>
         </div>
 
-        <!-- Tab 3: Cài đặt thời gian ghi nhớ -->
+        <!-- Tab 3: Cài đặt -->
         <div class="admin-panel" id="tabSettings">
           <form id="settingsForm">
             <div class="form-group">
               <label for="sessionMinutesInput">Thời gian ghi nhớ trình duyệt (phút)</label>
               <input type="number" id="sessionMinutesInput" class="text-input" min="1" max="1440" value="5" required />
             </div>
+
+            <label class="toggle-row">
+              <div>
+                <strong>Không khóa dòng thời gian</strong>
+                <span>Bật để mọi người vào thẳng link mà không cần trả lời 5 câu hỏi bảo mật.</span>
+              </div>
+              <input type="checkbox" id="unlockTimelineToggle" />
+            </label>
+
+            <label class="toggle-row">
+              <div>
+                <strong>Tạm đóng Dòng thời gian</strong>
+                <span>Chặn người xem truy cập trong lúc QTV chỉnh sửa hoặc đăng bài mới.</span>
+              </div>
+              <input type="checkbox" id="maintenanceModeToggle" />
+            </label>
+
+            <div class="form-group">
+              <label for="maintenanceNoteInput">Ghi chú khi tạm đóng (hiển thị dưới thông báo, không bắt buộc)</label>
+              <textarea id="maintenanceNoteInput" class="textarea-input" placeholder="Ví dụ: Đang cập nhật thêm ảnh mới, quay lại sau 15 phút nhé..."></textarea>
+            </div>
+
             <button type="submit" class="submit-btn">Lưu cài đặt</button>
           </form>
         </div>
@@ -1161,6 +1484,7 @@
       onValue,
       push,
       set,
+      update,
       remove,
       runTransaction
     } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-database.js";
@@ -1186,11 +1510,20 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // ===== PHẦN TỬ DOM CHÍNH (KHAI BÁO SỚM ĐỂ TRÁNH LỖI) =====
+    // ===== DOM =====
     const toastEl = document.getElementById("toast");
+    const loadingScreen = document.getElementById("loadingScreen");
+    const maintenanceScreen = document.getElementById("maintenanceScreen");
+    const maintenanceNoteDisplay = document.getElementById("maintenanceNoteDisplay");
+    const securityGate = document.getElementById("securityGate");
+    const albumContainer = document.getElementById("albumContainer");
+    const adminMaintenanceBar = document.getElementById("adminMaintenanceBar");
     const feedEl = document.getElementById("feed");
     const photoCountEl = document.getElementById("photoCount");
+    const postSearchInput = document.getElementById("postSearchInput");
+    const clearSearchBtn = document.getElementById("clearSearchBtn");
     const adminModal = document.getElementById("adminModal");
+    const editPostModal = document.getElementById("editPostModal");
     const lightbox = document.getElementById("lightbox");
     const lbStage = document.getElementById("lbStage");
     const lbImg = document.getElementById("lbImg");
@@ -1198,7 +1531,7 @@
     const lbZoomPct = document.getElementById("lbZoomPct");
     const lbOriginal = document.getElementById("lbOriginal");
 
-    // ===== 48 ẢNH GỐC =====
+    // ===== 48 BÀI ĐĂNG GỐC (1 -> 48) =====
     const STATIC_IMAGES = [
       "https://i.ibb.co/Q371rkvY/1795096808676-1047622583193778454-1047622583193778454-925a2807021e4785847af3602efd1452.jpg",
       "https://i.ibb.co/kszq6rjn/1795096808715-1047622583193778454-1047622583193778454-9d862968c254ee99fbd779c316b2f616.jpg",
@@ -1251,12 +1584,28 @@
     ];
 
     // ===== TRẠNG THÁI ỨNG DỤNG =====
-    let sessionMinutes = 5;
+    let appSettings = {
+      sessionMinutes: 5,
+      unlockTimeline: false,
+      maintenanceMode: false,
+      maintenanceNote: "",
+      nextPostNumber: 49
+    };
+
+    let authReady = false;
+    let settingsReady = false;
+    let postsLoaded = false;
+    let metaLoaded = false;
+    let commentsLoaded = false;
+
     let isAdmin = false;
     let albumOpened = false;
     let sessionExpireTimer = null;
+    let searchFilterNum = null;
+    let editingPostId = null;
 
     let dynamicPosts = {};
+    let postMeta = {};
     let likesData = {};
     let commentsData = {};
 
@@ -1267,10 +1616,12 @@
     let likedPosts = new Set(JSON.parse(localStorage.getItem(LIKED_POSTS_KEY) || "[]"));
     let likedComments = new Set(JSON.parse(localStorage.getItem(LIKED_COMMENTS_KEY) || "[]"));
 
+    // Tham số link chia sẻ: ?p=postId&c=commentId&r=replyId&t=expiryBase36
     const urlParams = new URLSearchParams(window.location.search);
     let pendingTarget = {
       postId: urlParams.get("p") || null,
-      commentId: urlParams.get("c") || null
+      commentId: urlParams.get("c") || null,
+      replyId: urlParams.get("r") || null
     };
     const sharedToken = urlParams.get("t");
 
@@ -1280,7 +1631,7 @@
       toastEl.textContent = msg;
       toastEl.classList.add("show");
       if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2600);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2800);
     }
 
     function escapeHtml(str) {
@@ -1291,17 +1642,22 @@
         .replace(/"/g, "&quot;");
     }
 
+    // Thời gian: phút -> giờ -> tối đa 2 ngày (hết 2,99 ngày sang ngày thứ 3 hiện HH:mm DD/MM/YYYY)
     function formatTime(ts) {
       if (!ts) return "";
-      const diffSec = Math.floor((Date.now() - ts) / 1000);
+      const diffMs = Date.now() - ts;
+      const diffSec = Math.floor(diffMs / 1000);
       if (diffSec < 60) return "Vừa xong";
       const diffMin = Math.floor(diffSec / 60);
       if (diffMin < 60) return `${diffMin} phút trước`;
       const diffHr = Math.floor(diffMin / 60);
       if (diffHr < 24) return `${diffHr} giờ trước`;
+      const diffDays = Math.floor(diffHr / 24);
+      if (diffDays < 3) return `${diffDays} ngày trước`;
+
       const d = new Date(ts);
       const pad = (n) => String(n).padStart(2, "0");
-      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      return `${pad(d.getHours())}:${pad(d.getMinutes())} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
     }
 
     function detectMedia(url, forcedType = "auto") {
@@ -1327,39 +1683,61 @@
       return { type: "image", src: url };
     }
 
+    // Tổng hợp tất cả bài đăng (cả 48 bài cũ + bài mới), sắp xếp MỚI NHẤT TRÊN CÙNG, CŨ NHẤT DƯỚI CÙNG
     function getAllPosts() {
-      const customList = Object.entries(dynamicPosts)
-        .map(([id, data]) => ({
+      const staticList = STATIC_IMAGES.map((url, idx) => {
+        const num = idx + 1;
+        const id = `static_${num}`;
+        const meta = postMeta[id] || {};
+        return {
           id,
+          postNumber: num,
+          url,
+          type: "image",
+          caption: meta.caption || "",
+          hidden: Boolean(meta.hidden),
+          deleted: Boolean(meta.deleted),
+          createdAt: 0,
+          isCustom: false
+        };
+      });
+
+      // Xử lý bài mới (hỗ trợ cả bài cũ chưa có postNumber)
+      const rawCustom = Object.entries(dynamicPosts)
+        .map(([id, data]) => ({ id, ...data }))
+        .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+      let fallbackNum = STATIC_IMAGES.length + 1;
+      const customList = rawCustom.map((data) => {
+        const num = typeof data.postNumber === "number" ? data.postNumber : fallbackNum++;
+        const meta = postMeta[data.id] || {};
+        return {
+          id: data.id,
+          postNumber: num,
           url: data.url,
           type: data.type || "auto",
-          caption: data.caption || "",
+          caption: meta.caption !== undefined ? meta.caption : (data.caption || ""),
+          hidden: meta.hidden !== undefined ? Boolean(meta.hidden) : Boolean(data.hidden),
+          deleted: Boolean(meta.deleted) || Boolean(data.deleted),
           createdAt: data.createdAt || 0,
-          isCustom: true,
-          label: data.caption ? data.caption.slice(0, 40) : "Bài đăng mới"
-        }))
-        .sort((a, b) => b.createdAt - a.createdAt);
+          isCustom: true
+        };
+      });
 
-      const staticList = STATIC_IMAGES.map((url, idx) => ({
-        id: `static_${idx + 1}`,
-        url,
-        type: "image",
-        caption: "",
-        createdAt: 0,
-        isCustom: false,
-        label: `Ảnh #${idx + 1}`
-      }));
+      return [...staticList, ...customList]
+        .filter((p) => !p.deleted)
+        .sort((a, b) => b.postNumber - a.postNumber);
+    }
 
-      return [...customList, ...staticList];
+    function getPostById(postId) {
+      return getAllPosts().find((p) => p.id === postId) || null;
     }
 
     function getPostLabel(postId) {
-      if (postId.startsWith("static_")) {
-        return `Ảnh #${postId.replace("static_", "")}`;
-      }
-      const p = dynamicPosts[postId];
-      if (!p) return "Bài đã xóa";
-      return p.caption ? `Bài: ${p.caption.slice(0, 30)}` : "Bài đăng mới";
+      const p = getPostById(postId);
+      if (p) return `Bài đăng ${p.postNumber}`;
+      if (postId.startsWith("static_")) return `Bài đăng ${postId.replace("static_", "")} (đã xóa)`;
+      return "Bài đăng (đã xóa)";
     }
 
     function countComments(postId) {
@@ -1400,7 +1778,7 @@
         .sort((a, b) => (b.likes - a.likes) || ((b.createdAt || 0) - (a.createdAt || 0)));
 
       if (items.length === 0) {
-        listEl.innerHTML = `<div class="empty-comments">Chưa có bình luận nào. Hãy là người đầu tiên khen tấm này!</div>`;
+        listEl.innerHTML = `<div class="empty-comments">Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</div>`;
         return;
       }
 
@@ -1442,7 +1820,7 @@
                     <button type="button" class="c-btn ${isRLiked ? "liked" : ""}" data-like-reply="${postId}|${c.id}|${r.id}">
                       ${isRLiked ? "♥" : "♡"} ${r.likes}
                     </button>
-                    <button type="button" class="c-btn" data-share-comment="${postId}|${r.id}">Chia sẻ</button>
+                    <button type="button" class="c-btn" data-share-reply="${postId}|${c.id}|${r.id}">Chia sẻ</button>
                     ${isAdmin ? `<button type="button" class="c-btn danger" data-delete-reply="${postId}|${c.id}|${r.id}">Xóa</button>` : ""}
                   </div>
                 </div>
@@ -1494,24 +1872,43 @@
     }
 
     function renderFeed() {
-      const posts = getAllPosts();
-      photoCountEl.textContent = `${posts.length} bài`;
-      document.title = `Album Ảnh (${posts.length} bài)`;
+      const allPosts = getAllPosts();
+      photoCountEl.textContent = `${allPosts.length} bài đăng`;
+      document.title = "Dòng thời gian 10A3 25-26";
+
+      let displayPosts = allPosts;
+      if (searchFilterNum !== null) {
+        displayPosts = allPosts.filter((p) => p.postNumber === searchFilterNum);
+      }
 
       feedEl.innerHTML = "";
-      posts.forEach((post) => {
+
+      if (displayPosts.length === 0) {
+        feedEl.innerHTML = `<div class="empty-feed">${
+          searchFilterNum !== null
+            ? `Không tìm thấy <strong>Bài đăng ${searchFilterNum}</strong>.`
+            : "Chưa có bài đăng nào."
+        }</div>`;
+        return;
+      }
+
+      displayPosts.forEach((post) => {
         const card = document.createElement("article");
         card.className = "post-card";
         card.id = `post-${post.id}`;
 
-        const media = detectMedia(post.url, post.type);
         let mediaHtml = "";
-        if (media.type === "video") {
-          mediaHtml = `<video controls playsinline preload="metadata" src="${escapeHtml(media.src)}"></video>`;
-        } else if (media.type === "iframe") {
-          mediaHtml = `<div class="iframe-wrap"><iframe src="${escapeHtml(media.src)}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
+        if (post.hidden) {
+          mediaHtml = `<div class="hidden-media-box">Hình ảnh / video của bài đăng này hiện đang được ẩn.</div>`;
         } else {
-          mediaHtml = `<img src="${escapeHtml(media.src)}" alt="${escapeHtml(post.label)}" loading="lazy" data-zoom-src="${escapeHtml(media.src)}" data-zoom-title="${escapeHtml(post.label)}" />`;
+          const media = detectMedia(post.url, post.type);
+          if (media.type === "video") {
+            mediaHtml = `<video controls playsinline preload="metadata" src="${escapeHtml(media.src)}"></video>`;
+          } else if (media.type === "iframe") {
+            mediaHtml = `<div class="iframe-wrap"><iframe src="${escapeHtml(media.src)}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
+          } else {
+            mediaHtml = `<img src="${escapeHtml(media.src)}" alt="Bài đăng ${post.postNumber}" loading="lazy" data-zoom-src="${escapeHtml(media.src)}" data-zoom-title="Bài đăng ${post.postNumber}" />`;
+          }
         }
 
         const isLiked = likedPosts.has(post.id);
@@ -1519,13 +1916,27 @@
         const cCount = countComments(post.id);
         const isOpen = openCommentPosts.has(post.id);
 
+        const adminMenuHtml = isAdmin ? `
+          <div class="post-menu-wrap">
+            <button type="button" class="menu-dots-btn" data-toggle-menu="${post.id}" title="Tùy chọn Quản trị">&#8942;</button>
+            <div class="post-dropdown" id="menu-${post.id}">
+              <button type="button" class="dropdown-item" data-edit-post="${post.id}">Chỉnh sửa bài viết</button>
+              <button type="button" class="dropdown-item" data-hide-post="${post.id}">${post.hidden ? "Hiện lại bài đăng" : "Ẩn bài đăng"}</button>
+              <button type="button" class="dropdown-item danger" data-delete-post="${post.id}">Xóa bài đăng</button>
+            </div>
+          </div>
+        ` : "";
+
         card.innerHTML = `
           <div class="post-head">
             <div>
-              <div class="post-title">${escapeHtml(post.isCustom ? "Bài đăng mới" : post.label)}</div>
+              <div class="post-title-row">
+                <span class="post-title">Bài đăng ${post.postNumber}</span>
+                ${post.hidden && isAdmin ? `<span class="hidden-badge">Đang ẩn</span>` : ""}
+              </div>
               ${post.createdAt ? `<div class="post-meta">${formatTime(post.createdAt)}</div>` : ""}
             </div>
-            ${isAdmin && post.isCustom ? `<button type="button" class="mini-btn danger" data-delete-post="${post.id}">Xóa bài</button>` : ""}
+            ${adminMenuHtml}
           </div>
           ${post.caption ? `<div class="post-caption">${escapeHtml(post.caption)}</div>` : ""}
           <div class="post-media">${mediaHtml}</div>
@@ -1564,64 +1975,171 @@
       });
     }
 
-    function jumpToTarget(postId, commentId = null) {
+    // ===== CUỘN CHÍNH XÁC TỚI BÀI VIẾT / BÌNH LUẬN ĐƯỢC CHIA SẺ =====
+    function scrollElementIntoCenter(el) {
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function jumpToTarget(postId, commentId = null, replyId = null) {
+      // Nếu đang lọc tìm kiếm thì tắt lọc để thấy bài
+      if (searchFilterNum !== null) {
+        searchFilterNum = null;
+        postSearchInput.value = "";
+        clearSearchBtn.classList.remove("show");
+        renderFeed();
+      }
+
       const card = document.getElementById(`post-${postId}`);
       if (!card) return false;
-      card.scrollIntoView({ behavior: "smooth", block: "center" });
-      card.classList.add("highlight");
-      setTimeout(() => card.classList.remove("highlight"), 2500);
 
       if (commentId) {
         openCommentPosts.add(postId);
+        // Nếu người dùng share reply nhưng link cũ chỉ có c=replyId, tự tìm parent
+        let resolvedParentId = commentId;
+        let resolvedTargetElId = replyId ? `comment-${replyId}` : `comment-${commentId}`;
+
+        if (!replyId && commentsData[postId]) {
+          const postC = commentsData[postId];
+          if (!postC[commentId]) {
+            for (const [cid, cObj] of Object.entries(postC)) {
+              if (cObj.replies && cObj.replies[commentId]) {
+                resolvedParentId = cid;
+                expandedReplies.add(`${postId}__${cid}`);
+                break;
+              }
+            }
+          }
+        } else if (replyId) {
+          expandedReplies.add(`${postId}__${commentId}`);
+        }
+
         const sec = card.querySelector(".comments-section");
         if (sec) sec.classList.add("open");
         renderCommentsForPost(postId);
 
-        setTimeout(() => {
-          const cEl = document.getElementById(`comment-${commentId}`);
-          if (cEl) {
-            cEl.scrollIntoView({ behavior: "smooth", block: "center" });
-            cEl.classList.add("highlight");
-            setTimeout(() => cEl.classList.remove("highlight"), 3000);
-          }
-        }, 120);
+        const targetEl = document.getElementById(resolvedTargetElId) || card;
+        // Cuộn nhiều nhịp để tránh lệch vị trí khi ảnh phía trên mới tải xong
+        scrollElementIntoCenter(targetEl);
+        setTimeout(() => scrollElementIntoCenter(document.getElementById(resolvedTargetElId) || document.getElementById(`post-${postId}`)), 450);
+        setTimeout(() => scrollElementIntoCenter(document.getElementById(resolvedTargetElId) || document.getElementById(`post-${postId}`)), 1000);
+
+        targetEl.classList.add("highlight");
+        setTimeout(() => targetEl.classList.remove("highlight"), 3500);
+      } else {
+        scrollElementIntoCenter(card);
+        setTimeout(() => scrollElementIntoCenter(document.getElementById(`post-${postId}`)), 450);
+        setTimeout(() => scrollElementIntoCenter(document.getElementById(`post-${postId}`)), 1000);
+
+        card.classList.add("highlight");
+        setTimeout(() => card.classList.remove("highlight"), 3200);
       }
       return true;
     }
 
     function tryJumpPending() {
-      if (!pendingTarget.postId) return;
-      const ok = jumpToTarget(pendingTarget.postId, pendingTarget.commentId);
-      if (ok) {
-        pendingTarget = { postId: null, commentId: null };
+      if (!albumOpened || !pendingTarget.postId) return;
+      if (!postsLoaded || !metaLoaded || !commentsLoaded) return;
+
+      const { postId, commentId, replyId } = pendingTarget;
+      pendingTarget = { postId: null, commentId: null, replyId: null };
+
+      const ok = jumpToTarget(postId, commentId, replyId);
+      if (!ok) {
+        showToast("Bài đăng được chia sẻ không tồn tại hoặc đã bị xóa.");
       }
     }
 
-    function openAlbum(expiresAt) {
-      albumOpened = true;
-      document.getElementById("securityGate").style.display = "none";
-      document.getElementById("albumContainer").style.display = "block";
-      renderFeed();
+    // ===== ĐIỀU PHỐI QUYỀN TRUY CẬP (TẠM ĐÓNG / KHÔNG KHÓA / QTV / PHIÊN) =====
+    function showOnly(sectionName) {
+      loadingScreen.style.display = sectionName === "loading" ? "block" : "none";
+      maintenanceScreen.style.display = sectionName === "maintenance" ? "block" : "none";
+      securityGate.style.display = sectionName === "gate" ? "block" : "none";
+      albumContainer.style.display = sectionName === "album" ? "block" : "none";
+      albumOpened = sectionName === "album";
+    }
 
-      if (sessionExpireTimer) clearTimeout(sessionExpireTimer);
-      const remaining = expiresAt - Date.now();
-      if (remaining > 0) {
-        sessionExpireTimer = setTimeout(() => {
-          localStorage.removeItem(AUTH_STORAGE_KEY);
-          window.location.href = window.location.pathname;
-        }, remaining);
+    function evaluateAccess() {
+      if (!authReady || !settingsReady) return;
+
+      if (sessionExpireTimer) {
+        clearTimeout(sessionExpireTimer);
+        sessionExpireTimer = null;
       }
 
-      setTimeout(tryJumpPending, 250);
+      // 1. Quản trị viên: luôn được vào thẳng, không bao giờ cần xác thực lại
+      if (isAdmin) {
+        adminMaintenanceBar.classList.toggle("show", Boolean(appSettings.maintenanceMode));
+        showOnly("album");
+        renderFeed();
+        tryJumpPending();
+        return;
+      }
+
+      adminMaintenanceBar.classList.remove("show");
+
+      // 2. Chế độ Tạm đóng Dòng thời gian
+      if (appSettings.maintenanceMode) {
+        const note = (appSettings.maintenanceNote || "").trim();
+        if (note) {
+          maintenanceNoteDisplay.textContent = note;
+          maintenanceNoteDisplay.style.display = "block";
+        } else {
+          maintenanceNoteDisplay.style.display = "none";
+        }
+        showOnly("maintenance");
+        return;
+      }
+
+      // 3. Chế độ Không khóa dòng thời gian (vào thẳng)
+      if (appSettings.unlockTimeline) {
+        showOnly("album");
+        renderFeed();
+        tryJumpPending();
+        return;
+      }
+
+      // 4. Chế độ bình thường: kiểm tra phiên ghi nhớ & token link chia sẻ
+      const savedExpires = parseInt(localStorage.getItem(AUTH_STORAGE_KEY), 10) || 0;
+      let sharedExpires = 0;
+
+      if (sharedToken) {
+        const parsed = parseInt(sharedToken, 36);
+        if (!Number.isNaN(parsed) && parsed > Date.now()) {
+          sharedExpires = parsed;
+        }
+      }
+
+      const effectiveExpires = Math.max(savedExpires, sharedExpires);
+      if (effectiveExpires > Date.now()) {
+        localStorage.setItem(AUTH_STORAGE_KEY, String(effectiveExpires));
+        showOnly("album");
+        renderFeed();
+        tryJumpPending();
+
+        const remaining = effectiveExpires - Date.now();
+        sessionExpireTimer = setTimeout(() => {
+          if (!isAdmin && !appSettings.unlockTimeline) {
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+            window.location.href = window.location.pathname;
+          }
+        }, remaining);
+      } else {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        showOnly("gate");
+      }
     }
 
     // ===== TẠO LINK CHIA SẺ =====
-    function copyShareLink(postId, commentId = null) {
-      const expiresAt = parseInt(localStorage.getItem(AUTH_STORAGE_KEY), 10) || (Date.now() + sessionMinutes * 60 * 1000);
+    function copyShareLink(postId, commentId = null, replyId = null) {
+      const expiresAt = isAdmin
+        ? Date.now() + appSettings.sessionMinutes * 60 * 1000
+        : (parseInt(localStorage.getItem(AUTH_STORAGE_KEY), 10) || (Date.now() + appSettings.sessionMinutes * 60 * 1000));
       const token = expiresAt.toString(36);
       const url = new URL(window.location.href.split("?")[0]);
       url.searchParams.set("p", postId);
       if (commentId) url.searchParams.set("c", commentId);
+      if (replyId) url.searchParams.set("r", replyId);
       url.searchParams.set("t", token);
 
       const finalUrl = url.toString();
@@ -1644,7 +2162,7 @@
       showToast("Đã sao chép link chia sẻ!");
     }
 
-    // ===== QUẢN TRỊ VIÊN =====
+    // ===== BÌNH LUẬN GẦN ĐÂY (QTV) =====
     function renderRecentComments() {
       const container = document.getElementById("recentCommentsList");
       if (!container) return;
@@ -1678,7 +2196,7 @@
       flat.sort((a, b) => b.createdAt - a.createdAt);
 
       if (flat.length === 0) {
-        container.innerHTML = `<div class="empty-comments">Chưa có bình luận nào trên toàn Album.</div>`;
+        container.innerHTML = `<div class="empty-comments">Chưa có bình luận nào.</div>`;
         return;
       }
 
@@ -1690,12 +2208,33 @@
           </div>
           <div class="rc-text">${escapeHtml(item.text)}</div>
           <div class="rc-actions">
-            <button type="button" class="mini-btn" data-rc-view="${item.postId}|${item.isReply ? item.rId : item.cId}|${item.isReply ? item.cId : ""}">Xem bài</button>
+            <button type="button" class="mini-btn" data-rc-view="${item.postId}|${item.cId}|${item.isReply ? item.rId : ""}">Xem bài</button>
             <button type="button" class="mini-btn danger" data-rc-del="${item.isReply ? `reply|${item.postId}|${item.cId}|${item.rId}` : `comment|${item.postId}|${item.cId}`}">Xóa</button>
           </div>
         </div>
       `).join("");
     }
+
+    // ===== TÌM KIẾM THEO SỐ BÀI =====
+    postSearchInput.addEventListener("input", () => {
+      const val = postSearchInput.value.trim();
+      if (!val) {
+        searchFilterNum = null;
+        clearSearchBtn.classList.remove("show");
+      } else {
+        const num = parseInt(val, 10);
+        searchFilterNum = Number.isNaN(num) ? null : num;
+        clearSearchBtn.classList.add("show");
+      }
+      renderFeed();
+    });
+
+    clearSearchBtn.addEventListener("click", () => {
+      postSearchInput.value = "";
+      searchFilterNum = null;
+      clearSearchBtn.classList.remove("show");
+      renderFeed();
+    });
 
     // ===== TRÌNH XEM ẢNH ZOOM ĐỘC LẬP =====
     let scale = 1, panX = 0, panY = 0;
@@ -1729,20 +2268,79 @@
       document.body.style.overflow = "";
     }
 
-    // ===== GẮN TOÀN BỘ SỰ KIỆN =====
-    document.getElementById("backHomeBtn").addEventListener("click", () => {
-      if (sessionExpireTimer) clearTimeout(sessionExpireTimer);
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-      window.location.href = window.location.pathname;
+    // ===== ĐÓNG DROPDOWN 3 CHẤM KHI BẤM RA NGOÀI =====
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".post-menu-wrap")) {
+        document.querySelectorAll(".post-dropdown.open").forEach((m) => m.classList.remove("open"));
+      }
     });
 
+    // ===== SỰ KIỆN TRÊN FEED =====
     feedEl.addEventListener("click", async (e) => {
+      // Mở / đóng menu 3 chấm QTV
+      const menuBtn = e.target.closest("[data-toggle-menu]");
+      if (menuBtn) {
+        const id = menuBtn.dataset.toggleMenu;
+        const targetMenu = document.getElementById(`menu-${id}`);
+        const wasOpen = targetMenu.classList.contains("open");
+        document.querySelectorAll(".post-dropdown.open").forEach((m) => m.classList.remove("open"));
+        if (!wasOpen) targetMenu.classList.add("open");
+        return;
+      }
+
+      // QTV: Chỉnh sửa caption bài viết
+      const editBtn = e.target.closest("[data-edit-post]");
+      if (editBtn && isAdmin) {
+        const postId = editBtn.dataset.editPost;
+        const post = getPostById(postId);
+        if (!post) return;
+        editingPostId = postId;
+        document.getElementById("editPostModalTitle").textContent = `Chỉnh sửa Bài đăng ${post.postNumber}`;
+        document.getElementById("editCaptionInput").value = post.caption || "";
+        document.querySelectorAll(".post-dropdown.open").forEach((m) => m.classList.remove("open"));
+        editPostModal.classList.add("open");
+        return;
+      }
+
+      // QTV: Ẩn / Hiện lại bài đăng
+      const hideBtn = e.target.closest("[data-hide-post]");
+      if (hideBtn && isAdmin) {
+        const postId = hideBtn.dataset.hidePost;
+        const post = getPostById(postId);
+        if (!post) return;
+        const nextHidden = !post.hidden;
+        document.querySelectorAll(".post-dropdown.open").forEach((m) => m.classList.remove("open"));
+        await update(ref(db, `postMeta/${postId}`), { hidden: nextHidden });
+        showToast(nextHidden ? `Đã ẩn ảnh/video của Bài đăng ${post.postNumber}` : `Đã hiện lại Bài đăng ${post.postNumber}`);
+        return;
+      }
+
+      // QTV: Xóa vĩnh viễn bài đăng (không đôn số)
+      const delPost = e.target.closest("[data-delete-post]");
+      if (delPost && isAdmin) {
+        const postId = delPost.dataset.deletePost;
+        const post = getPostById(postId);
+        if (!post) return;
+        document.querySelectorAll(".post-dropdown.open").forEach((m) => m.classList.remove("open"));
+        if (!confirm(`Xóa vĩnh viễn Bài đăng ${post.postNumber}? Số thứ tự các bài khác sẽ giữ nguyên.`)) return;
+
+        if (post.isCustom) {
+          await remove(ref(db, `posts/${postId}`));
+        } else {
+          await update(ref(db, `postMeta/${postId}`), { deleted: true });
+        }
+        showToast(`Đã xóa vĩnh viễn Bài đăng ${post.postNumber}.`);
+        return;
+      }
+
+      // Xem ảnh phóng to
       const zoomImg = e.target.closest("[data-zoom-src]");
       if (zoomImg) {
         openLightbox(zoomImg.dataset.zoomSrc, zoomImg.dataset.zoomTitle);
         return;
       }
 
+      // Tim bài viết
       const likeBtn = e.target.closest("[data-like-post]");
       if (likeBtn) {
         const postId = likeBtn.dataset.likePost;
@@ -1762,6 +2360,7 @@
         return;
       }
 
+      // Mở / đóng bình luận
       const toggleCmt = e.target.closest("[data-toggle-comments]");
       if (toggleCmt) {
         const postId = toggleCmt.dataset.toggleComments;
@@ -1777,12 +2376,14 @@
         return;
       }
 
+      // Chia sẻ bài viết
       const sharePost = e.target.closest("[data-share-post]");
       if (sharePost) {
         copyShareLink(sharePost.dataset.sharePost);
         return;
       }
 
+      // Tim bình luận gốc
       const likeCmt = e.target.closest("[data-like-comment]");
       if (likeCmt) {
         const [postId, cId] = likeCmt.dataset.likeComment.split("|");
@@ -1799,6 +2400,7 @@
         return;
       }
 
+      // Tim reply
       const likeReply = e.target.closest("[data-like-reply]");
       if (likeReply) {
         const [postId, cId, rId] = likeReply.dataset.likeReply.split("|");
@@ -1815,6 +2417,7 @@
         return;
       }
 
+      // Chia sẻ bình luận gốc
       const shareCmt = e.target.closest("[data-share-comment]");
       if (shareCmt) {
         const [postId, cId] = shareCmt.dataset.shareComment.split("|");
@@ -1822,6 +2425,15 @@
         return;
       }
 
+      // Chia sẻ reply
+      const shareRep = e.target.closest("[data-share-reply]");
+      if (shareRep) {
+        const [postId, cId, rId] = shareRep.dataset.shareReply.split("|");
+        copyShareLink(postId, cId, rId);
+        return;
+      }
+
+      // Mở ô trả lời
       const openReply = e.target.closest("[data-open-reply]");
       if (openReply) {
         const key = openReply.dataset.openReply;
@@ -1832,6 +2444,7 @@
         return;
       }
 
+      // Xem X câu trả lời
       const expandRep = e.target.closest("[data-expand-replies]");
       if (expandRep) {
         expandedReplies.add(expandRep.dataset.expandReplies);
@@ -1839,6 +2452,7 @@
         return;
       }
 
+      // Ẩn các câu trả lời
       const collapseRep = e.target.closest("[data-collapse-replies]");
       if (collapseRep) {
         expandedReplies.delete(collapseRep.dataset.collapseReplies);
@@ -1846,6 +2460,7 @@
         return;
       }
 
+      // QTV xóa bình luận gốc
       const delCmt = e.target.closest("[data-delete-comment]");
       if (delCmt && isAdmin) {
         if (!confirm("Xóa bình luận này (và toàn bộ câu trả lời bên trong)?")) return;
@@ -1855,21 +2470,13 @@
         return;
       }
 
+      // QTV xóa reply
       const delRep = e.target.closest("[data-delete-reply]");
       if (delRep && isAdmin) {
         if (!confirm("Xóa câu trả lời này?")) return;
         const [postId, cId, rId] = delRep.dataset.deleteReply.split("|");
         await remove(ref(db, `comments/${postId}/${cId}/replies/${rId}`));
         showToast("Đã xóa câu trả lời.");
-        return;
-      }
-
-      const delPost = e.target.closest("[data-delete-post]");
-      if (delPost && isAdmin) {
-        if (!confirm("Xóa bài đăng này khỏi Album?")) return;
-        const postId = delPost.dataset.deletePost;
-        await remove(ref(db, `posts/${postId}`));
-        showToast("Đã xóa bài đăng.");
         return;
       }
     });
@@ -1911,10 +2518,52 @@
       }
     });
 
-    document.getElementById("openAdminBtn").addEventListener("click", () => {
+    // Lưu chỉnh sửa caption
+    document.getElementById("closeEditPostModal").addEventListener("click", () => {
+      editPostModal.classList.remove("open");
+      editingPostId = null;
+    });
+    editPostModal.addEventListener("click", (e) => {
+      if (e.target === editPostModal) {
+        editPostModal.classList.remove("open");
+        editingPostId = null;
+      }
+    });
+
+    document.getElementById("editPostForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!isAdmin || !editingPostId) return;
+      const newCaption = document.getElementById("editCaptionInput").value.trim();
+      await update(ref(db, `postMeta/${editingPostId}`), { caption: newCaption });
+      editPostModal.classList.remove("open");
+      editingPostId = null;
+      showToast("Đã lưu chỉnh sửa bài viết!");
+    });
+
+    // Nút Quay về trang chủ
+    document.getElementById("backHomeBtn").addEventListener("click", () => {
+      if (isAdmin) {
+        showToast("Bạn đang ở quyền Quản trị viên. Hãy đăng xuất QTV để quay về màn hình xác thực.");
+        return;
+      }
+      if (appSettings.unlockTimeline) {
+        showToast("Dòng thời gian hiện đang mở không cần xác thực.");
+        return;
+      }
+      if (sessionExpireTimer) clearTimeout(sessionExpireTimer);
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      window.location.href = window.location.pathname;
+    });
+
+    // Mở modal QTV từ mọi màn hình
+    function openAdminModal() {
       adminModal.classList.add("open");
       if (isAdmin) renderRecentComments();
-    });
+    }
+    document.getElementById("openAdminBtn").addEventListener("click", openAdminModal);
+    document.getElementById("gateAdminBtn").addEventListener("click", openAdminModal);
+    document.getElementById("maintenanceAdminBtn").addEventListener("click", openAdminModal);
+
     document.getElementById("closeAdminModal").addEventListener("click", () => {
       adminModal.classList.remove("open");
     });
@@ -1960,6 +2609,7 @@
       showToast("Đã đăng xuất Quản trị viên.");
     });
 
+    // QTV đăng bài mới (cấp số thứ tự tăng dần, không đôn số khi xóa)
     document.getElementById("newPostForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!isAdmin) return;
@@ -1968,7 +2618,18 @@
       const caption = document.getElementById("postCaption").value.trim();
       if (!url) return;
 
+      const allExisting = getAllPosts();
+      const maxExisting = allExisting.reduce((m, p) => Math.max(m, p.postNumber), STATIC_IMAGES.length);
+
+      let assignedNumber = Math.max(appSettings.nextPostNumber || 49, maxExisting + 1);
+      await runTransaction(ref(db, "settings/nextPostNumber"), (curr) => {
+        const nextNum = Math.max(curr || 49, maxExisting + 1);
+        assignedNumber = nextNum;
+        return nextNum + 1;
+      });
+
       await push(ref(db, "posts"), {
+        postNumber: assignedNumber,
         url,
         type,
         caption,
@@ -1977,26 +2638,36 @@
 
       document.getElementById("newPostForm").reset();
       adminModal.classList.remove("open");
-      showToast("Đã đăng bài mới lên đầu Album!");
+      showToast(`Đã đăng Bài đăng ${assignedNumber}!`);
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
 
+    // QTV lưu cài đặt
     document.getElementById("settingsForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!isAdmin) return;
       const mins = parseInt(document.getElementById("sessionMinutesInput").value, 10);
       if (Number.isNaN(mins) || mins < 1) return;
-      await set(ref(db, "settings/sessionMinutes"), mins);
-      showToast(`Đã cập nhật thời gian ghi nhớ: ${mins} phút`);
+
+      const unlockTimeline = document.getElementById("unlockTimelineToggle").checked;
+      const maintenanceMode = document.getElementById("maintenanceModeToggle").checked;
+      const maintenanceNote = document.getElementById("maintenanceNoteInput").value.trim();
+
+      await update(ref(db, "settings"), {
+        sessionMinutes: mins,
+        unlockTimeline,
+        maintenanceMode,
+        maintenanceNote
+      });
+      showToast("Đã lưu cài đặt!");
     });
 
     document.getElementById("recentCommentsList").addEventListener("click", async (e) => {
       const viewBtn = e.target.closest("[data-rc-view]");
       if (viewBtn) {
-        const [postId, targetCId, parentCId] = viewBtn.dataset.rcView.split("|");
-        if (parentCId) expandedReplies.add(`${postId}__${parentCId}`);
+        const [postId, cId, rId] = viewBtn.dataset.rcView.split("|");
         adminModal.classList.remove("open");
-        jumpToTarget(postId, targetCId);
+        jumpToTarget(postId, cId, rId || null);
         return;
       }
 
@@ -2013,7 +2684,7 @@
       }
     });
 
-    // Sự kiện Lightbox
+    // ===== LIGHTBOX EVENTS =====
     document.getElementById("lbClose").addEventListener("click", closeLightbox);
     document.getElementById("lbZoomIn").addEventListener("click", () => {
       scale = Math.min(4, scale + 0.5);
@@ -2031,8 +2702,7 @@
       applyTransform();
     }, { passive: false });
 
-    let isMouseDragging = false;
-    let dragStartX = 0, dragStartY = 0;
+    let isMouseDragging = false, dragStartX = 0, dragStartY = 0;
     lbStage.addEventListener("mousedown", (e) => {
       if (scale <= 1) return;
       isMouseDragging = true;
@@ -2203,16 +2873,16 @@
       if (score === 5) {
         let sec = 3;
         statusBanner.className = "status-banner success";
-        statusBanner.innerHTML = `Xác thực thành công, mở Album ảnh sau <span class="countdown-num">${sec}</span> giây!`;
+        statusBanner.innerHTML = `Xác thực thành công, mở Dòng thời gian sau <span class="countdown-num">${sec}</span> giây!`;
         const timer = setInterval(() => {
           sec--;
           if (sec > 0) {
-            statusBanner.innerHTML = `Xác thực thành công, mở Album ảnh sau <span class="countdown-num">${sec}</span> giây!`;
+            statusBanner.innerHTML = `Xác thực thành công, mở Dòng thời gian sau <span class="countdown-num">${sec}</span> giây!`;
           } else {
             clearInterval(timer);
-            const expiresAt = Date.now() + sessionMinutes * 60 * 1000;
+            const expiresAt = Date.now() + appSettings.sessionMinutes * 60 * 1000;
             localStorage.setItem(AUTH_STORAGE_KEY, String(expiresAt));
-            openAlbum(expiresAt);
+            evaluateAccess();
           }
         }, 1000);
       } else {
@@ -2232,17 +2902,37 @@
     });
 
     // ===== ĐỒNG BỘ FIREBASE =====
-    onValue(ref(db, "settings/sessionMinutes"), (snap) => {
-      const val = snap.val();
-      if (typeof val === "number" && val >= 1) {
-        sessionMinutes = val;
-        const input = document.getElementById("sessionMinutesInput");
-        if (input) input.value = val;
-      }
+    onValue(ref(db, "settings"), (snap) => {
+      const val = snap.val() || {};
+      appSettings = {
+        sessionMinutes: (typeof val.sessionMinutes === "number" && val.sessionMinutes >= 1) ? val.sessionMinutes : 5,
+        unlockTimeline: Boolean(val.unlockTimeline),
+        maintenanceMode: Boolean(val.maintenanceMode),
+        maintenanceNote: val.maintenanceNote || "",
+        nextPostNumber: (typeof val.nextPostNumber === "number" && val.nextPostNumber >= 49) ? val.nextPostNumber : 49
+      };
+
+      document.getElementById("sessionMinutesInput").value = appSettings.sessionMinutes;
+      document.getElementById("unlockTimelineToggle").checked = appSettings.unlockTimeline;
+      document.getElementById("maintenanceModeToggle").checked = appSettings.maintenanceMode;
+      document.getElementById("maintenanceNoteInput").value = appSettings.maintenanceNote;
+
+      settingsReady = true;
+      evaluateAccess();
     });
 
     onValue(ref(db, "posts"), (snap) => {
       dynamicPosts = snap.val() || {};
+      postsLoaded = true;
+      if (albumOpened) {
+        renderFeed();
+        tryJumpPending();
+      }
+    });
+
+    onValue(ref(db, "postMeta"), (snap) => {
+      postMeta = snap.val() || {};
+      metaLoaded = true;
       if (albumOpened) {
         renderFeed();
         tryJumpPending();
@@ -2256,14 +2946,18 @@
 
     onValue(ref(db, "comments"), (snap) => {
       commentsData = snap.val() || {};
+      commentsLoaded = true;
       if (albumOpened) {
         updateAllCommentSections();
         if (isAdmin) renderRecentComments();
+        tryJumpPending();
       }
     });
 
     onAuthStateChanged(auth, (user) => {
       isAdmin = Boolean(user && user.uid === ADMIN_UID);
+      authReady = true;
+
       const openAdminBtn = document.getElementById("openAdminBtn");
       const loginForm = document.getElementById("adminLoginForm");
       const dashboard = document.getElementById("adminDashboard");
@@ -2284,31 +2978,8 @@
         title.textContent = "Đăng nhập Quản trị viên";
       }
 
-      if (albumOpened) {
-        renderFeed();
-      }
+      evaluateAccess();
     });
-
-    // ===== KIỂM TRA PHIÊN GHI NHỚ (CHẠY CUỐI CÙNG SAU KHI MỌI THỨ SẴN SÀNG) =====
-    (function checkInitialAccess() {
-      const savedExpires = parseInt(localStorage.getItem(AUTH_STORAGE_KEY), 10) || 0;
-      let sharedExpires = 0;
-
-      if (sharedToken) {
-        const parsed = parseInt(sharedToken, 36);
-        if (!Number.isNaN(parsed) && parsed > Date.now()) {
-          sharedExpires = parsed;
-        }
-      }
-
-      const effectiveExpires = Math.max(savedExpires, sharedExpires);
-      if (effectiveExpires > Date.now()) {
-        localStorage.setItem(AUTH_STORAGE_KEY, String(effectiveExpires));
-        openAlbum(effectiveExpires);
-      } else {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-      }
-    })();
   </script>
 </body>
 </html>
