@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="robots" content="noindex, nofollow" />
   <title>Ký ức A3 - Học sinh lứa 2010 | Hiếu Phụng</title>
   <style>
     * {
@@ -51,7 +52,7 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    /* ===== MÀN HÌNH CHỜ, TẠM ĐÓNG (VÀNG), BỊ CHẶN (ĐỎ) ===== */
+    /* ===== MÀN HÌNH CHỜ, TẠM ĐÓNG (VÀNG), BỊ CHẶN / KHÓA PIN (ĐỎ) ===== */
     .center-screen {
       max-width: 520px;
       margin: 72px auto;
@@ -116,6 +117,26 @@
       margin-bottom: 16px;
     }
 
+    .lock-countdown-box {
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: rgba(220, 38, 38, 0.14);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      border-radius: 10px;
+      color: #fecaca;
+      font-size: 0.94rem;
+    }
+
+    .lock-countdown-timer {
+      display: block;
+      margin-top: 6px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #ffffff;
+      font-variant-numeric: tabular-nums;
+    }
+
     .maintenance-note {
       margin-top: 14px;
       padding: 14px 16px;
@@ -143,51 +164,61 @@
       color: #94a3b8;
     }
 
-    /* ===== SECURITY GATE ===== */
+    /* ===== MÀN HÌNH NHẬP MẬT KHẨU 6 SỐ ===== */
     .gate-wrapper {
       display: none;
-      max-width: 640px;
-      margin: 16px auto;
+      max-width: 440px;
+      margin: 64px auto;
       background: #171a21;
       border: 1px solid #262b36;
       border-radius: 16px;
-      padding: 28px 22px;
+      padding: 28px 24px;
       box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+      text-align: center;
     }
 
     .gate-header {
-      text-align: center;
-      margin-bottom: 24px;
-      padding-bottom: 18px;
+      margin-bottom: 22px;
+      padding-bottom: 16px;
       border-bottom: 1px solid #262b36;
     }
 
     .gate-header h1 {
-      font-size: 1.35rem;
+      font-size: 1.28rem;
       margin-bottom: 8px;
       color: #f8fafc;
       line-height: 1.35;
     }
 
     .gate-header p {
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       color: #94a3b8;
     }
 
-    .question-box {
-      background: #1d212b;
-      border: 1px solid #2a303d;
+    .pin-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: #12151b;
+      border: 1px solid #333a4a;
       border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
+      color: #f8fafc;
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: 10px;
+      text-align: center;
+      outline: none;
+      margin-bottom: 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
 
-    .question-title {
-      font-size: 0.98rem;
-      font-weight: 600;
-      margin-bottom: 12px;
-      color: #e2e8f0;
-      display: block;
+    .pin-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+    }
+
+    .pin-input::placeholder {
+      letter-spacing: 8px;
+      color: #475569;
     }
 
     .text-input {
@@ -206,115 +237,10 @@
       border-color: #3b82f6;
     }
 
-    .date-preview {
-      text-align: center;
-      font-size: 1.2rem;
-      font-weight: 700;
-      letter-spacing: 2px;
-      color: #60a5fa;
-      background: #12151b;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 14px;
-      border: 1px solid #2a303d;
-    }
-
-    .slider-group {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .slider-row {
-      display: grid;
-      grid-template-columns: 62px 1fr 48px;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.88rem;
-      color: #cbd5e1;
-    }
-
-    .slider-row input[type="range"] {
-      width: 100%;
-      accent-color: #3b82f6;
-      cursor: pointer;
-    }
-
-    .slider-val {
-      text-align: right;
-      font-weight: 600;
-      color: #f8fafc;
-    }
-
-    .options-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
-
-    .option-label {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      background: #12151b;
-      border: 1px solid #2e3442;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.93rem;
-      transition: border-color 0.2s, background 0.2s;
-    }
-
-    .option-label:hover {
-      border-color: #475569;
-      background: #171b24;
-    }
-
-    .option-label input[type="radio"] {
-      accent-color: #3b82f6;
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-    }
-
-    .agree-group {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .agree-btn {
-      padding: 11px 14px;
-      border-radius: 8px;
-      border: 1px solid #333a4a;
-      background: #12151b;
-      color: #cbd5e1;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .agree-btn:hover {
-      border-color: #64748b;
-    }
-
-    .agree-btn.selected-yes {
-      background: #16a34a;
-      border-color: #22c55e;
-      color: #fff;
-    }
-
-    .agree-btn.selected-no {
-      background: #dc2626;
-      border-color: #ef4444;
-      color: #fff;
-    }
-
     .submit-btn {
       width: 100%;
       padding: 13px;
-      margin-top: 8px;
+      margin-top: 6px;
       background: #2563eb;
       color: #fff;
       border: none;
@@ -336,11 +262,11 @@
 
     .status-banner {
       display: none;
-      margin-top: 16px;
-      padding: 14px 16px;
+      margin-top: 14px;
+      padding: 12px 14px;
       border-radius: 10px;
       text-align: center;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       line-height: 1.5;
     }
 
@@ -351,17 +277,18 @@
       color: #fca5a5;
     }
 
+    .status-banner.warning {
+      display: block;
+      background: rgba(234, 179, 8, 0.14);
+      border: 1px solid #eab308;
+      color: #fde047;
+    }
+
     .status-banner.success {
       display: block;
       background: rgba(22, 163, 74, 0.16);
       border: 1px solid #22c55e;
       color: #86efac;
-    }
-
-    .countdown-num {
-      font-weight: 700;
-      color: #fff;
-      font-size: 1.05rem;
     }
 
     .gate-footer {
@@ -376,7 +303,6 @@
       margin: 0 auto;
     }
 
-    /* Banner thông báo nổi của QTV */
     .announcement-banner {
       display: none;
       background: linear-gradient(135deg, #2563eb, #7c3aed);
@@ -536,7 +462,6 @@
       display: inline-block;
     }
 
-    /* Nút chuyển chế độ Bài viết / Dạng lưới */
     .view-switcher {
       display: inline-flex;
       background: #171a21;
@@ -1169,11 +1094,11 @@
       font-size: 0.82rem;
     }
 
-    /* ===== LIGHTBOX ZOOM ĐỘC LẬP ===== */
+    /* ===== LIGHTBOX ZOOM MƯỢT NHƯ ZALO ===== */
     .lightbox {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.95);
+      background: #000000;
       display: none;
       flex-direction: column;
       z-index: 2600;
@@ -1194,7 +1119,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 0 16px;
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), transparent);
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.72), transparent);
       z-index: 2610;
       pointer-events: none;
     }
@@ -1234,16 +1159,26 @@
       justify-content: center;
       touch-action: none;
       user-select: none;
+      -webkit-user-select: none;
       cursor: grab;
     }
 
+    .lb-stage:active {
+      cursor: grabbing;
+    }
+
     .lb-img {
-      max-width: 96vw;
-      max-height: 82vh;
+      max-width: 100vw;
+      max-height: 86vh;
       object-fit: contain;
       transform-origin: center center;
       will-change: transform;
       pointer-events: none;
+      -webkit-user-drag: none;
+    }
+
+    .lb-img.animate {
+      transition: transform 0.22s cubic-bezier(0.2, 0.85, 0.3, 1);
     }
 
     .lb-bottom-bar {
@@ -1258,7 +1193,8 @@
       border: 1px solid #334155;
       padding: 6px 14px;
       border-radius: 999px;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
+      white-space: nowrap;
       z-index: 2610;
     }
 
@@ -1280,9 +1216,10 @@
       color: #60a5fa;
       text-decoration: none;
       font-weight: 500;
-      margin-left: 6px;
+      margin-left: 4px;
       padding-left: 10px;
       border-left: 1px solid #334155;
+      white-space: nowrap;
     }
 
     /* ===== MODAL ===== */
@@ -1396,6 +1333,13 @@
       color: #cbd5e1;
       margin-bottom: 6px;
       font-weight: 500;
+    }
+
+    .form-hint {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin-top: 5px;
+      line-height: 1.4;
     }
 
     .select-input, .textarea-input {
@@ -1516,7 +1460,8 @@
 
     @media (max-width: 600px) {
       .gate-wrapper {
-        padding: 20px 14px;
+        padding: 22px 16px;
+        margin: 40px auto;
       }
       header.album-header h1 {
         font-size: 1.02rem;
@@ -1555,6 +1500,21 @@
     <button type="button" class="subtle-admin-link" id="bannedAdminBtn">Đăng nhập Quản trị viên</button>
   </section>
 
+  <!-- MÀN HÌNH BỊ KHÓA 6 GIỜ DO NHẬP SAI MẬT KHẨU 3 LẦN (GIỐNG MÀN HÌNH BỊ CHẶN + ĐẾM NGƯỢC) -->
+  <section class="center-screen danger-screen" id="pinLockedScreen" style="display: none;">
+    <div class="status-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+      </svg>
+    </div>
+    <h1>Xin lỗi, hiện tại bạn không còn quyền truy cập vào liên kết này!</h1>
+    <div class="lock-countdown-box">
+      Bạn đã nhập sai mật khẩu quá 3 lần. Vui lòng thử lại sau:
+      <span class="lock-countdown-timer" id="pinLockCountdown">06:00:00</span>
+    </div>
+    <button type="button" class="subtle-admin-link" id="pinLockedAdminBtn">Đăng nhập Quản trị viên</button>
+  </section>
+
   <!-- MÀN HÌNH TẠM ĐÓNG (MÀU VÀNG CHỜ ĐỢI) -->
   <section class="center-screen warning-screen" id="maintenanceScreen" style="display: none;">
     <div class="status-icon">
@@ -1567,68 +1527,24 @@
     <button type="button" class="subtle-admin-link" id="maintenanceAdminBtn">Đăng nhập Quản trị viên</button>
   </section>
 
-  <!-- MÀN HÌNH BẢO MẬT -->
+  <!-- MÀN HÌNH NHẬP MẬT KHẨU 6 SỐ -->
   <section class="gate-wrapper" id="securityGate">
     <div class="gate-header">
       <h1>Ký ức A3 - Học sinh lứa 2010 | Hiếu Phụng</h1>
-      <p>Vui lòng trả lời đúng cả 5/5 câu hỏi dưới đây để truy cập.</p>
+      <p>Vui lòng nhập mật khẩu gồm 6 chữ số để truy cập.</p>
     </div>
 
     <form id="securityForm" autocomplete="off">
-      <div class="question-box">
-        <label class="question-title" for="q1">Câu 1. Họ tên thầy Hưng là gì?</label>
-        <input type="text" id="q1" class="text-input" placeholder="Nhập họ và tên đầy đủ..." required />
-      </div>
-
-      <div class="question-box">
-        <span class="question-title">Câu 2. Ngày tháng năm sinh của thầy Hưng?</span>
-        <div class="date-preview" id="datePreview">15 / 06 / 1985</div>
-        <div class="slider-group">
-          <div class="slider-row">
-            <label for="dobDay">Ngày</label>
-            <input type="range" id="dobDay" min="1" max="30" value="15" />
-            <span class="slider-val" id="dobDayVal">15</span>
-          </div>
-          <div class="slider-row">
-            <label for="dobMonth">Tháng</label>
-            <input type="range" id="dobMonth" min="1" max="12" value="6" />
-            <span class="slider-val" id="dobMonthVal">06</span>
-          </div>
-          <div class="slider-row">
-            <label for="dobYear">Năm</label>
-            <input type="range" id="dobYear" min="1960" max="2005" value="1985" />
-            <span class="slider-val" id="dobYearVal">1985</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="question-box">
-        <label class="question-title" for="q3">Câu 3. Thầy Hưng chủ nhiệm lớp nào trong năm học 2025-2026?</label>
-        <input type="text" id="q3" class="text-input" placeholder="Nhập tên lớp..." required />
-      </div>
-
-      <div class="question-box">
-        <span class="question-title">Câu 4. Thầy Hưng dạy chính môn gì?</span>
-        <div class="options-grid">
-          <label class="option-label"><input type="radio" name="q4" value="ngu_van" /> Ngữ văn</label>
-          <label class="option-label"><input type="radio" name="q4" value="toan" /> Toán</label>
-          <label class="option-label"><input type="radio" name="q4" value="ngoai_ngu" /> Ngoại ngữ</label>
-          <label class="option-label"><input type="radio" name="q4" value="lich_su" /> Lịch sử</label>
-          <label class="option-label"><input type="radio" name="q4" value="gdtc" /> Giáo dục thể chất</label>
-          <label class="option-label"><input type="radio" name="q4" value="gdqp" /> Giáo dục quốc phòng và an ninh</label>
-          <label class="option-label"><input type="radio" name="q4" value="hdtn" /> Hoạt động trải nghiệm, hướng nghiệp</label>
-          <label class="option-label"><input type="radio" name="q4" value="gddp" /> Giáo dục của địa phương</label>
-        </div>
-      </div>
-
-      <div class="question-box">
-        <span class="question-title">Câu 5. Phải gọi thầy Hưng là Hưng Bắc Gấu mới được truy cập.</span>
-        <div class="agree-group">
-          <button type="button" class="agree-btn" id="btnAgree">Đồng ý</button>
-          <button type="button" class="agree-btn" id="btnDisagree">Không đồng ý</button>
-        </div>
-      </div>
-
+      <input
+        type="password"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        maxlength="6"
+        id="pinInput"
+        class="pin-input"
+        placeholder="••••••"
+        required
+      />
       <button type="submit" class="submit-btn" id="submitBtn">Xác nhận &amp; Truy cập</button>
       <div class="status-banner" id="statusBanner"></div>
     </form>
@@ -1693,14 +1609,14 @@
     <div class="pagination-bar bottom" id="paginationBottom" style="display: none;"></div>
   </div>
 
-  <!-- MODAL XEM CHI TIẾT BÀI ĐĂNG (KHI BẤM TỪ DẠNG LƯỚI - KHÔNG LẶP TIÊU ĐỀ) -->
+  <!-- MODAL XEM CHI TIẾT BÀI ĐĂNG (TỪ LƯỚI) -->
   <div class="modal-backdrop" id="postDetailModal">
     <div class="modal-box post-detail-box">
       <div id="postDetailBody"></div>
     </div>
   </div>
 
-  <!-- TRÌNH XEM ẢNH ZOOM ĐỘC LẬP -->
+  <!-- TRÌNH XEM ẢNH PHÓNG TO MƯỢT NHƯ ZALO -->
   <div class="lightbox" id="lightbox" aria-hidden="true">
     <div class="lb-top-bar">
       <span class="lb-title" id="lbTitle">Xem ảnh</span>
@@ -1805,6 +1721,19 @@
         <div class="admin-panel" id="tabSettings">
           <form id="settingsForm">
             <div class="form-group">
+              <label for="accessPasswordInput">Đặt mật khẩu truy cập gồm 6 số</label>
+              <input
+                type="text"
+                inputmode="numeric"
+                maxlength="6"
+                id="accessPasswordInput"
+                class="text-input"
+                placeholder="Nhập 6 chữ số (để trống để mở tự do)..."
+              />
+              <div class="form-hint">Có đặt mật khẩu thì trang sẽ khóa yêu cầu nhập 6 số (sai quá 3 lần khóa 6 giờ). Xóa trống để mở trang tự do.</div>
+            </div>
+
+            <div class="form-group">
               <label for="sessionMinutesInput">Thời gian ghi nhớ trình duyệt (phút)</label>
               <input type="number" id="sessionMinutesInput" class="text-input" min="1" max="1440" value="5" required />
             </div>
@@ -1821,14 +1750,6 @@
               <label for="announcementTextInput">Nội dung thông báo</label>
               <textarea id="announcementTextInput" class="textarea-input" placeholder="Nhập nội dung thông báo hiển thị trên banner..."></textarea>
             </div>
-
-            <label class="toggle-row">
-              <div>
-                <strong>Không khóa dòng thời gian</strong>
-                <span>Bật để mọi người vào thẳng link mà không cần trả lời 5 câu hỏi bảo mật.</span>
-              </div>
-              <input type="checkbox" id="unlockTimelineToggle" />
-            </label>
 
             <label class="toggle-row">
               <div>
@@ -1885,6 +1806,9 @@
     const SITE_TITLE = "Ký ức A3 - Học sinh lứa 2010 | Hiếu Phụng";
     const ADMIN_UID = "k4Lu9AXGcxgtFMXwRKS04CtZOAX2";
     const AUTH_STORAGE_KEY = "album_auth_expires_at";
+    const PIN_FAILS_KEY = "kyuc_a3_pin_fails";
+    const PIN_LOCK_UNTIL_KEY = "kyuc_a3_pin_lock_until";
+    const PIN_LOCK_DURATION_MS = 6 * 60 * 60 * 1000; // 6 giờ
     const LIKED_POSTS_KEY = "album_liked_posts";
     const LIKED_COMMENTS_KEY = "album_liked_comments";
     const VISITOR_ID_KEY = "kyuc_a3_visitor_id";
@@ -1944,9 +1868,13 @@
     const toastEl = document.getElementById("toast");
     const loadingScreen = document.getElementById("loadingScreen");
     const bannedScreen = document.getElementById("bannedScreen");
+    const pinLockedScreen = document.getElementById("pinLockedScreen");
+    const pinLockCountdown = document.getElementById("pinLockCountdown");
     const maintenanceScreen = document.getElementById("maintenanceScreen");
     const maintenanceNoteDisplay = document.getElementById("maintenanceNoteDisplay");
     const securityGate = document.getElementById("securityGate");
+    const pinInput = document.getElementById("pinInput");
+    const statusBanner = document.getElementById("statusBanner");
     const albumContainer = document.getElementById("albumContainer");
     const announcementBanner = document.getElementById("announcementBanner");
     const announcementTextDisplay = document.getElementById("announcementTextDisplay");
@@ -1969,6 +1897,16 @@
     const lbTitle = document.getElementById("lbTitle");
     const lbZoomPct = document.getElementById("lbZoomPct");
     const lbOriginal = document.getElementById("lbOriginal");
+
+    // ===== TỰ ĐỘNG TẠM DỪNG VIDEO KHI LƯỚT QUA (NHẸ, KHÔNG XÓA DOM) =====
+    const videoAutoPauseObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const video = entry.target;
+        if (!entry.isIntersecting && !video.paused && !video.ended) {
+          video.pause();
+        }
+      });
+    }, { threshold: 0.2 });
 
     // ===== 48 BÀI ĐĂNG GỐC (1 -> 48) =====
     const STATIC_IMAGES = [
@@ -2024,8 +1962,8 @@
 
     // ===== TRẠNG THÁI =====
     let appSettings = {
+      accessPassword: "",
       sessionMinutes: 5,
-      unlockTimeline: false,
       maintenanceMode: false,
       maintenanceNote: "",
       announcementEnabled: false,
@@ -2043,11 +1981,12 @@
     let isAdmin = false;
     let albumOpened = false;
     let sessionExpireTimer = null;
+    let pinLockInterval = null;
     let searchFilterNum = null;
     let editingPostId = null;
     let activeDetailPostId = null;
 
-    let viewMode = "feed"; // "feed" | "grid"
+    let viewMode = "feed";
     let currentPage = 1;
     let renderDebounceTimer = null;
 
@@ -2104,6 +2043,15 @@
       if (!originalUrl || !/^https?:\/\//i.test(originalUrl)) return originalUrl;
       if (originalUrl.includes("i.ytimg.com")) return originalUrl;
       return `https://wsrv.nl/?url=${encodeURIComponent(originalUrl)}&w=${width}&q=80&output=webp`;
+    }
+
+    function formatCountdown(ms) {
+      const totalSec = Math.max(0, Math.ceil(ms / 1000));
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${pad(h)}:${pad(m)}:${pad(s)}`;
     }
 
     function formatTime(ts) {
@@ -2351,6 +2299,7 @@
 
     function cleanupMediaInContainer(container) {
       container.querySelectorAll("video").forEach((v) => {
+        videoAutoPauseObserver.unobserve(v);
         v.pause();
         v.removeAttribute("src");
         v.load();
@@ -2369,7 +2318,7 @@
       }
     }, true);
 
-    // ===== TẠO THẺ BÀI ĐĂNG (DÙNG CHUNG CHO FEED VÀ MODAL CHI TIẾT TỪ LƯỚI) =====
+    // ===== TẠO THẺ BÀI ĐĂNG =====
     function createPostCard(post, isDetailModal = false) {
       const card = document.createElement("article");
       card.className = "post-card";
@@ -2463,7 +2412,13 @@
             });
           } else {
             const previewUrl = media.src.includes("#") ? media.src : `${media.src}#t=0.1`;
-            mediaBox.innerHTML = `<video controls playsinline preload="metadata" src="${escapeHtml(previewUrl)}"></video>`;
+            const vid = document.createElement("video");
+            vid.controls = true;
+            vid.playsInline = true;
+            vid.preload = "metadata";
+            vid.src = previewUrl;
+            mediaBox.appendChild(vid);
+            if (!isDetailModal) videoAutoPauseObserver.observe(vid);
           }
         } else if (media.type === "iframe") {
           if (poster) {
@@ -2502,7 +2457,7 @@
       return card;
     }
 
-    // ===== TẠO Ô LƯỚI (HIỆN ẢNH BÌA CHO CẢ VIDEO TRỰC TIẾP) =====
+    // ===== TẠO Ô LƯỚI =====
     function createGridTile(post) {
       const tile = document.createElement("div");
       tile.className = "grid-tile";
@@ -2807,13 +2762,39 @@
     }
 
     // ===== ĐIỀU PHỐI QUYỀN TRUY CẬP =====
+    function stopPinLockCountdown() {
+      if (pinLockInterval) {
+        clearInterval(pinLockInterval);
+        pinLockInterval = null;
+      }
+    }
+
+    function startPinLockCountdown(lockUntil) {
+      stopPinLockCountdown();
+      const tick = () => {
+        const remaining = lockUntil - Date.now();
+        if (remaining <= 0) {
+          stopPinLockCountdown();
+          localStorage.removeItem(PIN_LOCK_UNTIL_KEY);
+          localStorage.removeItem(PIN_FAILS_KEY);
+          evaluateAccess();
+          return;
+        }
+        pinLockCountdown.textContent = formatCountdown(remaining);
+      };
+      tick();
+      pinLockInterval = setInterval(tick, 1000);
+    }
+
     function showOnly(sectionName) {
       loadingScreen.style.display = sectionName === "loading" ? "block" : "none";
       bannedScreen.style.display = sectionName === "banned" ? "block" : "none";
+      pinLockedScreen.style.display = sectionName === "pinLocked" ? "block" : "none";
       maintenanceScreen.style.display = sectionName === "maintenance" ? "block" : "none";
       securityGate.style.display = sectionName === "gate" ? "block" : "none";
       albumContainer.style.display = sectionName === "album" ? "block" : "none";
       albumOpened = sectionName === "album";
+      if (sectionName !== "pinLocked") stopPinLockCountdown();
     }
 
     function updateAnnouncementUI() {
@@ -2836,6 +2817,7 @@
 
       updateAnnouncementUI();
 
+      // 1. QTV luôn được vào thẳng
       if (isAdmin) {
         adminMaintenanceBar.classList.toggle("show", Boolean(appSettings.maintenanceMode));
         const wasClosed = !albumOpened;
@@ -2846,6 +2828,7 @@
 
       adminMaintenanceBar.classList.remove("show");
 
+      // 2. Bị chặn do bình luận vi phạm
       if (isCurrentVisitorBanned()) {
         cleanupMediaInContainer(feedEl);
         if (activeDetailPostId) closePostDetailModal();
@@ -2853,6 +2836,7 @@
         return;
       }
 
+      // 3. Tạm đóng Dòng thời gian
       if (appSettings.maintenanceMode) {
         const note = (appSettings.maintenanceNote || "").trim();
         if (note) {
@@ -2865,13 +2849,29 @@
         return;
       }
 
-      if (appSettings.unlockTimeline) {
+      // 4. Không đặt mật khẩu 6 số -> mở tự do
+      const requiredPin = (appSettings.accessPassword || "").trim();
+      if (!/^\d{6}$/.test(requiredPin)) {
         const wasClosed = !albumOpened;
         showOnly("album");
         if (wasClosed || feedEl.children.length === 0) scheduleRenderFeed();
         return;
       }
 
+      // 5. Kiểm tra đang bị khóa 6 giờ do sai quá 3 lần
+      const lockUntil = parseInt(localStorage.getItem(PIN_LOCK_UNTIL_KEY), 10) || 0;
+      if (lockUntil > Date.now()) {
+        cleanupMediaInContainer(feedEl);
+        if (activeDetailPostId) closePostDetailModal();
+        showOnly("pinLocked");
+        startPinLockCountdown(lockUntil);
+        return;
+      } else if (lockUntil > 0) {
+        localStorage.removeItem(PIN_LOCK_UNTIL_KEY);
+        localStorage.removeItem(PIN_FAILS_KEY);
+      }
+
+      // 6. Kiểm tra phiên ghi nhớ & token link chia sẻ
       const savedExpires = parseInt(localStorage.getItem(AUTH_STORAGE_KEY), 10) || 0;
       let sharedExpires = 0;
 
@@ -2891,16 +2891,72 @@
 
         const remaining = effectiveExpires - Date.now();
         sessionExpireTimer = setTimeout(() => {
-          if (!isAdmin && !appSettings.unlockTimeline) {
+          if (!isAdmin && /^\d{6}$/.test((appSettings.accessPassword || "").trim())) {
             localStorage.removeItem(AUTH_STORAGE_KEY);
             window.location.href = window.location.pathname;
           }
         }, remaining);
       } else {
         localStorage.removeItem(AUTH_STORAGE_KEY);
+        const fails = parseInt(localStorage.getItem(PIN_FAILS_KEY), 10) || 0;
+        if (fails > 0 && fails < 3) {
+          statusBanner.className = "status-banner warning";
+          statusBanner.textContent = `Bạn đã nhập sai ${fails} lần, bạn còn ${3 - fails} lần thử`;
+        } else {
+          statusBanner.className = "status-banner";
+          statusBanner.textContent = "";
+        }
         showOnly("gate");
       }
     }
+
+    // ===== XỬ LÝ NHẬP MẬT KHẨU 6 SỐ =====
+    pinInput.addEventListener("input", () => {
+      pinInput.value = pinInput.value.replace(/\D/g, "").slice(0, 6);
+    });
+
+    document.getElementById("accessPasswordInput").addEventListener("input", (e) => {
+      e.target.value = e.target.value.replace(/\D/g, "").slice(0, 6);
+    });
+
+    document.getElementById("securityForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const entered = pinInput.value.trim();
+      const requiredPin = (appSettings.accessPassword || "").trim();
+
+      if (entered.length !== 6) {
+        statusBanner.className = "status-banner warning";
+        statusBanner.textContent = "Vui lòng nhập đủ 6 chữ số.";
+        pinInput.focus();
+        return;
+      }
+
+      if (entered === requiredPin) {
+        localStorage.removeItem(PIN_FAILS_KEY);
+        localStorage.removeItem(PIN_LOCK_UNTIL_KEY);
+        pinInput.value = "";
+        statusBanner.className = "status-banner";
+        const expiresAt = Date.now() + appSettings.sessionMinutes * 60 * 1000;
+        localStorage.setItem(AUTH_STORAGE_KEY, String(expiresAt));
+        showToast("Xác thực thành công!");
+        evaluateAccess();
+      } else {
+        const fails = (parseInt(localStorage.getItem(PIN_FAILS_KEY), 10) || 0) + 1;
+        pinInput.value = "";
+
+        if (fails >= 3) {
+          const lockUntil = Date.now() + PIN_LOCK_DURATION_MS;
+          localStorage.setItem(PIN_LOCK_UNTIL_KEY, String(lockUntil));
+          localStorage.removeItem(PIN_FAILS_KEY);
+          evaluateAccess();
+        } else {
+          localStorage.setItem(PIN_FAILS_KEY, String(fails));
+          statusBanner.className = "status-banner warning";
+          statusBanner.textContent = `Bạn đã nhập sai ${fails} lần, bạn còn ${3 - fails} lần thử`;
+          pinInput.focus();
+        }
+      }
+    });
 
     // ===== TẠO LINK CHIA SẺ =====
     function copyShareLink(postId, commentId = null, replyId = null) {
@@ -3071,27 +3127,68 @@
       renderFeed();
     });
 
-    // ===== LIGHTBOX ZOOM ĐỘC LẬP =====
+    // ===== LIGHTBOX ZOOM MƯỢT NHƯ ZALO (FOCAL-POINT PINCH + PAN + CLAMP + SPRING) =====
     let scale = 1, panX = 0, panY = 0;
+    let rafId = null;
 
-    function applyTransform() {
-      if (scale <= 1) {
+    function clampPan(s, x, y) {
+      if (s <= 1) return { x: 0, y: 0 };
+      const stageW = lbStage.clientWidth || window.innerWidth;
+      const stageH = lbStage.clientHeight || window.innerHeight;
+      const baseW = lbImg.offsetWidth || stageW;
+      const baseH = lbImg.offsetHeight || stageH;
+      const maxX = Math.max(0, (baseW * s - stageW) / 2);
+      const maxY = Math.max(0, (baseH * s - stageH) / 2);
+      return {
+        x: Math.max(-maxX, Math.min(maxX, x)),
+        y: Math.max(-maxY, Math.min(maxY, y))
+      };
+    }
+
+    function scheduleRenderTransform(animate = false) {
+      if (animate) {
+        lbImg.classList.add("animate");
+      } else {
+        lbImg.classList.remove("animate");
+      }
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        lbImg.style.transform = `translate3d(${panX.toFixed(2)}px, ${panY.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`;
+        lbZoomPct.textContent = `${Math.round(scale * 100)}%`;
+        rafId = null;
+      });
+    }
+
+    function zoomToPoint(targetScale, clientX, clientY, animate = true) {
+      const clampedScale = Math.max(1, Math.min(5, targetScale));
+      if (clampedScale <= 1.01) {
         scale = 1;
         panX = 0;
         panY = 0;
+        scheduleRenderTransform(animate);
+        return;
       }
-      lbImg.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`;
-      lbZoomPct.textContent = `${Math.round(scale * 100)}%`;
+      const rect = lbStage.getBoundingClientRect();
+      const relX = clientX - (rect.left + rect.width / 2);
+      const relY = clientY - (rect.top + rect.height / 2);
+      const focalX = (relX - panX) / scale;
+      const focalY = (relY - panY) / scale;
+      scale = clampedScale;
+      const clamped = clampPan(scale, relX - focalX * scale, relY - focalY * scale);
+      panX = clamped.x;
+      panY = clamped.y;
+      scheduleRenderTransform(animate);
     }
 
     function openLightbox(src, title) {
       scale = 1;
       panX = 0;
       panY = 0;
+      lbImg.classList.remove("animate");
       lbImg.src = src;
       lbTitle.textContent = title || "Xem ảnh";
       lbOriginal.href = src;
-      applyTransform();
+      scheduleRenderTransform(false);
       lightbox.classList.add("open");
       lightbox.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
@@ -3103,6 +3200,162 @@
       if (!activeDetailPostId) document.body.style.overflow = "";
       lbImg.src = BLANK_GIF;
     }
+
+    document.getElementById("lbClose").addEventListener("click", closeLightbox);
+    document.getElementById("lbZoomIn").addEventListener("click", () => {
+      const rect = lbStage.getBoundingClientRect();
+      zoomToPoint(scale + 0.75, rect.left + rect.width / 2, rect.top + rect.height / 2, true);
+    });
+    document.getElementById("lbZoomOut").addEventListener("click", () => {
+      const rect = lbStage.getBoundingClientRect();
+      zoomToPoint(scale - 0.75, rect.left + rect.width / 2, rect.top + rect.height / 2, true);
+    });
+
+    // Zoom con lăn chuột theo vị trí trỏ chuột
+    lbStage.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.18 : 0.85;
+      zoomToPoint(scale * factor, e.clientX, e.clientY, false);
+    }, { passive: false });
+
+    // Kéo chuột khi đang phóng to
+    let isMouseDragging = false, dragStartX = 0, dragStartY = 0;
+    lbStage.addEventListener("mousedown", (e) => {
+      if (scale <= 1) return;
+      isMouseDragging = true;
+      lbImg.classList.remove("animate");
+      dragStartX = e.clientX - panX;
+      dragStartY = e.clientY - panY;
+    });
+    window.addEventListener("mousemove", (e) => {
+      if (!isMouseDragging) return;
+      const clamped = clampPan(scale, e.clientX - dragStartX, e.clientY - dragStartY);
+      panX = clamped.x;
+      panY = clamped.y;
+      scheduleRenderTransform(false);
+    });
+    window.addEventListener("mouseup", () => { isMouseDragging = false; });
+
+    // Cảm ứng 2 ngón (Focal-point pinch + simultaneous pan) & 1 ngón mượt như Zalo
+    let isPinching = false;
+    let pinchStartDist = 0;
+    let pinchStartScale = 1;
+    let pinchFocalX = 0;
+    let pinchFocalY = 0;
+    let isTouchPanning = false;
+    let touchPanStartX = 0;
+    let touchPanStartY = 0;
+    let lastTapTime = 0;
+    let lastTapX = 0, lastTapY = 0;
+
+    function getTouchMetrics(touches) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const midX = (touches[0].clientX + touches[1].clientX) / 2;
+      const midY = (touches[0].clientY + touches[1].clientY) / 2;
+      return { dist, midX, midY };
+    }
+
+    lbStage.addEventListener("touchstart", (e) => {
+      lbImg.classList.remove("animate");
+      if (e.touches.length === 2) {
+        isPinching = true;
+        isTouchPanning = false;
+        const { dist, midX, midY } = getTouchMetrics(e.touches);
+        const rect = lbStage.getBoundingClientRect();
+        const relX = midX - (rect.left + rect.width / 2);
+        const relY = midY - (rect.top + rect.height / 2);
+        pinchStartDist = dist || 1;
+        pinchStartScale = scale;
+        pinchFocalX = (relX - panX) / scale;
+        pinchFocalY = (relY - panY) / scale;
+      } else if (e.touches.length === 1) {
+        isPinching = false;
+        const t = e.touches[0];
+        const now = Date.now();
+        const distTap = Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY);
+        if (now - lastTapTime < 280 && distTap < 40) {
+          // Chạm đúp phóng thẳng vào điểm chạm hoặc thu về 100%
+          lastTapTime = 0;
+          if (scale > 1.05) {
+            zoomToPoint(1, t.clientX, t.clientY, true);
+          } else {
+            zoomToPoint(2.5, t.clientX, t.clientY, true);
+          }
+          return;
+        }
+        lastTapTime = now;
+        lastTapX = t.clientX;
+        lastTapY = t.clientY;
+        isTouchPanning = true;
+        touchPanStartX = t.clientX - panX;
+        touchPanStartY = t.clientY - panY;
+      }
+    }, { passive: true });
+
+    lbStage.addEventListener("touchmove", (e) => {
+      if (isPinching && e.touches.length === 2) {
+        e.preventDefault();
+        const { dist, midX, midY } = getTouchMetrics(e.touches);
+        const rect = lbStage.getBoundingClientRect();
+        const relX = midX - (rect.left + rect.width / 2);
+        const relY = midY - (rect.top + rect.height / 2);
+
+        scale = Math.max(0.85, Math.min(5, pinchStartScale * (dist / pinchStartDist)));
+        panX = relX - pinchFocalX * scale;
+        panY = relY - pinchFocalY * scale;
+        scheduleRenderTransform(false);
+      } else if (isTouchPanning && e.touches.length === 1 && scale > 1.01) {
+        e.preventDefault();
+        const t = e.touches[0];
+        const clamped = clampPan(scale, t.clientX - touchPanStartX, t.clientY - touchPanStartY);
+        panX = clamped.x;
+        panY = clamped.y;
+        scheduleRenderTransform(false);
+      }
+    }, { passive: false });
+
+    lbStage.addEventListener("touchend", (e) => {
+      if (e.touches.length === 1) {
+        // Nhấc bớt 1 ngón từ pinch -> chuyển mượt sang kéo 1 ngón không bị giật
+        isPinching = false;
+        isTouchPanning = true;
+        touchPanStartX = e.touches[0].clientX - panX;
+        touchPanStartY = e.touches[0].clientY - panY;
+      } else if (e.touches.length === 0) {
+        isPinching = false;
+        isTouchPanning = false;
+        if (scale < 1.02) {
+          scale = 1;
+          panX = 0;
+          panY = 0;
+          scheduleRenderTransform(true);
+        } else {
+          const clamped = clampPan(scale, panX, panY);
+          if (clamped.x !== panX || clamped.y !== panY) {
+            panX = clamped.x;
+            panY = clamped.y;
+            scheduleRenderTransform(true);
+          }
+        }
+      }
+    }, { passive: true });
+
+    lbStage.addEventListener("dblclick", (e) => {
+      if (scale > 1.05) {
+        zoomToPoint(1, e.clientX, e.clientY, true);
+      } else {
+        zoomToPoint(2.5, e.clientX, e.clientY, true);
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        if (lightbox.classList.contains("open")) closeLightbox();
+        else if (postDetailModal.classList.contains("open")) closePostDetailModal();
+      }
+    });
 
     document.addEventListener("click", (e) => {
       if (!e.target.closest(".post-menu-wrap")) {
@@ -3124,7 +3377,17 @@
         const mType = posterWrap.dataset.playMediaType;
         const mSrc = posterWrap.dataset.playMediaSrc;
         if (mType === "video") {
-          mediaBox.innerHTML = `<video controls autoplay playsinline preload="auto" src="${escapeHtml(mSrc)}"></video>`;
+          mediaBox.innerHTML = "";
+          const vid = document.createElement("video");
+          vid.controls = true;
+          vid.autoplay = true;
+          vid.playsInline = true;
+          vid.preload = "auto";
+          vid.src = mSrc;
+          mediaBox.appendChild(vid);
+          if (!mediaBox.closest("#postDetailBody")) {
+            videoAutoPauseObserver.observe(vid);
+          }
         } else {
           mediaBox.innerHTML = `<div class="iframe-wrap"><iframe src="${escapeHtml(mSrc)}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
         }
@@ -3439,11 +3702,11 @@
 
     document.getElementById("backHomeBtn").addEventListener("click", () => {
       if (isAdmin) {
-        showToast("Bạn đang ở quyền Quản trị viên. Hãy đăng xuất QTV để quay về màn hình xác thực.");
+        showToast("Bạn đang ở quyền Quản trị viên. Hãy đăng xuất QTV để quay về màn hình khóa.");
         return;
       }
-      if (appSettings.unlockTimeline) {
-        showToast("Trang hiện đang mở không cần xác thực.");
+      if (!/^\d{6}$/.test((appSettings.accessPassword || "").trim())) {
+        showToast("Trang hiện đang mở tự do không cần mật khẩu.");
         return;
       }
       if (sessionExpireTimer) clearTimeout(sessionExpireTimer);
@@ -3462,6 +3725,7 @@
     document.getElementById("gateAdminBtn").addEventListener("click", openAdminModal);
     document.getElementById("maintenanceAdminBtn").addEventListener("click", openAdminModal);
     document.getElementById("bannedAdminBtn").addEventListener("click", openAdminModal);
+    document.getElementById("pinLockedAdminBtn").addEventListener("click", openAdminModal);
 
     document.getElementById("closeAdminModal").addEventListener("click", () => {
       adminModal.classList.remove("open");
@@ -3547,20 +3811,26 @@
     document.getElementById("settingsForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!isAdmin) return;
+
+      const accessPassword = document.getElementById("accessPasswordInput").value.trim();
+      if (accessPassword !== "" && !/^\d{6}$/.test(accessPassword)) {
+        showToast("Mật khẩu phải gồm đúng 6 chữ số (hoặc để trống để mở tự do)!");
+        return;
+      }
+
       const mins = parseInt(document.getElementById("sessionMinutesInput").value, 10);
       if (Number.isNaN(mins) || mins < 1) return;
 
       const announcementEnabled = document.getElementById("announcementEnabledToggle").checked;
       const announcementText = document.getElementById("announcementTextInput").value.trim();
-      const unlockTimeline = document.getElementById("unlockTimelineToggle").checked;
       const maintenanceMode = document.getElementById("maintenanceModeToggle").checked;
       const maintenanceNote = document.getElementById("maintenanceNoteInput").value.trim();
 
       await update(ref(db, "settings"), {
+        accessPassword,
         sessionMinutes: mins,
         announcementEnabled,
         announcementText,
-        unlockTimeline,
         maintenanceMode,
         maintenanceNote
       });
@@ -3606,232 +3876,12 @@
       }
     });
 
-    // ===== LIGHTBOX EVENTS =====
-    document.getElementById("lbClose").addEventListener("click", closeLightbox);
-    document.getElementById("lbZoomIn").addEventListener("click", () => {
-      scale = Math.min(4, scale + 0.5);
-      applyTransform();
-    });
-    document.getElementById("lbZoomOut").addEventListener("click", () => {
-      scale = Math.max(1, scale - 0.5);
-      applyTransform();
-    });
-
-    lbStage.addEventListener("wheel", (e) => {
-      e.preventDefault();
-      const delta = e.deltaY < 0 ? 0.25 : -0.25;
-      scale = Math.min(4, Math.max(1, scale + delta));
-      applyTransform();
-    }, { passive: false });
-
-    let isMouseDragging = false, dragStartX = 0, dragStartY = 0;
-    lbStage.addEventListener("mousedown", (e) => {
-      if (scale <= 1) return;
-      isMouseDragging = true;
-      dragStartX = e.clientX - panX;
-      dragStartY = e.clientY - panY;
-    });
-    window.addEventListener("mousemove", (e) => {
-      if (!isMouseDragging) return;
-      panX = e.clientX - dragStartX;
-      panY = e.clientY - dragStartY;
-      applyTransform();
-    });
-    window.addEventListener("mouseup", () => { isMouseDragging = false; });
-
-    let pinchStartDist = 0, pinchStartScale = 1;
-    let touchPanStartX = 0, touchPanStartY = 0, lastTapTime = 0;
-
-    function getTouchDist(touches) {
-      return Math.hypot(
-        touches[0].clientX - touches[1].clientX,
-        touches[0].clientY - touches[1].clientY
-      );
-    }
-
-    lbStage.addEventListener("touchstart", (e) => {
-      if (e.touches.length === 2) {
-        pinchStartDist = getTouchDist(e.touches);
-        pinchStartScale = scale;
-      } else if (e.touches.length === 1) {
-        const now = Date.now();
-        if (now - lastTapTime < 280) {
-          scale = scale > 1 ? 1 : 2.2;
-          panX = 0;
-          panY = 0;
-          applyTransform();
-        }
-        lastTapTime = now;
-        touchPanStartX = e.touches[0].clientX - panX;
-        touchPanStartY = e.touches[0].clientY - panY;
-      }
-    }, { passive: true });
-
-    lbStage.addEventListener("touchmove", (e) => {
-      if (e.touches.length === 2 && pinchStartDist > 0) {
-        e.preventDefault();
-        const dist = getTouchDist(e.touches);
-        scale = Math.min(4, Math.max(1, pinchStartScale * (dist / pinchStartDist)));
-        applyTransform();
-      } else if (e.touches.length === 1 && scale > 1) {
-        e.preventDefault();
-        panX = e.touches[0].clientX - touchPanStartX;
-        panY = e.touches[0].clientY - touchPanStartY;
-        applyTransform();
-      }
-    }, { passive: false });
-
-    lbStage.addEventListener("dblclick", () => {
-      scale = scale > 1 ? 1 : 2.2;
-      panX = 0;
-      panY = 0;
-      applyTransform();
-    });
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        if (lightbox.classList.contains("open")) closeLightbox();
-        else if (postDetailModal.classList.contains("open")) closePostDetailModal();
-      }
-    });
-
-    // ===== 5 CÂU HỎI BẢO MẬT =====
-    const dobDay = document.getElementById("dobDay");
-    const dobMonth = document.getElementById("dobMonth");
-    const dobYear = document.getElementById("dobYear");
-    const dobDayVal = document.getElementById("dobDayVal");
-    const dobMonthVal = document.getElementById("dobMonthVal");
-    const dobYearVal = document.getElementById("dobYearVal");
-    const datePreview = document.getElementById("datePreview");
-
-    let validDay = 15, validMonth = 6, validYear = 1985;
-    const pad2 = (n) => String(n).padStart(2, "0");
-    const getDaysInMonth = (m, y) => new Date(y, m, 0).getDate();
-
-    function renderDate() {
-      const maxDays = getDaysInMonth(validMonth, validYear);
-      dobDay.max = maxDays;
-      if (validDay > maxDays) validDay = maxDays;
-      dobDay.value = validDay;
-      dobMonth.value = validMonth;
-      dobYear.value = validYear;
-      dobDayVal.textContent = pad2(validDay);
-      dobMonthVal.textContent = pad2(validMonth);
-      dobYearVal.textContent = validYear;
-      datePreview.textContent = `${pad2(validDay)} / ${pad2(validMonth)} / ${validYear}`;
-    }
-
-    dobDay.addEventListener("input", () => {
-      validDay = Math.min(parseInt(dobDay.value, 10), getDaysInMonth(validMonth, validYear));
-      renderDate();
-    });
-
-    dobMonth.addEventListener("input", () => {
-      const target = parseInt(dobMonth.value, 10);
-      if (validDay <= getDaysInMonth(target, validYear)) {
-        validMonth = target;
-      } else {
-        const step = target > validMonth ? 1 : -1;
-        let cand = target + step;
-        while (cand >= 1 && cand <= 12) {
-          if (validDay <= getDaysInMonth(cand, validYear)) { validMonth = cand; break; }
-          cand += step;
-        }
-      }
-      renderDate();
-    });
-
-    dobYear.addEventListener("input", () => {
-      const target = parseInt(dobYear.value, 10);
-      const minY = parseInt(dobYear.min, 10), maxY = parseInt(dobYear.max, 10);
-      if (validDay <= getDaysInMonth(validMonth, target)) {
-        validYear = target;
-      } else {
-        const step = target > validYear ? 1 : -1;
-        let cand = target + step;
-        while (cand >= minY && cand <= maxY) {
-          if (validDay <= getDaysInMonth(validMonth, cand)) { validYear = cand; break; }
-          cand += step;
-        }
-      }
-      renderDate();
-    });
-    renderDate();
-
-    let q5Answer = null;
-    const btnAgree = document.getElementById("btnAgree");
-    const btnDisagree = document.getElementById("btnDisagree");
-    btnAgree.addEventListener("click", () => {
-      q5Answer = "yes";
-      btnAgree.classList.add("selected-yes");
-      btnDisagree.classList.remove("selected-no");
-    });
-    btnDisagree.addEventListener("click", () => {
-      q5Answer = "no";
-      btnDisagree.classList.add("selected-no");
-      btnAgree.classList.remove("selected-yes");
-    });
-
-    function normalizeText(str) {
-      return str.trim().replace(/\s+/g, " ")
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
-    }
-
-    const submitBtn = document.getElementById("submitBtn");
-    const statusBanner = document.getElementById("statusBanner");
-
-    document.getElementById("securityForm").addEventListener("submit", (e) => {
-      e.preventDefault();
-      let score = 0;
-
-      if (normalizeText(document.getElementById("q1").value) === "nguyen tan hung") score++;
-      if (validDay === 2 && validMonth === 11 && validYear === 1980) score++;
-      const ans3 = document.getElementById("q3").value.trim().replace(/\s+/g, "").toLowerCase();
-      if (ans3 === "10a3" || ans3 === "103") score++;
-      const q4 = document.querySelector('input[name="q4"]:checked');
-      if (q4 && q4.value === "gdqp") score++;
-      if (q5Answer === "yes") score++;
-
-      submitBtn.disabled = true;
-
-      if (score === 5) {
-        let sec = 3;
-        statusBanner.className = "status-banner success";
-        statusBanner.innerHTML = `Xác thực thành công, truy cập sau <span class="countdown-num">${sec}</span> giây!`;
-        const timer = setInterval(() => {
-          sec--;
-          if (sec > 0) {
-            statusBanner.innerHTML = `Xác thực thành công, truy cập sau <span class="countdown-num">${sec}</span> giây!`;
-          } else {
-            clearInterval(timer);
-            const expiresAt = Date.now() + appSettings.sessionMinutes * 60 * 1000;
-            localStorage.setItem(AUTH_STORAGE_KEY, String(expiresAt));
-            evaluateAccess();
-          }
-        }, 1000);
-      } else {
-        let sec = 3;
-        statusBanner.className = "status-banner error";
-        statusBanner.innerHTML = `Xác thực bảo mật thất bại, vui lòng thực hiện lại từ đầu!<br/>Tự động tải lại trang sau <span class="countdown-num">${sec}</span> giây...`;
-        const timer = setInterval(() => {
-          sec--;
-          if (sec > 0) {
-            statusBanner.innerHTML = `Xác thực bảo mật thất bại, vui lòng thực hiện lại từ đầu!<br/>Tự động tải lại trang sau <span class="countdown-num">${sec}</span> giây...`;
-          } else {
-            clearInterval(timer);
-            window.location.reload();
-          }
-        }, 1000);
-      }
-    });
-
     // ===== ĐỒNG BỘ FIREBASE =====
     onValue(ref(db, "settings"), (snap) => {
       const val = snap.val() || {};
       appSettings = {
+        accessPassword: typeof val.accessPassword === "string" ? val.accessPassword.trim() : "",
         sessionMinutes: (typeof val.sessionMinutes === "number" && val.sessionMinutes >= 1) ? val.sessionMinutes : 5,
-        unlockTimeline: Boolean(val.unlockTimeline),
         maintenanceMode: Boolean(val.maintenanceMode),
         maintenanceNote: val.maintenanceNote || "",
         announcementEnabled: Boolean(val.announcementEnabled),
@@ -3839,10 +3889,10 @@
         nextPostNumber: (typeof val.nextPostNumber === "number" && val.nextPostNumber >= 49) ? val.nextPostNumber : 49
       };
 
+      document.getElementById("accessPasswordInput").value = appSettings.accessPassword;
       document.getElementById("sessionMinutesInput").value = appSettings.sessionMinutes;
       document.getElementById("announcementEnabledToggle").checked = appSettings.announcementEnabled;
       document.getElementById("announcementTextInput").value = appSettings.announcementText;
-      document.getElementById("unlockTimelineToggle").checked = appSettings.unlockTimeline;
       document.getElementById("maintenanceModeToggle").checked = appSettings.maintenanceMode;
       document.getElementById("maintenanceNoteInput").value = appSettings.maintenanceNote;
 
