@@ -717,7 +717,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      touch-action: none; /* Khóa zoom của trình duyệt trong khung xem ảnh */
+      touch-action: none;
       user-select: none;
       cursor: grab;
     }
@@ -1094,7 +1094,7 @@
         <div class="status-banner" id="adminLoginError"></div>
       </form>
 
-      <!-- Bảng điều khiển QTV (hiện sau khi đăng nhập đúng UID) -->
+      <!-- Bảng điều khiển QTV -->
       <div id="adminDashboard" style="display: none;">
         <div class="admin-tabs">
           <button type="button" class="admin-tab active" data-tab="tabPost">Đăng bài</button>
@@ -1186,6 +1186,18 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
+    // ===== PHẦN TỬ DOM CHÍNH (KHAI BÁO SỚM ĐỂ TRÁNH LỖI) =====
+    const toastEl = document.getElementById("toast");
+    const feedEl = document.getElementById("feed");
+    const photoCountEl = document.getElementById("photoCount");
+    const adminModal = document.getElementById("adminModal");
+    const lightbox = document.getElementById("lightbox");
+    const lbStage = document.getElementById("lbStage");
+    const lbImg = document.getElementById("lbImg");
+    const lbTitle = document.getElementById("lbTitle");
+    const lbZoomPct = document.getElementById("lbZoomPct");
+    const lbOriginal = document.getElementById("lbOriginal");
+
     // ===== 48 ẢNH GỐC =====
     const STATIC_IMAGES = [
       "https://i.ibb.co/Q371rkvY/1795096808676-1047622583193778454-1047622583193778454-925a2807021e4785847af3602efd1452.jpg",
@@ -1244,9 +1256,9 @@
     let albumOpened = false;
     let sessionExpireTimer = null;
 
-    let dynamicPosts = {};   // từ Firebase /posts
-    let likesData = {};      // từ Firebase /likes
-    let commentsData = {};   // từ Firebase /comments
+    let dynamicPosts = {};
+    let likesData = {};
+    let commentsData = {};
 
     const openCommentPosts = new Set();
     const expandedReplies = new Set();
@@ -1255,7 +1267,6 @@
     let likedPosts = new Set(JSON.parse(localStorage.getItem(LIKED_POSTS_KEY) || "[]"));
     let likedComments = new Set(JSON.parse(localStorage.getItem(LIKED_COMMENTS_KEY) || "[]"));
 
-    // Xử lý link chia sẻ (?p=postId&c=commentId&t=expiryBase36)
     const urlParams = new URLSearchParams(window.location.search);
     let pendingTarget = {
       postId: urlParams.get("p") || null,
@@ -1264,7 +1275,6 @@
     const sharedToken = urlParams.get("t");
 
     // ===== TIỆN ÍCH =====
-    const toastEl = document.getElementById("toast");
     let toastTimer = null;
     function showToast(msg) {
       toastEl.textContent = msg;
@@ -1298,13 +1308,11 @@
       if (forcedType === "image") return { type: "image", src: url };
       if (forcedType === "video") return { type: "video", src: url };
 
-      // YouTube / Shorts
       const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
       if (ytMatch) {
         return { type: "iframe", src: `https://www.youtube.com/embed/${ytMatch[1]}` };
       }
 
-      // Google Drive
       const gdMatch = url.match(/drive\.google\.com\/file\/d\/([A-Za-z0-9_-]+)/);
       if (gdMatch) {
         return { type: "iframe", src: `https://drive.google.com/file/d/${gdMatch[1]}/preview` };
@@ -1312,7 +1320,6 @@
 
       if (forcedType === "iframe") return { type: "iframe", src: url };
 
-      // Direct video extensions
       if (/\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url)) {
         return { type: "video", src: url };
       }
@@ -1355,213 +1362,6 @@
       return p.caption ? `Bài: ${p.caption.slice(0, 30)}` : "Bài đăng mới";
     }
 
-    // ===== ĐỒNG BỘ FIREBASE =====
-    onValue(ref(db, "settings/sessionMinutes"), (snap) => {
-      const val = snap.val();
-      if (typeof val === "number" && val >= 1) {
-        sessionMinutes = val;
-        const input = document.getElementById("sessionMinutesInput");
-        if (input) input.value = val;
-      }
-    });
-
-    onValue(ref(db, "posts"), (snap) => {
-      dynamicPosts = snap.val() || {};
-      if (albumOpened) renderFeed();
-    });
-
-    onValue(ref(db, "likes"), (snap) => {
-      likesData = snap.val() || {};
-      if (albumOpened) updateAllLikeCounts();
-    });
-
-    onValue(ref(db, "comments"), (snap) => {
-      commentsData = snap.val() || {};
-      if (albumOpened) {
-        updateAllCommentSections();
-        if (isAdmin) renderRecentComments();
-      }
-    });
-
-    onAuthStateChanged(auth, (user) => {
-      isAdmin = Boolean(user && user.uid === ADMIN_UID);
-      const openAdminBtn = document.getElementById("openAdminBtn");
-      const loginForm = document.getElementById("adminLoginForm");
-      const dashboard = document.getElementById("adminDashboard");
-      const title = document.getElementById("adminModalTitle");
-
-      if (isAdmin) {
-        openAdminBtn.textContent = "Quản trị (Đã vào)";
-        openAdminBtn.classList.add("admin-active");
-        loginForm.style.display = "none";
-        dashboard.style.display = "block";
-        title.textContent = "Bảng Quản Trị Viên";
-        renderRecentComments();
-      } else {
-        openAdminBtn.textContent = "Quản trị";
-        openAdminBtn.classList.remove("admin-active");
-        loginForm.style.display = "block";
-        dashboard.style.display = "none";
-        title.textContent = "Đăng nhập Quản trị viên";
-      }
-
-      if (albumOpened) {
-        renderFeed();
-      }
-    });
-
-    // ===== MỞ ALBUM & PHIÊN GHI NHỚ =====
-    function openAlbum(expiresAt) {
-      albumOpened = true;
-      document.getElementById("securityGate").style.display = "none";
-      document.getElementById("albumContainer").style.display = "block";
-      renderFeed();
-
-      // Tự động khóa khi hết hạn phiên
-      if (sessionExpireTimer) clearTimeout(sessionExpireTimer);
-      const remaining = expiresAt - Date.now();
-      if (remaining > 0) {
-        sessionExpireTimer = setTimeout(() => {
-          localStorage.removeItem(AUTH_STORAGE_KEY);
-          window.location.href = window.location.pathname;
-        }, remaining);
-      }
-
-      // Chuyển tới bài/bình luận được chia sẻ (nếu có)
-      if (pendingTarget.postId) {
-        const target = { ...pendingTarget };
-        pendingTarget = { postId: null, commentId: null };
-        setTimeout(() => jumpToTarget(target.postId, target.commentId), 250);
-      }
-    }
-
-    function jumpToTarget(postId, commentId = null) {
-      const card = document.getElementById(`post-${postId}`);
-      if (!card) return;
-      card.scrollIntoView({ behavior: "smooth", block: "center" });
-      card.classList.add("highlight");
-      setTimeout(() => card.classList.remove("highlight"), 2500);
-
-      if (commentId) {
-        openCommentPosts.add(postId);
-        const sec = card.querySelector(".comments-section");
-        if (sec) sec.classList.add("open");
-        renderCommentsForPost(postId);
-
-        setTimeout(() => {
-          const cEl = document.getElementById(`comment-${commentId}`);
-          if (cEl) {
-            cEl.scrollIntoView({ behavior: "smooth", block: "center" });
-            cEl.classList.add("highlight");
-            setTimeout(() => cEl.classList.remove("highlight"), 3000);
-          }
-        }, 120);
-      }
-    }
-
-    // Kiểm tra phiên khi tải trang (hỗ trợ cả link chia sẻ còn hạn)
-    (function checkInitialAccess() {
-      const savedExpires = parseInt(localStorage.getItem(AUTH_STORAGE_KEY), 10) || 0;
-      let sharedExpires = 0;
-
-      if (sharedToken) {
-        const parsed = parseInt(sharedToken, 36);
-        if (!Number.isNaN(parsed) && parsed > Date.now()) {
-          sharedExpires = parsed;
-        }
-      }
-
-      const effectiveExpires = Math.max(savedExpires, sharedExpires);
-      if (effectiveExpires > Date.now()) {
-        localStorage.setItem(AUTH_STORAGE_KEY, String(effectiveExpires));
-        openAlbum(effectiveExpires);
-      } else {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-      }
-    })();
-
-    // Nút Quay về trang chủ
-    document.getElementById("backHomeBtn").addEventListener("click", () => {
-      if (sessionExpireTimer) clearTimeout(sessionExpireTimer);
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-      window.location.href = window.location.pathname;
-    });
-
-    // ===== RENDER FEED BÀI VIẾT =====
-    const feedEl = document.getElementById("feed");
-    const photoCountEl = document.getElementById("photoCount");
-
-    function renderFeed() {
-      const posts = getAllPosts();
-      photoCountEl.textContent = `${posts.length} bài`;
-      document.title = `Album Ảnh (${posts.length} bài)`;
-
-      feedEl.innerHTML = "";
-      posts.forEach((post) => {
-        const card = document.createElement("article");
-        card.className = "post-card";
-        card.id = `post-${post.id}`;
-
-        const media = detectMedia(post.url, post.type);
-        let mediaHtml = "";
-        if (media.type === "video") {
-          mediaHtml = `<video controls playsinline preload="metadata" src="${escapeHtml(media.src)}"></video>`;
-        } else if (media.type === "iframe") {
-          mediaHtml = `<div class="iframe-wrap"><iframe src="${escapeHtml(media.src)}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
-        } else {
-          mediaHtml = `<img src="${escapeHtml(media.src)}" alt="${escapeHtml(post.label)}" loading="lazy" data-zoom-src="${escapeHtml(media.src)}" data-zoom-title="${escapeHtml(post.label)}" />`;
-        }
-
-        const isLiked = likedPosts.has(post.id);
-        const likeCount = likesData[post.id] || 0;
-        const cCount = countComments(post.id);
-        const isOpen = openCommentPosts.has(post.id);
-
-        card.innerHTML = `
-          <div class="post-head">
-            <div>
-              <div class="post-title">${escapeHtml(post.isCustom ? "Bài đăng mới" : post.label)}</div>
-              ${post.createdAt ? `<div class="post-meta">${formatTime(post.createdAt)}</div>` : ""}
-            </div>
-            ${isAdmin && post.isCustom ? `<button type="button" class="mini-btn danger" data-delete-post="${post.id}">Xóa bài</button>` : ""}
-          </div>
-          ${post.caption ? `<div class="post-caption">${escapeHtml(post.caption)}</div>` : ""}
-          <div class="post-media">${mediaHtml}</div>
-          <div class="post-actions">
-            <button type="button" class="action-btn ${isLiked ? "liked" : ""}" data-like-post="${post.id}">
-              <svg viewBox="0 0 24 24" fill="${isLiked ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-              <span class="like-count">${likeCount}</span>
-            </button>
-            <button type="button" class="action-btn" data-toggle-comments="${post.id}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              <span class="comment-count">${cCount}</span>
-            </button>
-            <button type="button" class="action-btn" data-share-post="${post.id}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-              </svg>
-              <span>Chia sẻ</span>
-            </button>
-          </div>
-          <div class="comments-section ${isOpen ? "open" : ""}" id="comments-sec-${post.id}">
-            <form class="comment-form" data-comment-form="${post.id}">
-              <input type="text" class="comment-input" placeholder="Viết bình luận ẩn danh..." maxlength="500" required />
-              <button type="submit" class="comment-send-btn">Gửi</button>
-            </form>
-            <div class="comments-list" id="comments-list-${post.id}"></div>
-          </div>
-        `;
-
-        feedEl.appendChild(card);
-        if (isOpen) renderCommentsForPost(post.id);
-      });
-    }
-
     function countComments(postId) {
       const postComments = commentsData[postId];
       if (!postComments) return 0;
@@ -1597,7 +1397,6 @@
       const raw = commentsData[postId] || {};
       const items = Object.entries(raw)
         .map(([id, c]) => ({ id, ...c, likes: c.likes || 0 }))
-        // Bình luận nhiều tim nhất nổi lên trên cùng
         .sort((a, b) => (b.likes - a.likes) || ((b.createdAt || 0) - (a.createdAt || 0)));
 
       if (items.length === 0) {
@@ -1694,7 +1493,129 @@
       }).join("");
     }
 
-    // ===== TẠO LINK CHIA SẺ THEO THỜI HẠN PHIÊN =====
+    function renderFeed() {
+      const posts = getAllPosts();
+      photoCountEl.textContent = `${posts.length} bài`;
+      document.title = `Album Ảnh (${posts.length} bài)`;
+
+      feedEl.innerHTML = "";
+      posts.forEach((post) => {
+        const card = document.createElement("article");
+        card.className = "post-card";
+        card.id = `post-${post.id}`;
+
+        const media = detectMedia(post.url, post.type);
+        let mediaHtml = "";
+        if (media.type === "video") {
+          mediaHtml = `<video controls playsinline preload="metadata" src="${escapeHtml(media.src)}"></video>`;
+        } else if (media.type === "iframe") {
+          mediaHtml = `<div class="iframe-wrap"><iframe src="${escapeHtml(media.src)}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
+        } else {
+          mediaHtml = `<img src="${escapeHtml(media.src)}" alt="${escapeHtml(post.label)}" loading="lazy" data-zoom-src="${escapeHtml(media.src)}" data-zoom-title="${escapeHtml(post.label)}" />`;
+        }
+
+        const isLiked = likedPosts.has(post.id);
+        const likeCount = likesData[post.id] || 0;
+        const cCount = countComments(post.id);
+        const isOpen = openCommentPosts.has(post.id);
+
+        card.innerHTML = `
+          <div class="post-head">
+            <div>
+              <div class="post-title">${escapeHtml(post.isCustom ? "Bài đăng mới" : post.label)}</div>
+              ${post.createdAt ? `<div class="post-meta">${formatTime(post.createdAt)}</div>` : ""}
+            </div>
+            ${isAdmin && post.isCustom ? `<button type="button" class="mini-btn danger" data-delete-post="${post.id}">Xóa bài</button>` : ""}
+          </div>
+          ${post.caption ? `<div class="post-caption">${escapeHtml(post.caption)}</div>` : ""}
+          <div class="post-media">${mediaHtml}</div>
+          <div class="post-actions">
+            <button type="button" class="action-btn ${isLiked ? "liked" : ""}" data-like-post="${post.id}">
+              <svg viewBox="0 0 24 24" fill="${isLiked ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+              <span class="like-count">${likeCount}</span>
+            </button>
+            <button type="button" class="action-btn" data-toggle-comments="${post.id}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span class="comment-count">${cCount}</span>
+            </button>
+            <button type="button" class="action-btn" data-share-post="${post.id}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+              <span>Chia sẻ</span>
+            </button>
+          </div>
+          <div class="comments-section ${isOpen ? "open" : ""}" id="comments-sec-${post.id}">
+            <form class="comment-form" data-comment-form="${post.id}">
+              <input type="text" class="comment-input" placeholder="Viết bình luận ẩn danh..." maxlength="500" required />
+              <button type="submit" class="comment-send-btn">Gửi</button>
+            </form>
+            <div class="comments-list" id="comments-list-${post.id}"></div>
+          </div>
+        `;
+
+        feedEl.appendChild(card);
+        if (isOpen) renderCommentsForPost(post.id);
+      });
+    }
+
+    function jumpToTarget(postId, commentId = null) {
+      const card = document.getElementById(`post-${postId}`);
+      if (!card) return false;
+      card.scrollIntoView({ behavior: "smooth", block: "center" });
+      card.classList.add("highlight");
+      setTimeout(() => card.classList.remove("highlight"), 2500);
+
+      if (commentId) {
+        openCommentPosts.add(postId);
+        const sec = card.querySelector(".comments-section");
+        if (sec) sec.classList.add("open");
+        renderCommentsForPost(postId);
+
+        setTimeout(() => {
+          const cEl = document.getElementById(`comment-${commentId}`);
+          if (cEl) {
+            cEl.scrollIntoView({ behavior: "smooth", block: "center" });
+            cEl.classList.add("highlight");
+            setTimeout(() => cEl.classList.remove("highlight"), 3000);
+          }
+        }, 120);
+      }
+      return true;
+    }
+
+    function tryJumpPending() {
+      if (!pendingTarget.postId) return;
+      const ok = jumpToTarget(pendingTarget.postId, pendingTarget.commentId);
+      if (ok) {
+        pendingTarget = { postId: null, commentId: null };
+      }
+    }
+
+    function openAlbum(expiresAt) {
+      albumOpened = true;
+      document.getElementById("securityGate").style.display = "none";
+      document.getElementById("albumContainer").style.display = "block";
+      renderFeed();
+
+      if (sessionExpireTimer) clearTimeout(sessionExpireTimer);
+      const remaining = expiresAt - Date.now();
+      if (remaining > 0) {
+        sessionExpireTimer = setTimeout(() => {
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+          window.location.href = window.location.pathname;
+        }, remaining);
+      }
+
+      setTimeout(tryJumpPending, 250);
+    }
+
+    // ===== TẠO LINK CHIA SẺ =====
     function copyShareLink(postId, commentId = null) {
       const expiresAt = parseInt(localStorage.getItem(AUTH_STORAGE_KEY), 10) || (Date.now() + sessionMinutes * 60 * 1000);
       const token = expiresAt.toString(36);
@@ -1723,282 +1644,7 @@
       showToast("Đã sao chép link chia sẻ!");
     }
 
-    // ===== XỬ LÝ SỰ KIỆN TRÊN FEED (DELEGATION) =====
-    feedEl.addEventListener("click", async (e) => {
-      // Xem ảnh phóng to
-      const zoomImg = e.target.closest("[data-zoom-src]");
-      if (zoomImg) {
-        openLightbox(zoomImg.dataset.zoomSrc, zoomImg.dataset.zoomTitle);
-        return;
-      }
-
-      // Tim bài viết
-      const likeBtn = e.target.closest("[data-like-post]");
-      if (likeBtn) {
-        const postId = likeBtn.dataset.likePost;
-        const already = likedPosts.has(postId);
-        if (already) likedPosts.delete(postId);
-        else likedPosts.add(postId);
-        localStorage.setItem(LIKED_POSTS_KEY, JSON.stringify([...likedPosts]));
-
-        likeBtn.classList.toggle("liked", !already);
-        const svg = likeBtn.querySelector("svg");
-        if (svg) svg.setAttribute("fill", !already ? "currentColor" : "none");
-
-        runTransaction(ref(db, `likes/${postId}`), (curr) => {
-          const val = (curr || 0) + (already ? -1 : 1);
-          return val < 0 ? 0 : val;
-        });
-        return;
-      }
-
-      // Mở / đóng bình luận bài viết
-      const toggleCmt = e.target.closest("[data-toggle-comments]");
-      if (toggleCmt) {
-        const postId = toggleCmt.dataset.toggleComments;
-        const sec = document.getElementById(`comments-sec-${postId}`);
-        if (openCommentPosts.has(postId)) {
-          openCommentPosts.delete(postId);
-          sec.classList.remove("open");
-        } else {
-          openCommentPosts.add(postId);
-          sec.classList.add("open");
-          renderCommentsForPost(postId);
-        }
-        return;
-      }
-
-      // Chia sẻ bài viết
-      const sharePost = e.target.closest("[data-share-post]");
-      if (sharePost) {
-        copyShareLink(sharePost.dataset.sharePost);
-        return;
-      }
-
-      // Tim bình luận gốc
-      const likeCmt = e.target.closest("[data-like-comment]");
-      if (likeCmt) {
-        const [postId, cId] = likeCmt.dataset.likeComment.split("|");
-        const key = `${postId}__${cId}`;
-        const already = likedComments.has(key);
-        if (already) likedComments.delete(key);
-        else likedComments.add(key);
-        localStorage.setItem(LIKED_COMMENTS_KEY, JSON.stringify([...likedComments]));
-
-        runTransaction(ref(db, `comments/${postId}/${cId}/likes`), (curr) => {
-          const val = (curr || 0) + (already ? -1 : 1);
-          return val < 0 ? 0 : val;
-        });
-        return;
-      }
-
-      // Tim reply
-      const likeReply = e.target.closest("[data-like-reply]");
-      if (likeReply) {
-        const [postId, cId, rId] = likeReply.dataset.likeReply.split("|");
-        const key = `${postId}__${cId}__${rId}`;
-        const already = likedComments.has(key);
-        if (already) likedComments.delete(key);
-        else likedComments.add(key);
-        localStorage.setItem(LIKED_COMMENTS_KEY, JSON.stringify([...likedComments]));
-
-        runTransaction(ref(db, `comments/${postId}/${cId}/replies/${rId}/likes`), (curr) => {
-          const val = (curr || 0) + (already ? -1 : 1);
-          return val < 0 ? 0 : val;
-        });
-        return;
-      }
-
-      // Chia sẻ bình luận
-      const shareCmt = e.target.closest("[data-share-comment]");
-      if (shareCmt) {
-        const [postId, cId] = shareCmt.dataset.shareComment.split("|");
-        copyShareLink(postId, cId);
-        return;
-      }
-
-      // Mở ô trả lời (chỉ có ở bình luận gốc)
-      const openReply = e.target.closest("[data-open-reply]");
-      if (openReply) {
-        const key = openReply.dataset.openReply;
-        const postId = openReply.dataset.postId;
-        if (openReplyForms.has(key)) openReplyForms.delete(key);
-        else openReplyForms.add(key);
-        renderCommentsForPost(postId);
-        return;
-      }
-
-      // Xem X câu trả lời
-      const expandRep = e.target.closest("[data-expand-replies]");
-      if (expandRep) {
-        expandedReplies.add(expandRep.dataset.expandReplies);
-        renderCommentsForPost(expandRep.dataset.postId);
-        return;
-      }
-
-      // Ẩn các câu trả lời
-      const collapseRep = e.target.closest("[data-collapse-replies]");
-      if (collapseRep) {
-        expandedReplies.delete(collapseRep.dataset.collapseReplies);
-        renderCommentsForPost(collapseRep.dataset.postId);
-        return;
-      }
-
-      // QTV xóa bình luận gốc
-      const delCmt = e.target.closest("[data-delete-comment]");
-      if (delCmt && isAdmin) {
-        if (!confirm("Xóa bình luận này (và toàn bộ câu trả lời bên trong)?")) return;
-        const [postId, cId] = delCmt.dataset.deleteComment.split("|");
-        await remove(ref(db, `comments/${postId}/${cId}`));
-        showToast("Đã xóa bình luận.");
-        return;
-      }
-
-      // QTV xóa reply
-      const delRep = e.target.closest("[data-delete-reply]");
-      if (delRep && isAdmin) {
-        if (!confirm("Xóa câu trả lời này?")) return;
-        const [postId, cId, rId] = delRep.dataset.deleteReply.split("|");
-        await remove(ref(db, `comments/${postId}/${cId}/replies/${rId}`));
-        showToast("Đã xóa câu trả lời.");
-        return;
-      }
-
-      // QTV xóa bài đăng mới
-      const delPost = e.target.closest("[data-delete-post]");
-      if (delPost && isAdmin) {
-        if (!confirm("Xóa bài đăng này khỏi Album?")) return;
-        const postId = delPost.dataset.deletePost;
-        await remove(ref(db, `posts/${postId}`));
-        showToast("Đã xóa bài đăng.");
-        return;
-      }
-    });
-
-    // Gửi bình luận gốc & gửi reply
-    feedEl.addEventListener("submit", async (e) => {
-      const cForm = e.target.closest("[data-comment-form]");
-      if (cForm) {
-        e.preventDefault();
-        const postId = cForm.dataset.commentForm;
-        const input = cForm.querySelector(".comment-input");
-        const text = input.value.trim();
-        if (!text) return;
-        input.value = "";
-        await push(ref(db, `comments/${postId}`), {
-          text,
-          createdAt: Date.now(),
-          likes: 0
-        });
-        showToast("Đã gửi bình luận!");
-        return;
-      }
-
-      const rForm = e.target.closest("[data-reply-form]");
-      if (rForm) {
-        e.preventDefault();
-        const [postId, cId] = rForm.dataset.replyForm.split("|");
-        const input = rForm.querySelector(".comment-input");
-        const text = input.value.trim();
-        if (!text) return;
-        const key = `${postId}__${cId}`;
-        openReplyForms.delete(key);
-        expandedReplies.add(key);
-        await push(ref(db, `comments/${postId}/${cId}/replies`), {
-          text,
-          createdAt: Date.now(),
-          likes: 0
-        });
-        showToast("Đã gửi câu trả lời!");
-      }
-    });
-
     // ===== QUẢN TRỊ VIÊN =====
-    const adminModal = document.getElementById("adminModal");
-    document.getElementById("openAdminBtn").addEventListener("click", () => {
-      adminModal.classList.add("open");
-      if (isAdmin) renderRecentComments();
-    });
-    document.getElementById("closeAdminModal").addEventListener("click", () => {
-      adminModal.classList.remove("open");
-    });
-    adminModal.addEventListener("click", (e) => {
-      if (e.target === adminModal) adminModal.classList.remove("open");
-    });
-
-    // Chuyển tab QTV
-    document.querySelectorAll(".admin-tab").forEach((tabBtn) => {
-      tabBtn.addEventListener("click", () => {
-        document.querySelectorAll(".admin-tab").forEach((b) => b.classList.remove("active"));
-        document.querySelectorAll(".admin-panel").forEach((p) => p.classList.remove("active"));
-        tabBtn.classList.add("active");
-        document.getElementById(tabBtn.dataset.tab).classList.add("active");
-        if (tabBtn.dataset.tab === "tabComments") renderRecentComments();
-      });
-    });
-
-    // Đăng nhập QTV
-    document.getElementById("adminLoginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("adminEmail").value.trim();
-      const pass = document.getElementById("adminPass").value;
-      const errBox = document.getElementById("adminLoginError");
-      errBox.className = "status-banner";
-
-      try {
-        const cred = await signInWithEmailAndPassword(auth, email, pass);
-        if (cred.user.uid !== ADMIN_UID) {
-          await signOut(auth);
-          errBox.className = "status-banner error";
-          errBox.textContent = "Tài khoản này không có quyền Quản trị viên.";
-        } else {
-          showToast("Đăng nhập Quản trị viên thành công!");
-        }
-      } catch (err) {
-        errBox.className = "status-banner error";
-        errBox.textContent = "Sai email hoặc mật khẩu!";
-      }
-    });
-
-    document.getElementById("adminLogoutBtn").addEventListener("click", async () => {
-      await signOut(auth);
-      adminModal.classList.remove("open");
-      showToast("Đã đăng xuất Quản trị viên.");
-    });
-
-    // QTV đăng bài mới
-    document.getElementById("newPostForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!isAdmin) return;
-      const url = document.getElementById("postUrl").value.trim();
-      const type = document.getElementById("postType").value;
-      const caption = document.getElementById("postCaption").value.trim();
-      if (!url) return;
-
-      await push(ref(db, "posts"), {
-        url,
-        type,
-        caption,
-        createdAt: Date.now()
-      });
-
-      document.getElementById("newPostForm").reset();
-      adminModal.classList.remove("open");
-      showToast("Đã đăng bài mới lên đầu Album!");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-
-    // QTV lưu cài đặt thời gian ghi nhớ
-    document.getElementById("settingsForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!isAdmin) return;
-      const mins = parseInt(document.getElementById("sessionMinutesInput").value, 10);
-      if (Number.isNaN(mins) || mins < 1) return;
-      await set(ref(db, "settings/sessionMinutes"), mins);
-      showToast(`Đã cập nhật thời gian ghi nhớ: ${mins} phút`);
-    });
-
-    // QTV xem danh sách Bình luận gần đây
     function renderRecentComments() {
       const container = document.getElementById("recentCommentsList");
       if (!container) return;
@@ -2051,40 +1697,8 @@
       `).join("");
     }
 
-    document.getElementById("recentCommentsList").addEventListener("click", async (e) => {
-      const viewBtn = e.target.closest("[data-rc-view]");
-      if (viewBtn) {
-        const [postId, targetCId, parentCId] = viewBtn.dataset.rcView.split("|");
-        if (parentCId) expandedReplies.add(`${postId}__${parentCId}`);
-        adminModal.classList.remove("open");
-        jumpToTarget(postId, targetCId);
-        return;
-      }
-
-      const delBtn = e.target.closest("[data-rc-del]");
-      if (delBtn && isAdmin) {
-        if (!confirm("Xác nhận xóa bình luận này?")) return;
-        const parts = delBtn.dataset.rcDel.split("|");
-        if (parts[0] === "comment") {
-          await remove(ref(db, `comments/${parts[1]}/${parts[2]}`));
-        } else {
-          await remove(ref(db, `comments/${parts[1]}/${parts[2]}/replies/${parts[3]}`));
-        }
-        showToast("Đã xóa bình luận.");
-      }
-    });
-
-    // ===== TRÌNH XEM ẢNH ZOOM ĐỘC LẬP (KHÔNG LÀM PHÓNG TO WEBSITE) =====
-    const lightbox = document.getElementById("lightbox");
-    const lbStage = document.getElementById("lbStage");
-    const lbImg = document.getElementById("lbImg");
-    const lbTitle = document.getElementById("lbTitle");
-    const lbZoomPct = document.getElementById("lbZoomPct");
-    const lbOriginal = document.getElementById("lbOriginal");
-
-    let scale = 1;
-    let panX = 0;
-    let panY = 0;
+    // ===== TRÌNH XEM ẢNH ZOOM ĐỘC LẬP =====
+    let scale = 1, panX = 0, panY = 0;
 
     function applyTransform() {
       if (scale <= 1) {
@@ -2115,6 +1729,291 @@
       document.body.style.overflow = "";
     }
 
+    // ===== GẮN TOÀN BỘ SỰ KIỆN =====
+    document.getElementById("backHomeBtn").addEventListener("click", () => {
+      if (sessionExpireTimer) clearTimeout(sessionExpireTimer);
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      window.location.href = window.location.pathname;
+    });
+
+    feedEl.addEventListener("click", async (e) => {
+      const zoomImg = e.target.closest("[data-zoom-src]");
+      if (zoomImg) {
+        openLightbox(zoomImg.dataset.zoomSrc, zoomImg.dataset.zoomTitle);
+        return;
+      }
+
+      const likeBtn = e.target.closest("[data-like-post]");
+      if (likeBtn) {
+        const postId = likeBtn.dataset.likePost;
+        const already = likedPosts.has(postId);
+        if (already) likedPosts.delete(postId);
+        else likedPosts.add(postId);
+        localStorage.setItem(LIKED_POSTS_KEY, JSON.stringify([...likedPosts]));
+
+        likeBtn.classList.toggle("liked", !already);
+        const svg = likeBtn.querySelector("svg");
+        if (svg) svg.setAttribute("fill", !already ? "currentColor" : "none");
+
+        runTransaction(ref(db, `likes/${postId}`), (curr) => {
+          const val = (curr || 0) + (already ? -1 : 1);
+          return val < 0 ? 0 : val;
+        });
+        return;
+      }
+
+      const toggleCmt = e.target.closest("[data-toggle-comments]");
+      if (toggleCmt) {
+        const postId = toggleCmt.dataset.toggleComments;
+        const sec = document.getElementById(`comments-sec-${postId}`);
+        if (openCommentPosts.has(postId)) {
+          openCommentPosts.delete(postId);
+          sec.classList.remove("open");
+        } else {
+          openCommentPosts.add(postId);
+          sec.classList.add("open");
+          renderCommentsForPost(postId);
+        }
+        return;
+      }
+
+      const sharePost = e.target.closest("[data-share-post]");
+      if (sharePost) {
+        copyShareLink(sharePost.dataset.sharePost);
+        return;
+      }
+
+      const likeCmt = e.target.closest("[data-like-comment]");
+      if (likeCmt) {
+        const [postId, cId] = likeCmt.dataset.likeComment.split("|");
+        const key = `${postId}__${cId}`;
+        const already = likedComments.has(key);
+        if (already) likedComments.delete(key);
+        else likedComments.add(key);
+        localStorage.setItem(LIKED_COMMENTS_KEY, JSON.stringify([...likedComments]));
+
+        runTransaction(ref(db, `comments/${postId}/${cId}/likes`), (curr) => {
+          const val = (curr || 0) + (already ? -1 : 1);
+          return val < 0 ? 0 : val;
+        });
+        return;
+      }
+
+      const likeReply = e.target.closest("[data-like-reply]");
+      if (likeReply) {
+        const [postId, cId, rId] = likeReply.dataset.likeReply.split("|");
+        const key = `${postId}__${cId}__${rId}`;
+        const already = likedComments.has(key);
+        if (already) likedComments.delete(key);
+        else likedComments.add(key);
+        localStorage.setItem(LIKED_COMMENTS_KEY, JSON.stringify([...likedComments]));
+
+        runTransaction(ref(db, `comments/${postId}/${cId}/replies/${rId}/likes`), (curr) => {
+          const val = (curr || 0) + (already ? -1 : 1);
+          return val < 0 ? 0 : val;
+        });
+        return;
+      }
+
+      const shareCmt = e.target.closest("[data-share-comment]");
+      if (shareCmt) {
+        const [postId, cId] = shareCmt.dataset.shareComment.split("|");
+        copyShareLink(postId, cId);
+        return;
+      }
+
+      const openReply = e.target.closest("[data-open-reply]");
+      if (openReply) {
+        const key = openReply.dataset.openReply;
+        const postId = openReply.dataset.postId;
+        if (openReplyForms.has(key)) openReplyForms.delete(key);
+        else openReplyForms.add(key);
+        renderCommentsForPost(postId);
+        return;
+      }
+
+      const expandRep = e.target.closest("[data-expand-replies]");
+      if (expandRep) {
+        expandedReplies.add(expandRep.dataset.expandReplies);
+        renderCommentsForPost(expandRep.dataset.postId);
+        return;
+      }
+
+      const collapseRep = e.target.closest("[data-collapse-replies]");
+      if (collapseRep) {
+        expandedReplies.delete(collapseRep.dataset.collapseReplies);
+        renderCommentsForPost(collapseRep.dataset.postId);
+        return;
+      }
+
+      const delCmt = e.target.closest("[data-delete-comment]");
+      if (delCmt && isAdmin) {
+        if (!confirm("Xóa bình luận này (và toàn bộ câu trả lời bên trong)?")) return;
+        const [postId, cId] = delCmt.dataset.deleteComment.split("|");
+        await remove(ref(db, `comments/${postId}/${cId}`));
+        showToast("Đã xóa bình luận.");
+        return;
+      }
+
+      const delRep = e.target.closest("[data-delete-reply]");
+      if (delRep && isAdmin) {
+        if (!confirm("Xóa câu trả lời này?")) return;
+        const [postId, cId, rId] = delRep.dataset.deleteReply.split("|");
+        await remove(ref(db, `comments/${postId}/${cId}/replies/${rId}`));
+        showToast("Đã xóa câu trả lời.");
+        return;
+      }
+
+      const delPost = e.target.closest("[data-delete-post]");
+      if (delPost && isAdmin) {
+        if (!confirm("Xóa bài đăng này khỏi Album?")) return;
+        const postId = delPost.dataset.deletePost;
+        await remove(ref(db, `posts/${postId}`));
+        showToast("Đã xóa bài đăng.");
+        return;
+      }
+    });
+
+    feedEl.addEventListener("submit", async (e) => {
+      const cForm = e.target.closest("[data-comment-form]");
+      if (cForm) {
+        e.preventDefault();
+        const postId = cForm.dataset.commentForm;
+        const input = cForm.querySelector(".comment-input");
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = "";
+        await push(ref(db, `comments/${postId}`), {
+          text,
+          createdAt: Date.now(),
+          likes: 0
+        });
+        showToast("Đã gửi bình luận!");
+        return;
+      }
+
+      const rForm = e.target.closest("[data-reply-form]");
+      if (rForm) {
+        e.preventDefault();
+        const [postId, cId] = rForm.dataset.replyForm.split("|");
+        const input = rForm.querySelector(".comment-input");
+        const text = input.value.trim();
+        if (!text) return;
+        const key = `${postId}__${cId}`;
+        openReplyForms.delete(key);
+        expandedReplies.add(key);
+        await push(ref(db, `comments/${postId}/${cId}/replies`), {
+          text,
+          createdAt: Date.now(),
+          likes: 0
+        });
+        showToast("Đã gửi câu trả lời!");
+      }
+    });
+
+    document.getElementById("openAdminBtn").addEventListener("click", () => {
+      adminModal.classList.add("open");
+      if (isAdmin) renderRecentComments();
+    });
+    document.getElementById("closeAdminModal").addEventListener("click", () => {
+      adminModal.classList.remove("open");
+    });
+    adminModal.addEventListener("click", (e) => {
+      if (e.target === adminModal) adminModal.classList.remove("open");
+    });
+
+    document.querySelectorAll(".admin-tab").forEach((tabBtn) => {
+      tabBtn.addEventListener("click", () => {
+        document.querySelectorAll(".admin-tab").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".admin-panel").forEach((p) => p.classList.remove("active"));
+        tabBtn.classList.add("active");
+        document.getElementById(tabBtn.dataset.tab).classList.add("active");
+        if (tabBtn.dataset.tab === "tabComments") renderRecentComments();
+      });
+    });
+
+    document.getElementById("adminLoginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("adminEmail").value.trim();
+      const pass = document.getElementById("adminPass").value;
+      const errBox = document.getElementById("adminLoginError");
+      errBox.className = "status-banner";
+
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, pass);
+        if (cred.user.uid !== ADMIN_UID) {
+          await signOut(auth);
+          errBox.className = "status-banner error";
+          errBox.textContent = "Tài khoản này không có quyền Quản trị viên.";
+        } else {
+          showToast("Đăng nhập Quản trị viên thành công!");
+        }
+      } catch (err) {
+        errBox.className = "status-banner error";
+        errBox.textContent = "Sai email hoặc mật khẩu!";
+      }
+    });
+
+    document.getElementById("adminLogoutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      adminModal.classList.remove("open");
+      showToast("Đã đăng xuất Quản trị viên.");
+    });
+
+    document.getElementById("newPostForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!isAdmin) return;
+      const url = document.getElementById("postUrl").value.trim();
+      const type = document.getElementById("postType").value;
+      const caption = document.getElementById("postCaption").value.trim();
+      if (!url) return;
+
+      await push(ref(db, "posts"), {
+        url,
+        type,
+        caption,
+        createdAt: Date.now()
+      });
+
+      document.getElementById("newPostForm").reset();
+      adminModal.classList.remove("open");
+      showToast("Đã đăng bài mới lên đầu Album!");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    document.getElementById("settingsForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!isAdmin) return;
+      const mins = parseInt(document.getElementById("sessionMinutesInput").value, 10);
+      if (Number.isNaN(mins) || mins < 1) return;
+      await set(ref(db, "settings/sessionMinutes"), mins);
+      showToast(`Đã cập nhật thời gian ghi nhớ: ${mins} phút`);
+    });
+
+    document.getElementById("recentCommentsList").addEventListener("click", async (e) => {
+      const viewBtn = e.target.closest("[data-rc-view]");
+      if (viewBtn) {
+        const [postId, targetCId, parentCId] = viewBtn.dataset.rcView.split("|");
+        if (parentCId) expandedReplies.add(`${postId}__${parentCId}`);
+        adminModal.classList.remove("open");
+        jumpToTarget(postId, targetCId);
+        return;
+      }
+
+      const delBtn = e.target.closest("[data-rc-del]");
+      if (delBtn && isAdmin) {
+        if (!confirm("Xác nhận xóa bình luận này?")) return;
+        const parts = delBtn.dataset.rcDel.split("|");
+        if (parts[0] === "comment") {
+          await remove(ref(db, `comments/${parts[1]}/${parts[2]}`));
+        } else {
+          await remove(ref(db, `comments/${parts[1]}/${parts[2]}/replies/${parts[3]}`));
+        }
+        showToast("Đã xóa bình luận.");
+      }
+    });
+
+    // Sự kiện Lightbox
     document.getElementById("lbClose").addEventListener("click", closeLightbox);
     document.getElementById("lbZoomIn").addEventListener("click", () => {
       scale = Math.min(4, scale + 0.5);
@@ -2125,7 +2024,6 @@
       applyTransform();
     });
 
-    // Zoom bằng con lăn chuột
     lbStage.addEventListener("wheel", (e) => {
       e.preventDefault();
       const delta = e.deltaY < 0 ? 0.25 : -0.25;
@@ -2133,7 +2031,6 @@
       applyTransform();
     }, { passive: false });
 
-    // Kéo chuột khi đang phóng to
     let isMouseDragging = false;
     let dragStartX = 0, dragStartY = 0;
     lbStage.addEventListener("mousedown", (e) => {
@@ -2150,16 +2047,14 @@
     });
     window.addEventListener("mouseup", () => { isMouseDragging = false; });
 
-    // Chụm 2 ngón tay để zoom + kéo 1 ngón trên điện thoại (không zoom trang web)
-    let pinchStartDist = 0;
-    let pinchStartScale = 1;
-    let touchPanStartX = 0, touchPanStartY = 0;
-    let lastTapTime = 0;
+    let pinchStartDist = 0, pinchStartScale = 1;
+    let touchPanStartX = 0, touchPanStartY = 0, lastTapTime = 0;
 
     function getTouchDist(touches) {
-      const dx = touches[0].clientX - touches[1].clientX;
-      const dy = touches[0].clientY - touches[1].clientY;
-      return Math.hypot(dx, dy);
+      return Math.hypot(
+        touches[0].clientX - touches[1].clientX,
+        touches[0].clientY - touches[1].clientY
+      );
     }
 
     lbStage.addEventListener("touchstart", (e) => {
@@ -2205,7 +2100,7 @@
       if (e.key === "Escape" && lightbox.classList.contains("open")) closeLightbox();
     });
 
-    // ===== XỬ LÝ 5 CÂU HỎI BẢO MẬT =====
+    // ===== 5 CÂU HỎI BẢO MẬT =====
     const dobDay = document.getElementById("dobDay");
     const dobMonth = document.getElementById("dobMonth");
     const dobYear = document.getElementById("dobYear");
@@ -2335,6 +2230,85 @@
         }, 1000);
       }
     });
+
+    // ===== ĐỒNG BỘ FIREBASE =====
+    onValue(ref(db, "settings/sessionMinutes"), (snap) => {
+      const val = snap.val();
+      if (typeof val === "number" && val >= 1) {
+        sessionMinutes = val;
+        const input = document.getElementById("sessionMinutesInput");
+        if (input) input.value = val;
+      }
+    });
+
+    onValue(ref(db, "posts"), (snap) => {
+      dynamicPosts = snap.val() || {};
+      if (albumOpened) {
+        renderFeed();
+        tryJumpPending();
+      }
+    });
+
+    onValue(ref(db, "likes"), (snap) => {
+      likesData = snap.val() || {};
+      if (albumOpened) updateAllLikeCounts();
+    });
+
+    onValue(ref(db, "comments"), (snap) => {
+      commentsData = snap.val() || {};
+      if (albumOpened) {
+        updateAllCommentSections();
+        if (isAdmin) renderRecentComments();
+      }
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      isAdmin = Boolean(user && user.uid === ADMIN_UID);
+      const openAdminBtn = document.getElementById("openAdminBtn");
+      const loginForm = document.getElementById("adminLoginForm");
+      const dashboard = document.getElementById("adminDashboard");
+      const title = document.getElementById("adminModalTitle");
+
+      if (isAdmin) {
+        openAdminBtn.textContent = "Quản trị (Đã vào)";
+        openAdminBtn.classList.add("admin-active");
+        loginForm.style.display = "none";
+        dashboard.style.display = "block";
+        title.textContent = "Bảng Quản Trị Viên";
+        renderRecentComments();
+      } else {
+        openAdminBtn.textContent = "Quản trị";
+        openAdminBtn.classList.remove("admin-active");
+        loginForm.style.display = "block";
+        dashboard.style.display = "none";
+        title.textContent = "Đăng nhập Quản trị viên";
+      }
+
+      if (albumOpened) {
+        renderFeed();
+      }
+    });
+
+    // ===== KIỂM TRA PHIÊN GHI NHỚ (CHẠY CUỐI CÙNG SAU KHI MỌI THỨ SẴN SÀNG) =====
+    (function checkInitialAccess() {
+      const savedExpires = parseInt(localStorage.getItem(AUTH_STORAGE_KEY), 10) || 0;
+      let sharedExpires = 0;
+
+      if (sharedToken) {
+        const parsed = parseInt(sharedToken, 36);
+        if (!Number.isNaN(parsed) && parsed > Date.now()) {
+          sharedExpires = parsed;
+        }
+      }
+
+      const effectiveExpires = Math.max(savedExpires, sharedExpires);
+      if (effectiveExpires > Date.now()) {
+        localStorage.setItem(AUTH_STORAGE_KEY, String(effectiveExpires));
+        openAlbum(effectiveExpires);
+      } else {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+      }
+    })();
   </script>
 </body>
 </html>
