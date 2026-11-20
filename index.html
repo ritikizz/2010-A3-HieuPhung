@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-  <title>Dòng thời gian 2010 - A3 Hiếu Phụng</title>
+  <title>Dòng thời gian 10A3 25-26</title>
   <style>
     * {
       box-sizing: border-box;
@@ -349,8 +349,7 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(15, 17, 21, 0.94);
-      backdrop-filter: blur(10px);
+      background: rgba(15, 17, 21, 0.97);
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -410,7 +409,6 @@
       color: #fff;
     }
 
-    /* Thanh tìm kiếm theo số bài */
     .search-bar {
       display: flex;
       gap: 8px;
@@ -447,7 +445,7 @@
       display: inline-block;
     }
 
-    /* ===== POST CARD ===== */
+    /* ===== POST CARD (TỐI ƯU HIỆU NĂNG RENDER) ===== */
     .feed {
       display: flex;
       flex-direction: column;
@@ -469,6 +467,8 @@
       border: 1px solid #262b36;
       border-radius: 14px;
       overflow: visible;
+      content-visibility: auto;
+      contain-intrinsic-size: auto 520px;
       transition: box-shadow 0.3s, border-color 0.3s;
     }
 
@@ -601,19 +601,25 @@
       align-items: center;
       justify-content: center;
       width: 100%;
+      min-height: 240px;
     }
 
     .post-media img {
       width: 100%;
-      max-height: 78vh;
+      max-height: 76vh;
       object-fit: contain;
       display: block;
       cursor: zoom-in;
+      transition: opacity 0.2s ease;
+    }
+
+    .post-media img.img-recycled {
+      opacity: 0;
     }
 
     .post-media video {
       width: 100%;
-      max-height: 78vh;
+      max-height: 76vh;
       display: block;
       background: #000;
     }
@@ -641,6 +647,29 @@
       font-size: 0.92rem;
       border-top: 1px dashed #2a303d;
       border-bottom: 1px dashed #2a303d;
+    }
+
+    /* Thanh tải thêm (Infinite Scroll) */
+    .feed-sentinel {
+      text-align: center;
+      padding: 20px 12px;
+      color: #64748b;
+      font-size: 0.88rem;
+    }
+
+    .load-more-btn {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      padding: 9px 20px;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .load-more-btn:hover {
+      background: #334155;
     }
 
     /* Thanh nút Tim - Bình luận - Chia sẻ */
@@ -1226,7 +1255,7 @@
 
   <!-- MÀN HÌNH ĐANG TẢI -->
   <section class="center-screen" id="loadingScreen">
-    <h1>Dòng thời gian 2010 - A3 Hiếu Phụng</h1>
+    <h1>Dòng thời gian 10A3 25-26</h1>
     <p style="color: #94a3b8; font-size: 0.92rem;">Đang tải dữ liệu...</p>
   </section>
 
@@ -1240,7 +1269,7 @@
   <!-- MÀN HÌNH BẢO MẬT -->
   <section class="gate-wrapper" id="securityGate">
     <div class="gate-header">
-      <h1>Dòng thời gian 2010 - A3 Hiếu Phụng</h1>
+      <h1>Dòng thời gian 10A3 25-26</h1>
       <p>Vui lòng trả lời đúng cả 5/5 câu hỏi dưới đây để truy cập.</p>
     </div>
 
@@ -1316,7 +1345,7 @@
 
     <header class="album-header">
       <div class="header-top-row">
-        <h1>Dòng thời gian 2010 - A3 Hiếu Phụng</h1>
+        <h1>Dòng thời gian 10A3 25-26</h1>
         <div class="header-actions">
           <span class="count-badge" id="photoCount"></span>
           <button type="button" class="header-btn" id="openAdminBtn">Quản trị</button>
@@ -1337,6 +1366,7 @@
     </header>
 
     <main class="feed" id="feed"></main>
+    <div class="feed-sentinel" id="feedSentinel"></div>
   </div>
 
   <!-- TRÌNH XEM ẢNH ZOOM ĐỘC LẬP -->
@@ -1483,7 +1513,6 @@
       ref,
       onValue,
       push,
-      set,
       update,
       remove,
       runTransaction
@@ -1505,6 +1534,8 @@
     const AUTH_STORAGE_KEY = "album_auth_expires_at";
     const LIKED_POSTS_KEY = "album_liked_posts";
     const LIKED_COMMENTS_KEY = "album_liked_comments";
+    const BATCH_SIZE = 5; // Mỗi lần chỉ tải thêm 5 bài để tiết kiệm RAM
+    const BLANK_GIF = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -1519,6 +1550,7 @@
     const albumContainer = document.getElementById("albumContainer");
     const adminMaintenanceBar = document.getElementById("adminMaintenanceBar");
     const feedEl = document.getElementById("feed");
+    const feedSentinel = document.getElementById("feedSentinel");
     const photoCountEl = document.getElementById("photoCount");
     const postSearchInput = document.getElementById("postSearchInput");
     const clearSearchBtn = document.getElementById("clearSearchBtn");
@@ -1609,6 +1641,11 @@
     let likesData = {};
     let commentsData = {};
 
+    // Infinite scroll state
+    let currentDisplayPosts = [];
+    let renderedCount = 0;
+    let renderDebounceTimer = null;
+
     const openCommentPosts = new Set();
     const expandedReplies = new Set();
     const openReplyForms = new Set();
@@ -1616,7 +1653,6 @@
     let likedPosts = new Set(JSON.parse(localStorage.getItem(LIKED_POSTS_KEY) || "[]"));
     let likedComments = new Set(JSON.parse(localStorage.getItem(LIKED_COMMENTS_KEY) || "[]"));
 
-    // Tham số link chia sẻ: ?p=postId&c=commentId&r=replyId&t=expiryBase36
     const urlParams = new URLSearchParams(window.location.search);
     let pendingTarget = {
       postId: urlParams.get("p") || null,
@@ -1624,6 +1660,43 @@
       replyId: urlParams.get("r") || null
     };
     const sharedToken = urlParams.get("t");
+
+    // ===== OBSERVER TỐI ƯU RAM (XẢ ẢNH XA KHUNG NHÌN + DỪNG VIDEO) =====
+    const mediaMemoryObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const mediaBox = entry.target;
+        const img = mediaBox.querySelector("img[data-real-src]");
+        if (img) {
+          if (entry.isIntersecting) {
+            if (img.dataset.loaded !== "1") {
+              img.src = img.dataset.realSrc;
+              img.dataset.loaded = "1";
+              img.classList.remove("img-recycled");
+            }
+          } else {
+            // Khóa chiều cao hiện tại để không bị giật trang, rồi xả ảnh khỏi RAM
+            if (img.dataset.loaded === "1" && mediaBox.offsetHeight > 0) {
+              mediaBox.style.minHeight = `${mediaBox.offsetHeight}px`;
+              img.classList.add("img-recycled");
+              img.src = BLANK_GIF;
+              img.dataset.loaded = "0";
+            }
+          }
+        }
+
+        const video = mediaBox.querySelector("video");
+        if (video && !entry.isIntersecting && !video.paused) {
+          video.pause();
+        }
+      });
+    }, { rootMargin: "1400px 0px 1400px 0px" });
+
+    // Observer tự động tải thêm bài khi lướt gần cuối
+    const infiniteScrollObserver = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && renderedCount < currentDisplayPosts.length) {
+        appendNextBatch();
+      }
+    }, { rootMargin: "700px 0px" });
 
     // ===== TIỆN ÍCH =====
     let toastTimer = null;
@@ -1642,11 +1715,9 @@
         .replace(/"/g, "&quot;");
     }
 
-    // Thời gian: phút -> giờ -> tối đa 2 ngày (hết 2,99 ngày sang ngày thứ 3 hiện HH:mm DD/MM/YYYY)
     function formatTime(ts) {
       if (!ts) return "";
-      const diffMs = Date.now() - ts;
-      const diffSec = Math.floor(diffMs / 1000);
+      const diffSec = Math.floor((Date.now() - ts) / 1000);
       if (diffSec < 60) return "Vừa xong";
       const diffMin = Math.floor(diffSec / 60);
       if (diffMin < 60) return `${diffMin} phút trước`;
@@ -1683,7 +1754,6 @@
       return { type: "image", src: url };
     }
 
-    // Tổng hợp tất cả bài đăng (cả 48 bài cũ + bài mới), sắp xếp MỚI NHẤT TRÊN CÙNG, CŨ NHẤT DƯỚI CÙNG
     function getAllPosts() {
       const staticList = STATIC_IMAGES.map((url, idx) => {
         const num = idx + 1;
@@ -1702,7 +1772,6 @@
         };
       });
 
-      // Xử lý bài mới (hỗ trợ cả bài cũ chưa có postNumber)
       const rawCustom = Object.entries(dynamicPosts)
         .map(([id, data]) => ({ id, ...data }))
         .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
@@ -1871,132 +1940,203 @@
       }).join("");
     }
 
-    function renderFeed() {
-      const allPosts = getAllPosts();
-      photoCountEl.textContent = `${allPosts.length} bài đăng`;
-      document.title = "Dòng thời gian 2010 - A3 Hiếu Phụng";
+    // ===== TẠO TỪNG THẺ BÀI ĐĂNG (NHẸ & TỐI ƯU RAM) =====
+    function createPostCard(post) {
+      const card = document.createElement("article");
+      card.className = "post-card";
+      card.id = `post-${post.id}`;
 
-      let displayPosts = allPosts;
-      if (searchFilterNum !== null) {
-        displayPosts = allPosts.filter((p) => p.postNumber === searchFilterNum);
+      let mediaHtml = "";
+      if (post.hidden) {
+        mediaHtml = `<div class="hidden-media-box">Hình ảnh / video của bài đăng này hiện đang được ẩn.</div>`;
+      } else {
+        const media = detectMedia(post.url, post.type);
+        if (media.type === "video") {
+          mediaHtml = `<video controls playsinline preload="none" src="${escapeHtml(media.src)}"></video>`;
+        } else if (media.type === "iframe") {
+          mediaHtml = `<div class="iframe-wrap"><iframe loading="lazy" src="${escapeHtml(media.src)}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
+        } else {
+          mediaHtml = `<img src="${BLANK_GIF}" data-real-src="${escapeHtml(media.src)}" data-loaded="0" class="img-recycled" alt="Bài đăng ${post.postNumber}" decoding="async" data-zoom-src="${escapeHtml(media.src)}" data-zoom-title="Bài đăng ${post.postNumber}" />`;
+        }
       }
 
-      feedEl.innerHTML = "";
+      const isLiked = likedPosts.has(post.id);
+      const likeCount = likesData[post.id] || 0;
+      const cCount = countComments(post.id);
+      const isOpen = openCommentPosts.has(post.id);
 
-      if (displayPosts.length === 0) {
+      const adminMenuHtml = isAdmin ? `
+        <div class="post-menu-wrap">
+          <button type="button" class="menu-dots-btn" data-toggle-menu="${post.id}" title="Tùy chọn Quản trị">&#8942;</button>
+          <div class="post-dropdown" id="menu-${post.id}">
+            <button type="button" class="dropdown-item" data-edit-post="${post.id}">Chỉnh sửa bài viết</button>
+            <button type="button" class="dropdown-item" data-hide-post="${post.id}">${post.hidden ? "Hiện lại bài đăng" : "Ẩn bài đăng"}</button>
+            <button type="button" class="dropdown-item danger" data-delete-post="${post.id}">Xóa bài đăng</button>
+          </div>
+        </div>
+      ` : "";
+
+      card.innerHTML = `
+        <div class="post-head">
+          <div>
+            <div class="post-title-row">
+              <span class="post-title">Bài đăng ${post.postNumber}</span>
+              ${post.hidden && isAdmin ? `<span class="hidden-badge">Đang ẩn</span>` : ""}
+            </div>
+            ${post.createdAt ? `<div class="post-meta">${formatTime(post.createdAt)}</div>` : ""}
+          </div>
+          ${adminMenuHtml}
+        </div>
+        ${post.caption ? `<div class="post-caption">${escapeHtml(post.caption)}</div>` : ""}
+        <div class="post-media">${mediaHtml}</div>
+        <div class="post-actions">
+          <button type="button" class="action-btn ${isLiked ? "liked" : ""}" data-like-post="${post.id}">
+            <svg viewBox="0 0 24 24" fill="${isLiked ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            <span class="like-count">${likeCount}</span>
+          </button>
+          <button type="button" class="action-btn" data-toggle-comments="${post.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span class="comment-count">${cCount}</span>
+          </button>
+          <button type="button" class="action-btn" data-share-post="${post.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            <span>Chia sẻ</span>
+          </button>
+        </div>
+        <div class="comments-section ${isOpen ? "open" : ""}" id="comments-sec-${post.id}">
+          <form class="comment-form" data-comment-form="${post.id}">
+            <input type="text" class="comment-input" placeholder="Viết bình luận ẩn danh..." maxlength="500" required />
+            <button type="submit" class="comment-send-btn">Gửi</button>
+          </form>
+          <div class="comments-list" id="comments-list-${post.id}"></div>
+        </div>
+      `;
+
+      const mediaBox = card.querySelector(".post-media");
+      if (mediaBox && !post.hidden) {
+        mediaMemoryObserver.observe(mediaBox);
+      }
+
+      if (isOpen) {
+        setTimeout(() => renderCommentsForPost(post.id), 0);
+      }
+      return card;
+    }
+
+    function updateSentinel() {
+      const remaining = currentDisplayPosts.length - renderedCount;
+      if (remaining > 0) {
+        feedSentinel.innerHTML = `<button type="button" class="load-more-btn" id="manualLoadMore">Đang tải thêm... (còn ${remaining} bài)</button>`;
+        const btn = document.getElementById("manualLoadMore");
+        if (btn) btn.addEventListener("click", () => appendNextBatch());
+      } else if (currentDisplayPosts.length > 0) {
+        feedSentinel.textContent = "Bạn đã xem hết Dòng thời gian.";
+      } else {
+        feedSentinel.textContent = "";
+      }
+    }
+
+    function appendNextBatch(targetCount = renderedCount + BATCH_SIZE) {
+      const end = Math.min(targetCount, currentDisplayPosts.length);
+      if (end <= renderedCount) {
+        updateSentinel();
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      for (let i = renderedCount; i < end; i++) {
+        frag.appendChild(createPostCard(currentDisplayPosts[i]));
+      }
+      feedEl.appendChild(frag);
+      renderedCount = end;
+      updateSentinel();
+    }
+
+    function renderFeed(keepCount = false) {
+      const allPosts = getAllPosts();
+      photoCountEl.textContent = `${allPosts.length} bài đăng`;
+      document.title = "Dòng thời gian 10A3 25-26";
+
+      currentDisplayPosts = searchFilterNum !== null
+        ? allPosts.filter((p) => p.postNumber === searchFilterNum)
+        : allPosts;
+
+      const desiredCount = keepCount
+        ? Math.max(BATCH_SIZE, Math.min(renderedCount || BATCH_SIZE, currentDisplayPosts.length))
+        : BATCH_SIZE;
+
+      mediaMemoryObserver.disconnect();
+      infiniteScrollObserver.disconnect();
+      feedEl.innerHTML = "";
+      renderedCount = 0;
+
+      if (currentDisplayPosts.length === 0) {
         feedEl.innerHTML = `<div class="empty-feed">${
           searchFilterNum !== null
             ? `Không tìm thấy <strong>Bài đăng ${searchFilterNum}</strong>.`
             : "Chưa có bài đăng nào."
         }</div>`;
+        feedSentinel.textContent = "";
         return;
       }
 
-      displayPosts.forEach((post) => {
-        const card = document.createElement("article");
-        card.className = "post-card";
-        card.id = `post-${post.id}`;
-
-        let mediaHtml = "";
-        if (post.hidden) {
-          mediaHtml = `<div class="hidden-media-box">Hình ảnh / video của bài đăng này hiện đang được ẩn.</div>`;
-        } else {
-          const media = detectMedia(post.url, post.type);
-          if (media.type === "video") {
-            mediaHtml = `<video controls playsinline preload="metadata" src="${escapeHtml(media.src)}"></video>`;
-          } else if (media.type === "iframe") {
-            mediaHtml = `<div class="iframe-wrap"><iframe src="${escapeHtml(media.src)}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
-          } else {
-            mediaHtml = `<img src="${escapeHtml(media.src)}" alt="Bài đăng ${post.postNumber}" loading="lazy" data-zoom-src="${escapeHtml(media.src)}" data-zoom-title="Bài đăng ${post.postNumber}" />`;
-          }
-        }
-
-        const isLiked = likedPosts.has(post.id);
-        const likeCount = likesData[post.id] || 0;
-        const cCount = countComments(post.id);
-        const isOpen = openCommentPosts.has(post.id);
-
-        const adminMenuHtml = isAdmin ? `
-          <div class="post-menu-wrap">
-            <button type="button" class="menu-dots-btn" data-toggle-menu="${post.id}" title="Tùy chọn Quản trị">&#8942;</button>
-            <div class="post-dropdown" id="menu-${post.id}">
-              <button type="button" class="dropdown-item" data-edit-post="${post.id}">Chỉnh sửa bài viết</button>
-              <button type="button" class="dropdown-item" data-hide-post="${post.id}">${post.hidden ? "Hiện lại bài đăng" : "Ẩn bài đăng"}</button>
-              <button type="button" class="dropdown-item danger" data-delete-post="${post.id}">Xóa bài đăng</button>
-            </div>
-          </div>
-        ` : "";
-
-        card.innerHTML = `
-          <div class="post-head">
-            <div>
-              <div class="post-title-row">
-                <span class="post-title">Bài đăng ${post.postNumber}</span>
-                ${post.hidden && isAdmin ? `<span class="hidden-badge">Đang ẩn</span>` : ""}
-              </div>
-              ${post.createdAt ? `<div class="post-meta">${formatTime(post.createdAt)}</div>` : ""}
-            </div>
-            ${adminMenuHtml}
-          </div>
-          ${post.caption ? `<div class="post-caption">${escapeHtml(post.caption)}</div>` : ""}
-          <div class="post-media">${mediaHtml}</div>
-          <div class="post-actions">
-            <button type="button" class="action-btn ${isLiked ? "liked" : ""}" data-like-post="${post.id}">
-              <svg viewBox="0 0 24 24" fill="${isLiked ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-              <span class="like-count">${likeCount}</span>
-            </button>
-            <button type="button" class="action-btn" data-toggle-comments="${post.id}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              <span class="comment-count">${cCount}</span>
-            </button>
-            <button type="button" class="action-btn" data-share-post="${post.id}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-              </svg>
-              <span>Chia sẻ</span>
-            </button>
-          </div>
-          <div class="comments-section ${isOpen ? "open" : ""}" id="comments-sec-${post.id}">
-            <form class="comment-form" data-comment-form="${post.id}">
-              <input type="text" class="comment-input" placeholder="Viết bình luận ẩn danh..." maxlength="500" required />
-              <button type="submit" class="comment-send-btn">Gửi</button>
-            </form>
-            <div class="comments-list" id="comments-list-${post.id}"></div>
-          </div>
-        `;
-
-        feedEl.appendChild(card);
-        if (isOpen) renderCommentsForPost(post.id);
-      });
+      appendNextBatch(desiredCount);
+      infiniteScrollObserver.observe(feedSentinel);
     }
 
-    // ===== CUỘN CHÍNH XÁC TỚI BÀI VIẾT / BÌNH LUẬN ĐƯỢC CHIA SẺ =====
+    // Gom các tín hiệu Firebase liên tiếp để chỉ vẽ lại 1 lần duy nhất
+    function scheduleRenderFeed(keepCount = true) {
+      if (!albumOpened) return;
+      if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
+      renderDebounceTimer = setTimeout(() => {
+        renderDebounceTimer = null;
+        renderFeed(keepCount);
+        tryJumpPending();
+      }, 60);
+    }
+
+    // ===== CUỘN CHÍNH XÁC TỚI BÀI VIẾT / BÌNH LUẬN (HỖ TRỢ INFINITE SCROLL) =====
     function scrollElementIntoCenter(el) {
       if (!el) return;
       el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
     function jumpToTarget(postId, commentId = null, replyId = null) {
-      // Nếu đang lọc tìm kiếm thì tắt lọc để thấy bài
       if (searchFilterNum !== null) {
         searchFilterNum = null;
         postSearchInput.value = "";
         clearSearchBtn.classList.remove("show");
-        renderFeed();
+        renderFeed(false);
+      }
+
+      const idx = currentDisplayPosts.findIndex((p) => p.id === postId);
+      if (idx === -1) return false;
+
+      // Nếu bài cần đến chưa được tải trong batch hiện tại -> tự tải tới đúng bài đó
+      if (idx >= renderedCount) {
+        appendNextBatch(idx + 2);
       }
 
       const card = document.getElementById(`post-${postId}`);
       if (!card) return false;
 
+      // Ép tải ngay ảnh của bài đích
+      const targetImg = card.querySelector("img[data-real-src]");
+      if (targetImg && targetImg.dataset.loaded !== "1") {
+        targetImg.src = targetImg.dataset.realSrc;
+        targetImg.dataset.loaded = "1";
+        targetImg.classList.remove("img-recycled");
+      }
+
       if (commentId) {
         openCommentPosts.add(postId);
-        // Nếu người dùng share reply nhưng link cũ chỉ có c=replyId, tự tìm parent
-        let resolvedParentId = commentId;
         let resolvedTargetElId = replyId ? `comment-${replyId}` : `comment-${commentId}`;
 
         if (!replyId && commentsData[postId]) {
@@ -2004,7 +2144,6 @@
           if (!postC[commentId]) {
             for (const [cid, cObj] of Object.entries(postC)) {
               if (cObj.replies && cObj.replies[commentId]) {
-                resolvedParentId = cid;
                 expandedReplies.add(`${postId}__${cid}`);
                 break;
               }
@@ -2019,17 +2158,16 @@
         renderCommentsForPost(postId);
 
         const targetEl = document.getElementById(resolvedTargetElId) || card;
-        // Cuộn nhiều nhịp để tránh lệch vị trí khi ảnh phía trên mới tải xong
         scrollElementIntoCenter(targetEl);
         setTimeout(() => scrollElementIntoCenter(document.getElementById(resolvedTargetElId) || document.getElementById(`post-${postId}`)), 450);
-        setTimeout(() => scrollElementIntoCenter(document.getElementById(resolvedTargetElId) || document.getElementById(`post-${postId}`)), 1000);
+        setTimeout(() => scrollElementIntoCenter(document.getElementById(resolvedTargetElId) || document.getElementById(`post-${postId}`)), 950);
 
         targetEl.classList.add("highlight");
         setTimeout(() => targetEl.classList.remove("highlight"), 3500);
       } else {
         scrollElementIntoCenter(card);
         setTimeout(() => scrollElementIntoCenter(document.getElementById(`post-${postId}`)), 450);
-        setTimeout(() => scrollElementIntoCenter(document.getElementById(`post-${postId}`)), 1000);
+        setTimeout(() => scrollElementIntoCenter(document.getElementById(`post-${postId}`)), 950);
 
         card.classList.add("highlight");
         setTimeout(() => card.classList.remove("highlight"), 3200);
@@ -2050,7 +2188,7 @@
       }
     }
 
-    // ===== ĐIỀU PHỐI QUYỀN TRUY CẬP (TẠM ĐÓNG / KHÔNG KHÓA / QTV / PHIÊN) =====
+    // ===== ĐIỀU PHỐI QUYỀN TRUY CẬP =====
     function showOnly(sectionName) {
       loadingScreen.style.display = sectionName === "loading" ? "block" : "none";
       maintenanceScreen.style.display = sectionName === "maintenance" ? "block" : "none";
@@ -2067,18 +2205,16 @@
         sessionExpireTimer = null;
       }
 
-      // 1. Quản trị viên: luôn được vào thẳng, không bao giờ cần xác thực lại
       if (isAdmin) {
         adminMaintenanceBar.classList.toggle("show", Boolean(appSettings.maintenanceMode));
+        const wasClosed = !albumOpened;
         showOnly("album");
-        renderFeed();
-        tryJumpPending();
+        if (wasClosed || feedEl.children.length === 0) scheduleRenderFeed(true);
         return;
       }
 
       adminMaintenanceBar.classList.remove("show");
 
-      // 2. Chế độ Tạm đóng Dòng thời gian
       if (appSettings.maintenanceMode) {
         const note = (appSettings.maintenanceNote || "").trim();
         if (note) {
@@ -2091,15 +2227,13 @@
         return;
       }
 
-      // 3. Chế độ Không khóa dòng thời gian (vào thẳng)
       if (appSettings.unlockTimeline) {
+        const wasClosed = !albumOpened;
         showOnly("album");
-        renderFeed();
-        tryJumpPending();
+        if (wasClosed || feedEl.children.length === 0) scheduleRenderFeed(true);
         return;
       }
 
-      // 4. Chế độ bình thường: kiểm tra phiên ghi nhớ & token link chia sẻ
       const savedExpires = parseInt(localStorage.getItem(AUTH_STORAGE_KEY), 10) || 0;
       let sharedExpires = 0;
 
@@ -2113,9 +2247,9 @@
       const effectiveExpires = Math.max(savedExpires, sharedExpires);
       if (effectiveExpires > Date.now()) {
         localStorage.setItem(AUTH_STORAGE_KEY, String(effectiveExpires));
+        const wasClosed = !albumOpened;
         showOnly("album");
-        renderFeed();
-        tryJumpPending();
+        if (wasClosed || feedEl.children.length === 0) scheduleRenderFeed(true);
 
         const remaining = effectiveExpires - Date.now();
         sessionExpireTimer = setTimeout(() => {
@@ -2226,14 +2360,14 @@
         searchFilterNum = Number.isNaN(num) ? null : num;
         clearSearchBtn.classList.add("show");
       }
-      renderFeed();
+      renderFeed(false);
     });
 
     clearSearchBtn.addEventListener("click", () => {
       postSearchInput.value = "";
       searchFilterNum = null;
       clearSearchBtn.classList.remove("show");
-      renderFeed();
+      renderFeed(false);
     });
 
     // ===== TRÌNH XEM ẢNH ZOOM ĐỘC LẬP =====
@@ -2266,6 +2400,7 @@
       lightbox.classList.remove("open");
       lightbox.setAttribute("aria-hidden", "true");
       document.body.style.overflow = "";
+      lbImg.src = BLANK_GIF; // Xả ảnh phóng to khỏi RAM ngay khi đóng
     }
 
     // ===== ĐÓNG DROPDOWN 3 CHẤM KHI BẤM RA NGOÀI =====
@@ -2277,7 +2412,6 @@
 
     // ===== SỰ KIỆN TRÊN FEED =====
     feedEl.addEventListener("click", async (e) => {
-      // Mở / đóng menu 3 chấm QTV
       const menuBtn = e.target.closest("[data-toggle-menu]");
       if (menuBtn) {
         const id = menuBtn.dataset.toggleMenu;
@@ -2288,7 +2422,6 @@
         return;
       }
 
-      // QTV: Chỉnh sửa caption bài viết
       const editBtn = e.target.closest("[data-edit-post]");
       if (editBtn && isAdmin) {
         const postId = editBtn.dataset.editPost;
@@ -2302,7 +2435,6 @@
         return;
       }
 
-      // QTV: Ẩn / Hiện lại bài đăng
       const hideBtn = e.target.closest("[data-hide-post]");
       if (hideBtn && isAdmin) {
         const postId = hideBtn.dataset.hidePost;
@@ -2315,7 +2447,6 @@
         return;
       }
 
-      // QTV: Xóa vĩnh viễn bài đăng (không đôn số)
       const delPost = e.target.closest("[data-delete-post]");
       if (delPost && isAdmin) {
         const postId = delPost.dataset.deletePost;
@@ -2333,14 +2464,12 @@
         return;
       }
 
-      // Xem ảnh phóng to
       const zoomImg = e.target.closest("[data-zoom-src]");
       if (zoomImg) {
         openLightbox(zoomImg.dataset.zoomSrc, zoomImg.dataset.zoomTitle);
         return;
       }
 
-      // Tim bài viết
       const likeBtn = e.target.closest("[data-like-post]");
       if (likeBtn) {
         const postId = likeBtn.dataset.likePost;
@@ -2360,7 +2489,6 @@
         return;
       }
 
-      // Mở / đóng bình luận
       const toggleCmt = e.target.closest("[data-toggle-comments]");
       if (toggleCmt) {
         const postId = toggleCmt.dataset.toggleComments;
@@ -2376,14 +2504,12 @@
         return;
       }
 
-      // Chia sẻ bài viết
       const sharePost = e.target.closest("[data-share-post]");
       if (sharePost) {
         copyShareLink(sharePost.dataset.sharePost);
         return;
       }
 
-      // Tim bình luận gốc
       const likeCmt = e.target.closest("[data-like-comment]");
       if (likeCmt) {
         const [postId, cId] = likeCmt.dataset.likeComment.split("|");
@@ -2400,7 +2526,6 @@
         return;
       }
 
-      // Tim reply
       const likeReply = e.target.closest("[data-like-reply]");
       if (likeReply) {
         const [postId, cId, rId] = likeReply.dataset.likeReply.split("|");
@@ -2417,7 +2542,6 @@
         return;
       }
 
-      // Chia sẻ bình luận gốc
       const shareCmt = e.target.closest("[data-share-comment]");
       if (shareCmt) {
         const [postId, cId] = shareCmt.dataset.shareComment.split("|");
@@ -2425,7 +2549,6 @@
         return;
       }
 
-      // Chia sẻ reply
       const shareRep = e.target.closest("[data-share-reply]");
       if (shareRep) {
         const [postId, cId, rId] = shareRep.dataset.shareReply.split("|");
@@ -2433,7 +2556,6 @@
         return;
       }
 
-      // Mở ô trả lời
       const openReply = e.target.closest("[data-open-reply]");
       if (openReply) {
         const key = openReply.dataset.openReply;
@@ -2444,7 +2566,6 @@
         return;
       }
 
-      // Xem X câu trả lời
       const expandRep = e.target.closest("[data-expand-replies]");
       if (expandRep) {
         expandedReplies.add(expandRep.dataset.expandReplies);
@@ -2452,7 +2573,6 @@
         return;
       }
 
-      // Ẩn các câu trả lời
       const collapseRep = e.target.closest("[data-collapse-replies]");
       if (collapseRep) {
         expandedReplies.delete(collapseRep.dataset.collapseReplies);
@@ -2460,7 +2580,6 @@
         return;
       }
 
-      // QTV xóa bình luận gốc
       const delCmt = e.target.closest("[data-delete-comment]");
       if (delCmt && isAdmin) {
         if (!confirm("Xóa bình luận này (và toàn bộ câu trả lời bên trong)?")) return;
@@ -2470,7 +2589,6 @@
         return;
       }
 
-      // QTV xóa reply
       const delRep = e.target.closest("[data-delete-reply]");
       if (delRep && isAdmin) {
         if (!confirm("Xóa câu trả lời này?")) return;
@@ -2555,7 +2673,7 @@
       window.location.href = window.location.pathname;
     });
 
-    // Mở modal QTV từ mọi màn hình
+    // Mở modal QTV
     function openAdminModal() {
       adminModal.classList.add("open");
       if (isAdmin) renderRecentComments();
@@ -2609,7 +2727,7 @@
       showToast("Đã đăng xuất Quản trị viên.");
     });
 
-    // QTV đăng bài mới (cấp số thứ tự tăng dần, không đôn số khi xóa)
+    // QTV đăng bài mới
     document.getElementById("newPostForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!isAdmin) return;
@@ -2924,19 +3042,13 @@
     onValue(ref(db, "posts"), (snap) => {
       dynamicPosts = snap.val() || {};
       postsLoaded = true;
-      if (albumOpened) {
-        renderFeed();
-        tryJumpPending();
-      }
+      scheduleRenderFeed(true);
     });
 
     onValue(ref(db, "postMeta"), (snap) => {
       postMeta = snap.val() || {};
       metaLoaded = true;
-      if (albumOpened) {
-        renderFeed();
-        tryJumpPending();
-      }
+      scheduleRenderFeed(true);
     });
 
     onValue(ref(db, "likes"), (snap) => {
@@ -2955,6 +3067,7 @@
     });
 
     onAuthStateChanged(auth, (user) => {
+      const prevAdmin = isAdmin;
       isAdmin = Boolean(user && user.uid === ADMIN_UID);
       authReady = true;
 
@@ -2979,6 +3092,9 @@
       }
 
       evaluateAccess();
+      if (prevAdmin !== isAdmin && albumOpened) {
+        scheduleRenderFeed(true);
+      }
     });
   </script>
 </body>
