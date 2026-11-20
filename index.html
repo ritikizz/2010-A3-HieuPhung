@@ -445,7 +445,7 @@
       display: inline-block;
     }
 
-    /* ===== POST CARD (TỐI ƯU HIỆU NĂNG RENDER) ===== */
+    /* ===== POST CARD ===== */
     .feed {
       display: flex;
       flex-direction: column;
@@ -468,7 +468,7 @@
       border-radius: 14px;
       overflow: visible;
       content-visibility: auto;
-      contain-intrinsic-size: auto 520px;
+      contain-intrinsic-size: auto 480px;
       transition: box-shadow 0.3s, border-color 0.3s;
     }
 
@@ -601,7 +601,8 @@
       align-items: center;
       justify-content: center;
       width: 100%;
-      min-height: 240px;
+      min-height: 220px;
+      position: relative;
     }
 
     .post-media img {
@@ -638,6 +639,59 @@
       border: none;
     }
 
+    /* Ảnh bìa Video + nút Play */
+    .video-poster-wrap {
+      position: relative;
+      width: 100%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0b0d11;
+    }
+
+    .video-poster-wrap img {
+      width: 100%;
+      max-height: 76vh;
+      object-fit: contain;
+      display: block;
+      cursor: pointer;
+    }
+
+    .play-overlay-btn {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.8);
+      border: 2px solid rgba(255, 255, 255, 0.88);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.7rem;
+      padding-left: 4px;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    }
+
+    .video-poster-wrap:hover .play-overlay-btn {
+      transform: scale(1.08);
+      background: rgba(37, 99, 235, 0.92);
+    }
+
+    .video-placeholder {
+      width: 100%;
+      min-height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 0.88rem;
+      background: #0b0d11;
+    }
+
     .hidden-media-box {
       width: 100%;
       padding: 44px 20px;
@@ -649,7 +703,6 @@
       border-bottom: 1px dashed #2a303d;
     }
 
-    /* Thanh tải thêm (Infinite Scroll) */
     .feed-sentinel {
       text-align: center;
       padding: 20px 12px;
@@ -1386,7 +1439,7 @@
     </div>
   </div>
 
-  <!-- MODAL CHỈNH SỬA CAPTION BÀI VIẾT (QTV) -->
+  <!-- MODAL CHỈNH SỬA BÀI VIẾT (QTV) -->
   <div class="modal-backdrop" id="editPostModal">
     <div class="modal-box" style="max-width: 480px;">
       <div class="modal-header">
@@ -1397,6 +1450,10 @@
         <div class="form-group">
           <label for="editCaptionInput">Tiêu đề / Caption bài viết</label>
           <textarea id="editCaptionInput" class="textarea-input" placeholder="Nhập caption cho bài viết..."></textarea>
+        </div>
+        <div class="form-group" id="editPosterGroup">
+          <label for="editPosterInput">Link ảnh bìa video (không bắt buộc)</label>
+          <input type="url" id="editPosterInput" class="text-input" placeholder="https://i.ibb.co/..." />
         </div>
         <button type="submit" class="submit-btn">Lưu thay đổi</button>
       </form>
@@ -1411,7 +1468,6 @@
         <button type="button" class="modal-close" id="closeAdminModal">&times;</button>
       </div>
 
-      <!-- Form đăng nhập QTV -->
       <form id="adminLoginForm">
         <div class="form-group">
           <label for="adminEmail">Email quản trị</label>
@@ -1425,7 +1481,6 @@
         <div class="status-banner" id="adminLoginError"></div>
       </form>
 
-      <!-- Bảng điều khiển QTV -->
       <div id="adminDashboard" style="display: none;">
         <div class="admin-tabs">
           <button type="button" class="admin-tab active" data-tab="tabPost">Đăng bài</button>
@@ -1448,6 +1503,10 @@
                 <option value="video">Video (link trực tiếp .mp4/.mov...)</option>
                 <option value="iframe">Video nhúng (YouTube / Google Drive / iframe)</option>
               </select>
+            </div>
+            <div class="form-group">
+              <label for="postPoster">Link ảnh bìa cho video (không bắt buộc — bỏ trống sẽ tự lấy khung hình đầu)</label>
+              <input type="url" id="postPoster" class="text-input" placeholder="https://i.ibb.co/..." />
             </div>
             <div class="form-group">
               <label for="postCaption">Mô tả / Caption (không bắt buộc)</label>
@@ -1534,7 +1593,7 @@
     const AUTH_STORAGE_KEY = "album_auth_expires_at";
     const LIKED_POSTS_KEY = "album_liked_posts";
     const LIKED_COMMENTS_KEY = "album_liked_comments";
-    const BATCH_SIZE = 5; // Mỗi lần chỉ tải thêm 5 bài để tiết kiệm RAM
+    const BATCH_SIZE = 4; // Tải gọn 4 bài mỗi đợt để giữ RAM & băng thông cực thấp
     const BLANK_GIF = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
     const app = initializeApp(firebaseConfig);
@@ -1641,7 +1700,6 @@
     let likesData = {};
     let commentsData = {};
 
-    // Infinite scroll state
     let currentDisplayPosts = [];
     let renderedCount = 0;
     let renderDebounceTimer = null;
@@ -1661,20 +1719,68 @@
     };
     const sharedToken = urlParams.get("t");
 
-    // ===== OBSERVER TỐI ƯU RAM (XẢ ẢNH XA KHUNG NHÌN + DỪNG VIDEO) =====
+    // ===== NÉN ẢNH CHO FEED (GIẢM 80-90% BĂNG THÔNG & RAM) =====
+    function getOptimizedImageUrl(originalUrl) {
+      if (!originalUrl || !/^https?:\/\//i.test(originalUrl)) return originalUrl;
+      if (originalUrl.includes("i.ytimg.com")) return originalUrl;
+      return `https://wsrv.nl/?url=${encodeURIComponent(originalUrl)}&w=900&q=80&output=webp`;
+    }
+
+    function buildVideoPreviewSrc(url) {
+      return url.includes("#") ? url : `${url}#t=0.5`;
+    }
+
+    function destroyVideoInBox(mediaBox) {
+      const video = mediaBox.querySelector("video");
+      if (video) {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+        video.remove();
+      }
+      const iframe = mediaBox.querySelector("iframe");
+      if (iframe) {
+        iframe.src = "about:blank";
+        iframe.remove();
+      }
+    }
+
+    function renderPosterPlaceholder(mediaBox, posterUrl, originalMediaSrc, mediaType) {
+      const optPoster = getOptimizedImageUrl(posterUrl);
+      mediaBox.innerHTML = `
+        <div class="video-poster-wrap" data-play-media-type="${mediaType}" data-play-media-src="${escapeHtml(originalMediaSrc)}">
+          <img src="${optPoster}" data-fallback-src="${escapeHtml(posterUrl)}" alt="Ảnh bìa video" decoding="async" />
+          <div class="play-overlay-btn" title="Phát video">&#9654;</div>
+        </div>
+      `;
+      const img = mediaBox.querySelector("img");
+      if (img) {
+        img.addEventListener("error", () => {
+          if (img.dataset.fb !== "1") {
+            img.dataset.fb = "1";
+            img.src = img.dataset.fallbackSrc;
+          }
+        });
+      }
+    }
+
+    // ===== OBSERVER TỐI ƯU RAM CHẶT CHẼ (VÙNG NHÌN 300PX) =====
     const mediaMemoryObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         const mediaBox = entry.target;
-        const img = mediaBox.querySelector("img[data-real-src]");
-        if (img) {
+        const kind = mediaBox.dataset.mediaKind;
+
+        // 1. ẢNH THƯỜNG
+        if (kind === "image") {
+          const img = mediaBox.querySelector("img[data-real-src]");
+          if (!img) return;
           if (entry.isIntersecting) {
             if (img.dataset.loaded !== "1") {
-              img.src = img.dataset.realSrc;
+              img.src = img.dataset.optSrc || img.dataset.realSrc;
               img.dataset.loaded = "1";
               img.classList.remove("img-recycled");
             }
           } else {
-            // Khóa chiều cao hiện tại để không bị giật trang, rồi xả ảnh khỏi RAM
             if (img.dataset.loaded === "1" && mediaBox.offsetHeight > 0) {
               mediaBox.style.minHeight = `${mediaBox.offsetHeight}px`;
               img.classList.add("img-recycled");
@@ -1682,21 +1788,84 @@
               img.dataset.loaded = "0";
             }
           }
+          return;
         }
 
-        const video = mediaBox.querySelector("video");
-        if (video && !entry.isIntersecting && !video.paused) {
-          video.pause();
+        // 2. VIDEO TRỰC TIẾP (KHÔNG CÓ ẢNH BÌA RIÊNG) -> HIỆN KHUNG HÌNH ĐẦU KHI VÀO TẦM NHÌN, XẢ RAM KHI RỜI KHỎI
+        if (kind === "video-direct") {
+          const vSrc = mediaBox.dataset.mediaSrc;
+          if (entry.isIntersecting) {
+            if (!mediaBox.querySelector("video")) {
+              mediaBox.innerHTML = `<video controls playsinline preload="metadata" src="${escapeHtml(buildVideoPreviewSrc(vSrc))}"></video>`;
+            }
+          } else {
+            const v = mediaBox.querySelector("video");
+            if (v) {
+              if (mediaBox.offsetHeight > 180) {
+                mediaBox.style.minHeight = `${mediaBox.offsetHeight}px`;
+              }
+              destroyVideoInBox(mediaBox);
+              mediaBox.innerHTML = `<div class="video-placeholder">Cuộn tới để xem video</div>`;
+            }
+          }
+          return;
+        }
+
+        // 3. VIDEO CÓ ẢNH BÌA RIÊNG HOẶC YOUTUBE -> HIỆN ẢNH BÌA NHẸ, XẢ TRÌNH PHÁT KHI RỜI KHỎI
+        if (kind === "video-poster" || kind === "iframe-poster") {
+          const posterUrl = mediaBox.dataset.posterSrc;
+          const mSrc = mediaBox.dataset.mediaSrc;
+          const playType = kind === "video-poster" ? "video" : "iframe";
+
+          if (entry.isIntersecting) {
+            if (!mediaBox.querySelector("video") && !mediaBox.querySelector("iframe") && !mediaBox.querySelector(".video-poster-wrap")) {
+              renderPosterPlaceholder(mediaBox, posterUrl, mSrc, playType);
+            }
+          } else {
+            if (mediaBox.offsetHeight > 180) {
+              mediaBox.style.minHeight = `${mediaBox.offsetHeight}px`;
+            }
+            destroyVideoInBox(mediaBox);
+            mediaBox.innerHTML = `<div class="video-placeholder"></div>`;
+          }
+          return;
+        }
+
+        // 4. IFRAME KHÁC (GOOGLE DRIVE...)
+        if (kind === "iframe-direct") {
+          const mSrc = mediaBox.dataset.mediaSrc;
+          if (entry.isIntersecting) {
+            if (!mediaBox.querySelector("iframe")) {
+              mediaBox.innerHTML = `<div class="iframe-wrap"><iframe loading="lazy" src="${escapeHtml(mSrc)}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
+            }
+          } else {
+            if (mediaBox.querySelector("iframe")) {
+              if (mediaBox.offsetHeight > 180) {
+                mediaBox.style.minHeight = `${mediaBox.offsetHeight}px`;
+              }
+              destroyVideoInBox(mediaBox);
+              mediaBox.innerHTML = `<div class="video-placeholder">Cuộn tới để xem video</div>`;
+            }
+          }
         }
       });
-    }, { rootMargin: "1400px 0px 1400px 0px" });
+    }, { rootMargin: "300px 0px 300px 0px" });
 
-    // Observer tự động tải thêm bài khi lướt gần cuối
+    // Chỉ tải thêm 4 bài khi cuộn sát đáy (150px)
     const infiniteScrollObserver = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && renderedCount < currentDisplayPosts.length) {
         appendNextBatch();
       }
-    }, { rootMargin: "700px 0px" });
+    }, { rootMargin: "150px 0px" });
+
+    // Chỉ cho phép 1 video phát cùng lúc để tiết kiệm CPU/RAM
+    feedEl.addEventListener("play", (e) => {
+      if (e.target && e.target.tagName === "VIDEO") {
+        feedEl.querySelectorAll("video").forEach((v) => {
+          if (v !== e.target && !v.paused) v.pause();
+        });
+      }
+    }, true);
 
     // ===== TIỆN ÍCH =====
     let toastTimer = null;
@@ -1732,26 +1901,34 @@
     }
 
     function detectMedia(url, forcedType = "auto") {
-      if (forcedType === "image") return { type: "image", src: url };
-      if (forcedType === "video") return { type: "video", src: url };
+      if (forcedType === "image") return { type: "image", src: url, autoPoster: "" };
+      if (forcedType === "video") return { type: "video", src: url, autoPoster: "" };
 
       const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
       if (ytMatch) {
-        return { type: "iframe", src: `https://www.youtube.com/embed/${ytMatch[1]}` };
+        return {
+          type: "iframe",
+          src: `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`,
+          autoPoster: `https://i.ytimg.com/vi/${ytMatch[1]}/hqdefault.jpg`
+        };
       }
 
       const gdMatch = url.match(/drive\.google\.com\/file\/d\/([A-Za-z0-9_-]+)/);
       if (gdMatch) {
-        return { type: "iframe", src: `https://drive.google.com/file/d/${gdMatch[1]}/preview` };
+        return {
+          type: "iframe",
+          src: `https://drive.google.com/file/d/${gdMatch[1]}/preview`,
+          autoPoster: ""
+        };
       }
 
-      if (forcedType === "iframe") return { type: "iframe", src: url };
+      if (forcedType === "iframe") return { type: "iframe", src: url, autoPoster: "" };
 
       if (/\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url)) {
-        return { type: "video", src: url };
+        return { type: "video", src: url, autoPoster: "" };
       }
 
-      return { type: "image", src: url };
+      return { type: "image", src: url, autoPoster: "" };
     }
 
     function getAllPosts() {
@@ -1764,6 +1941,7 @@
           postNumber: num,
           url,
           type: "image",
+          poster: "",
           caption: meta.caption || "",
           hidden: Boolean(meta.hidden),
           deleted: Boolean(meta.deleted),
@@ -1785,6 +1963,7 @@
           postNumber: num,
           url: data.url,
           type: data.type || "auto",
+          poster: meta.poster !== undefined ? meta.poster : (data.poster || ""),
           caption: meta.caption !== undefined ? meta.caption : (data.caption || ""),
           hidden: meta.hidden !== undefined ? Boolean(meta.hidden) : Boolean(data.hidden),
           deleted: Boolean(meta.deleted) || Boolean(data.deleted),
@@ -1940,25 +2119,11 @@
       }).join("");
     }
 
-    // ===== TẠO TỪNG THẺ BÀI ĐĂNG (NHẸ & TỐI ƯU RAM) =====
+    // ===== TẠO THẺ BÀI ĐĂNG TỐI ƯU =====
     function createPostCard(post) {
       const card = document.createElement("article");
       card.className = "post-card";
       card.id = `post-${post.id}`;
-
-      let mediaHtml = "";
-      if (post.hidden) {
-        mediaHtml = `<div class="hidden-media-box">Hình ảnh / video của bài đăng này hiện đang được ẩn.</div>`;
-      } else {
-        const media = detectMedia(post.url, post.type);
-        if (media.type === "video") {
-          mediaHtml = `<video controls playsinline preload="none" src="${escapeHtml(media.src)}"></video>`;
-        } else if (media.type === "iframe") {
-          mediaHtml = `<div class="iframe-wrap"><iframe loading="lazy" src="${escapeHtml(media.src)}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
-        } else {
-          mediaHtml = `<img src="${BLANK_GIF}" data-real-src="${escapeHtml(media.src)}" data-loaded="0" class="img-recycled" alt="Bài đăng ${post.postNumber}" decoding="async" data-zoom-src="${escapeHtml(media.src)}" data-zoom-title="Bài đăng ${post.postNumber}" />`;
-        }
-      }
 
       const isLiked = likedPosts.has(post.id);
       const likeCount = likesData[post.id] || 0;
@@ -1988,7 +2153,7 @@
           ${adminMenuHtml}
         </div>
         ${post.caption ? `<div class="post-caption">${escapeHtml(post.caption)}</div>` : ""}
-        <div class="post-media">${mediaHtml}</div>
+        <div class="post-media"></div>
         <div class="post-actions">
           <button type="button" class="action-btn ${isLiked ? "liked" : ""}" data-like-post="${post.id}">
             <svg viewBox="0 0 24 24" fill="${isLiked ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
@@ -2020,7 +2185,56 @@
       `;
 
       const mediaBox = card.querySelector(".post-media");
-      if (mediaBox && !post.hidden) {
+      if (post.hidden) {
+        mediaBox.innerHTML = `<div class="hidden-media-box">Hình ảnh / video của bài đăng này hiện đang được ẩn.</div>`;
+      } else {
+        const media = detectMedia(post.url, post.type);
+        const poster = (post.poster || "").trim() || media.autoPoster;
+
+        if (media.type === "video") {
+          if (poster) {
+            mediaBox.dataset.mediaKind = "video-poster";
+            mediaBox.dataset.mediaSrc = media.src;
+            mediaBox.dataset.posterSrc = poster;
+            mediaBox.innerHTML = `<div class="video-placeholder"></div>`;
+          } else {
+            mediaBox.dataset.mediaKind = "video-direct";
+            mediaBox.dataset.mediaSrc = media.src;
+            mediaBox.innerHTML = `<div class="video-placeholder">Đang tải ảnh bìa video...</div>`;
+          }
+        } else if (media.type === "iframe") {
+          if (poster) {
+            mediaBox.dataset.mediaKind = "iframe-poster";
+            mediaBox.dataset.mediaSrc = media.src;
+            mediaBox.dataset.posterSrc = poster;
+            mediaBox.innerHTML = `<div class="video-placeholder"></div>`;
+          } else {
+            mediaBox.dataset.mediaKind = "iframe-direct";
+            mediaBox.dataset.mediaSrc = media.src;
+            mediaBox.innerHTML = `<div class="video-placeholder">Đang tải video...</div>`;
+          }
+        } else {
+          mediaBox.dataset.mediaKind = "image";
+          const img = document.createElement("img");
+          img.src = BLANK_GIF;
+          img.dataset.realSrc = media.src;
+          img.dataset.optSrc = getOptimizedImageUrl(media.src);
+          img.dataset.loaded = "0";
+          img.className = "img-recycled";
+          img.alt = `Bài đăng ${post.postNumber}`;
+          img.decoding = "async";
+          img.dataset.zoomSrc = media.src;
+          img.dataset.zoomTitle = `Bài đăng ${post.postNumber}`;
+          // Tự động chuyển về ảnh gốc nếu bản nén gặp lỗi
+          img.addEventListener("error", () => {
+            if (img.dataset.loaded === "1" && img.dataset.fb !== "1") {
+              img.dataset.fb = "1";
+              img.src = img.dataset.realSrc;
+            }
+          });
+          mediaBox.appendChild(img);
+        }
+
         mediaMemoryObserver.observe(mediaBox);
       }
 
@@ -2033,7 +2247,7 @@
     function updateSentinel() {
       const remaining = currentDisplayPosts.length - renderedCount;
       if (remaining > 0) {
-        feedSentinel.innerHTML = `<button type="button" class="load-more-btn" id="manualLoadMore">Đang tải thêm... (còn ${remaining} bài)</button>`;
+        feedSentinel.innerHTML = `<button type="button" class="load-more-btn" id="manualLoadMore">Tải thêm bài đăng (còn ${remaining} bài)</button>`;
         const btn = document.getElementById("manualLoadMore");
         if (btn) btn.addEventListener("click", () => appendNextBatch());
       } else if (currentDisplayPosts.length > 0) {
@@ -2072,6 +2286,8 @@
         ? Math.max(BATCH_SIZE, Math.min(renderedCount || BATCH_SIZE, currentDisplayPosts.length))
         : BATCH_SIZE;
 
+      // Xả toàn bộ video cũ trước khi vẽ lại
+      feedEl.querySelectorAll(".post-media").forEach((box) => destroyVideoInBox(box));
       mediaMemoryObserver.disconnect();
       infiniteScrollObserver.disconnect();
       feedEl.innerHTML = "";
@@ -2091,7 +2307,6 @@
       infiniteScrollObserver.observe(feedSentinel);
     }
 
-    // Gom các tín hiệu Firebase liên tiếp để chỉ vẽ lại 1 lần duy nhất
     function scheduleRenderFeed(keepCount = true) {
       if (!albumOpened) return;
       if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
@@ -2099,10 +2314,10 @@
         renderDebounceTimer = null;
         renderFeed(keepCount);
         tryJumpPending();
-      }, 60);
+      }, 80);
     }
 
-    // ===== CUỘN CHÍNH XÁC TỚI BÀI VIẾT / BÌNH LUẬN (HỖ TRỢ INFINITE SCROLL) =====
+    // ===== CUỘN CHÍNH XÁC TỚI BÀI VIẾT / BÌNH LUẬN =====
     function scrollElementIntoCenter(el) {
       if (!el) return;
       el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -2119,7 +2334,6 @@
       const idx = currentDisplayPosts.findIndex((p) => p.id === postId);
       if (idx === -1) return false;
 
-      // Nếu bài cần đến chưa được tải trong batch hiện tại -> tự tải tới đúng bài đó
       if (idx >= renderedCount) {
         appendNextBatch(idx + 2);
       }
@@ -2127,10 +2341,9 @@
       const card = document.getElementById(`post-${postId}`);
       if (!card) return false;
 
-      // Ép tải ngay ảnh của bài đích
       const targetImg = card.querySelector("img[data-real-src]");
       if (targetImg && targetImg.dataset.loaded !== "1") {
-        targetImg.src = targetImg.dataset.realSrc;
+        targetImg.src = targetImg.dataset.optSrc || targetImg.dataset.realSrc;
         targetImg.dataset.loaded = "1";
         targetImg.classList.remove("img-recycled");
       }
@@ -2387,7 +2600,7 @@
       scale = 1;
       panX = 0;
       panY = 0;
-      lbImg.src = src;
+      lbImg.src = src; // Tải ảnh gốc nét căng khi phóng to
       lbTitle.textContent = title || "Xem ảnh";
       lbOriginal.href = src;
       applyTransform();
@@ -2400,10 +2613,9 @@
       lightbox.classList.remove("open");
       lightbox.setAttribute("aria-hidden", "true");
       document.body.style.overflow = "";
-      lbImg.src = BLANK_GIF; // Xả ảnh phóng to khỏi RAM ngay khi đóng
+      lbImg.src = BLANK_GIF;
     }
 
-    // ===== ĐÓNG DROPDOWN 3 CHẤM KHI BẤM RA NGOÀI =====
     document.addEventListener("click", (e) => {
       if (!e.target.closest(".post-menu-wrap")) {
         document.querySelectorAll(".post-dropdown.open").forEach((m) => m.classList.remove("open"));
@@ -2412,6 +2624,20 @@
 
     // ===== SỰ KIỆN TRÊN FEED =====
     feedEl.addEventListener("click", async (e) => {
+      // Bấm Play trên ảnh bìa video / YouTube
+      const posterWrap = e.target.closest(".video-poster-wrap");
+      if (posterWrap) {
+        const mediaBox = posterWrap.closest(".post-media");
+        const mType = posterWrap.dataset.playMediaType;
+        const mSrc = posterWrap.dataset.playMediaSrc;
+        if (mType === "video") {
+          mediaBox.innerHTML = `<video controls autoplay playsinline src="${escapeHtml(mSrc)}"></video>`;
+        } else {
+          mediaBox.innerHTML = `<div class="iframe-wrap"><iframe src="${escapeHtml(mSrc)}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
+        }
+        return;
+      }
+
       const menuBtn = e.target.closest("[data-toggle-menu]");
       if (menuBtn) {
         const id = menuBtn.dataset.toggleMenu;
@@ -2430,6 +2656,16 @@
         editingPostId = postId;
         document.getElementById("editPostModalTitle").textContent = `Chỉnh sửa Bài đăng ${post.postNumber}`;
         document.getElementById("editCaptionInput").value = post.caption || "";
+        const media = detectMedia(post.url, post.type);
+        const posterGroup = document.getElementById("editPosterGroup");
+        const posterInput = document.getElementById("editPosterInput");
+        if (media.type === "video" || media.type === "iframe") {
+          posterGroup.style.display = "block";
+          posterInput.value = post.poster || "";
+        } else {
+          posterGroup.style.display = "none";
+          posterInput.value = "";
+        }
         document.querySelectorAll(".post-dropdown.open").forEach((m) => m.classList.remove("open"));
         editPostModal.classList.add("open");
         return;
@@ -2636,7 +2872,7 @@
       }
     });
 
-    // Lưu chỉnh sửa caption
+    // Lưu chỉnh sửa caption & ảnh bìa video
     document.getElementById("closeEditPostModal").addEventListener("click", () => {
       editPostModal.classList.remove("open");
       editingPostId = null;
@@ -2652,13 +2888,16 @@
       e.preventDefault();
       if (!isAdmin || !editingPostId) return;
       const newCaption = document.getElementById("editCaptionInput").value.trim();
-      await update(ref(db, `postMeta/${editingPostId}`), { caption: newCaption });
+      const payload = { caption: newCaption };
+      if (document.getElementById("editPosterGroup").style.display !== "none") {
+        payload.poster = document.getElementById("editPosterInput").value.trim();
+      }
+      await update(ref(db, `postMeta/${editingPostId}`), payload);
       editPostModal.classList.remove("open");
       editingPostId = null;
       showToast("Đã lưu chỉnh sửa bài viết!");
     });
 
-    // Nút Quay về trang chủ
     document.getElementById("backHomeBtn").addEventListener("click", () => {
       if (isAdmin) {
         showToast("Bạn đang ở quyền Quản trị viên. Hãy đăng xuất QTV để quay về màn hình xác thực.");
@@ -2673,7 +2912,6 @@
       window.location.href = window.location.pathname;
     });
 
-    // Mở modal QTV
     function openAdminModal() {
       adminModal.classList.add("open");
       if (isAdmin) renderRecentComments();
@@ -2733,6 +2971,7 @@
       if (!isAdmin) return;
       const url = document.getElementById("postUrl").value.trim();
       const type = document.getElementById("postType").value;
+      const poster = document.getElementById("postPoster").value.trim();
       const caption = document.getElementById("postCaption").value.trim();
       if (!url) return;
 
@@ -2750,6 +2989,7 @@
         postNumber: assignedNumber,
         url,
         type,
+        poster,
         caption,
         createdAt: Date.now()
       });
