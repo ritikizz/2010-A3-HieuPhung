@@ -700,7 +700,7 @@
       font-size: 0.95rem;
     }
 
-    /* ===== POST CARD (MOBILE: DỌC TỰ NHIÊN | PC: LƯỚI 2 CỘT NGANG) ===== */
+    /* ===== POST CARD (MOBILE: DỌC TỰ NHIÊN | PC: LƯỚI 2 CỘT NGANG + NỀN MỜ) ===== */
     .post-card {
       background: #171a21;
       border: 1px solid #262b36;
@@ -741,6 +741,11 @@
       justify-content: center;
       width: 100%;
       position: relative;
+      overflow: hidden;
+    }
+
+    .media-blur-bg {
+      display: none;
     }
 
     .post-actions {
@@ -903,7 +908,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #0b0d11;
+      background: transparent;
     }
 
     .video-poster-wrap img {
@@ -1152,7 +1157,7 @@
       font-size: 0.82rem;
     }
 
-    /* ===== TỐI ƯU GIAO DIỆN MÁY TÍNH (DESKTOP >= 960px) ===== */
+    /* ===== TỐI ƯU GIAO DIỆN MÁY TÍNH Ở 100% ZOOM (DESKTOP >= 960px) ===== */
     @media (min-width: 960px) {
       body {
         padding: 16px 24px 64px;
@@ -1179,13 +1184,18 @@
         flex: 0 1 460px;
       }
 
-      /* Lưới 2 cột trực tiếp trên .post-card (không cần display: contents) */
+      /* Căn giữa cột bài viết rộng 880px -> ảnh dọc vừa vặn, không bị khoảng đen lớn */
+      .feed:not(.grid-mode) {
+        max-width: 880px;
+        margin: 0 auto;
+      }
+
       .post-card {
         display: grid;
-        grid-template-columns: minmax(0, 1.55fr) 370px;
+        grid-template-columns: minmax(0, 1fr) 360px;
         grid-template-rows: auto auto auto minmax(0, 1fr);
-        max-height: calc(100vh - 165px);
-        min-height: 440px;
+        max-height: min(76vh, 620px);
+        min-height: 410px;
         overflow: hidden;
       }
 
@@ -1193,14 +1203,50 @@
         grid-column: 1;
         grid-row: 1 / 5;
         height: 100%;
-        max-height: calc(100vh - 165px);
-        background: #080a0d;
+        max-height: min(76vh, 620px);
+        background: #0b0d11;
       }
 
-      .post-media img,
-      .post-media video,
-      .video-poster-wrap img {
-        max-height: calc(100vh - 165px);
+      /* Nền mờ chuyển sắc từ chính bức ảnh + bo tròn 4 góc ảnh mềm mại */
+      .post-media.has-blur {
+        padding: 14px;
+      }
+
+      .post-media.has-blur .media-blur-bg {
+        display: block;
+        position: absolute;
+        inset: -28px;
+        background-size: cover;
+        background-position: center;
+        filter: blur(28px) saturate(1.25) brightness(0.42);
+        transform: scale(1.12);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .post-media.has-blur > img,
+      .post-media.has-blur > .video-poster-wrap {
+        position: relative;
+        z-index: 1;
+        width: auto;
+        height: auto;
+        max-width: 100%;
+        max-height: calc(min(76vh, 620px) - 28px);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+      }
+
+      .post-media.has-blur > .video-poster-wrap img {
+        width: auto;
+        height: auto;
+        max-width: 100%;
+        max-height: calc(min(76vh, 620px) - 28px);
+        border-radius: 10px;
+      }
+
+      .post-media video {
+        max-height: min(76vh, 620px);
       }
 
       .post-head {
@@ -1249,8 +1295,37 @@
         gap: 10px;
       }
 
+      /* Modal chi tiết mở từ Lưới: ôm gọn theo tỷ lệ ảnh/video, bo góc mềm */
       .modal-box.post-detail-box {
-        max-width: 1040px;
+        width: fit-content;
+        max-width: min(92vw, 940px);
+      }
+
+      #postDetailModal .post-card {
+        grid-template-columns: minmax(340px, auto) 360px;
+        max-height: min(84vh, 660px);
+        min-height: 420px;
+      }
+
+      #postDetailModal .post-media {
+        max-height: min(84vh, 660px);
+        max-width: min(56vw, 580px);
+      }
+
+      #postDetailModal .post-media.is-embed {
+        width: min(56vw, 580px);
+      }
+
+      #postDetailModal .post-media.has-blur > img,
+      #postDetailModal .post-media.has-blur > .video-poster-wrap,
+      #postDetailModal .post-media.has-blur > .video-poster-wrap img {
+        max-height: calc(min(84vh, 660px) - 28px);
+        max-width: calc(min(56vw, 580px) - 28px);
+      }
+
+      #postDetailModal .post-media video {
+        max-height: min(84vh, 660px);
+        max-width: min(56vw, 580px);
       }
     }
 
@@ -3093,7 +3168,7 @@
       }
     }, true);
 
-    // ===== TẠO THẺ BÀI ĐĂNG (KHÔNG DÙNG display: contents -> HOẠT ĐỘNG 100% TRÊN MỌI DI ĐỘNG) =====
+    // ===== TẠO THẺ BÀI ĐĂNG (KÈM NỀN MỜ CHUYỂN SẮC TRÊN MÁY TÍNH) =====
     function createPostCard(post, isDetailModal = false) {
       const card = document.createElement("article");
       card.className = "post-card";
@@ -3175,15 +3250,22 @@
         if (media.type === "video") {
           if (poster) {
             const optPoster = getOptimizedImageUrl(poster, 900);
+            mediaBox.classList.add("has-blur");
             mediaBox.innerHTML = `
+              <div class="media-blur-bg" style="background-image:url('${escapeHtml(optPoster)}')"></div>
               <div class="video-poster-wrap" data-play-media-type="video" data-play-media-src="${escapeHtml(media.src)}">
                 <img src="${optPoster}" loading="lazy" decoding="async" alt="Ảnh bìa video" />
                 <div class="play-overlay-btn" title="Phát video">&#9654;</div>
               </div>
             `;
             const pImg = mediaBox.querySelector("img");
+            const bgEl = mediaBox.querySelector(".media-blur-bg");
             pImg.addEventListener("error", () => {
-              if (pImg.dataset.fb !== "1") { pImg.dataset.fb = "1"; pImg.src = poster; }
+              if (pImg.dataset.fb !== "1") {
+                pImg.dataset.fb = "1";
+                pImg.src = poster;
+                if (bgEl) bgEl.style.backgroundImage = `url('${poster}')`;
+              }
             });
           } else {
             const previewUrl = media.src.includes("#") ? media.src : `${media.src}#t=0.1`;
@@ -3198,29 +3280,49 @@
         } else if (media.type === "iframe") {
           if (poster) {
             const optPoster = getOptimizedImageUrl(poster, 900);
+            mediaBox.classList.add("has-blur");
             mediaBox.innerHTML = `
+              <div class="media-blur-bg" style="background-image:url('${escapeHtml(optPoster)}')"></div>
               <div class="video-poster-wrap" data-play-media-type="iframe" data-play-media-src="${escapeHtml(media.src)}">
                 <img src="${optPoster}" loading="lazy" decoding="async" alt="Ảnh bìa video" />
                 <div class="play-overlay-btn" title="Phát video">&#9654;</div>
               </div>
             `;
             const pImg = mediaBox.querySelector("img");
+            const bgEl = mediaBox.querySelector(".media-blur-bg");
             pImg.addEventListener("error", () => {
-              if (pImg.dataset.fb !== "1") { pImg.dataset.fb = "1"; pImg.src = poster; }
+              if (pImg.dataset.fb !== "1") {
+                pImg.dataset.fb = "1";
+                pImg.src = poster;
+                if (bgEl) bgEl.style.backgroundImage = `url('${poster}')`;
+              }
             });
           } else {
+            mediaBox.classList.add("is-embed");
             mediaBox.innerHTML = `<div class="iframe-wrap"><iframe loading="lazy" src="${escapeHtml(media.src)}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
           }
         } else {
+          const optSrc = getOptimizedImageUrl(media.src, 900);
+          mediaBox.classList.add("has-blur");
+
+          const blurBg = document.createElement("div");
+          blurBg.className = "media-blur-bg";
+          blurBg.style.backgroundImage = `url("${optSrc}")`;
+          mediaBox.appendChild(blurBg);
+
           const img = document.createElement("img");
-          img.src = getOptimizedImageUrl(media.src, 900);
+          img.src = optSrc;
           img.loading = "lazy";
           img.decoding = "async";
           img.alt = `Bài đăng ${post.postNumber}`;
           img.dataset.zoomSrc = media.src;
           img.dataset.zoomTitle = `Bài đăng ${post.postNumber}`;
           img.addEventListener("error", () => {
-            if (img.dataset.fb !== "1") { img.dataset.fb = "1"; img.src = media.src; }
+            if (img.dataset.fb !== "1") {
+              img.dataset.fb = "1";
+              img.src = media.src;
+              blurBg.style.backgroundImage = `url("${media.src}")`;
+            }
           });
           mediaBox.appendChild(img);
         }
@@ -4117,6 +4219,7 @@
         const mediaBox = posterWrap.closest(".post-media");
         const mType = posterWrap.dataset.playMediaType;
         const mSrc = posterWrap.dataset.playMediaSrc;
+        mediaBox.classList.remove("has-blur");
         if (mType === "video") {
           mediaBox.innerHTML = "";
           const vid = document.createElement("video");
@@ -4130,6 +4233,7 @@
             videoAutoPauseObserver.observe(vid);
           }
         } else {
+          mediaBox.classList.add("is-embed");
           mediaBox.innerHTML = `<div class="iframe-wrap"><iframe src="${escapeHtml(mSrc)}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
         }
         return;
