@@ -393,7 +393,7 @@
       flex-direction: column;
       gap: 10px;
       border-bottom: 1px solid #262a34;
-      padding: 10px 2px 12px;
+      padding: 8px 2px 12px;
       margin-bottom: 16px;
     }
 
@@ -452,20 +452,20 @@
       display: flex;
       gap: 8px;
       align-items: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
     }
 
     .search-bar {
+      position: relative;
       flex: 1;
-      min-width: 180px;
+      min-width: 0;
       display: flex;
-      gap: 6px;
       align-items: center;
     }
 
     .search-input {
-      flex: 1;
-      padding: 8px 13px;
+      width: 100%;
+      padding: 8px 34px 8px 13px;
       background: #171a21;
       border: 1px solid #2e3442;
       border-radius: 10px;
@@ -480,21 +480,35 @@
 
     .search-clear-btn {
       display: none;
-      padding: 8px 11px;
-      background: #222733;
-      border: 1px solid #334155;
-      color: #cbd5e1;
-      border-radius: 10px;
-      font-size: 0.82rem;
+      position: absolute;
+      right: 7px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #2b3140;
+      border: none;
+      color: #e2e8f0;
+      font-size: 1rem;
+      line-height: 1;
       cursor: pointer;
-      white-space: nowrap;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .search-clear-btn:hover {
+      background: #475569;
+      color: #fff;
     }
 
     .search-clear-btn.show {
-      display: inline-block;
+      display: inline-flex;
     }
 
     .view-switcher {
+      flex-shrink: 0;
       display: inline-flex;
       background: #171a21;
       border: 1px solid #2e3442;
@@ -507,7 +521,7 @@
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      padding: 6px 11px;
+      padding: 6px 10px;
       border-radius: 7px;
       border: none;
       background: transparent;
@@ -515,6 +529,7 @@
       font-size: 0.82rem;
       font-weight: 600;
       cursor: pointer;
+      white-space: nowrap;
       transition: background 0.2s, color 0.2s;
     }
 
@@ -685,12 +700,14 @@
       font-size: 0.95rem;
     }
 
-    /* ===== POST CARD ===== */
+    /* ===== POST CARD (MOBILE: DỌC 1 CỘT | PC: 2 CỘT NGANG) ===== */
     .post-card {
       background: #171a21;
       border: 1px solid #262b36;
       border-radius: 14px;
       overflow: visible;
+      display: flex;
+      flex-direction: column;
     }
 
     .post-card.highlight {
@@ -698,7 +715,12 @@
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
     }
 
+    .post-sidebar {
+      display: contents;
+    }
+
     .post-head {
+      order: 1;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -706,6 +728,49 @@
       border-bottom: 1px solid #222631;
       gap: 10px;
       position: relative;
+    }
+
+    .post-caption {
+      order: 2;
+      padding: 12px 16px 8px;
+      font-size: 0.94rem;
+      color: #e2e8f0;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .post-media {
+      order: 3;
+      background: #0b0d11;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      position: relative;
+    }
+
+    .post-actions {
+      order: 4;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid #222631;
+      padding: 6px 8px;
+      gap: 6px;
+    }
+
+    .comments-section {
+      order: 5;
+      display: none;
+      border-top: 1px solid #222631;
+      background: #13161c;
+      padding: 14px 16px;
+      border-bottom-left-radius: 14px;
+      border-bottom-right-radius: 14px;
+    }
+
+    .comments-section.open {
+      display: block;
     }
 
     .post-head-right {
@@ -811,24 +876,6 @@
       background: rgba(220, 38, 38, 0.16);
     }
 
-    .post-caption {
-      padding: 12px 16px 8px;
-      font-size: 0.94rem;
-      color: #e2e8f0;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .post-media {
-      background: #0b0d11;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      position: relative;
-    }
-
     .post-media img {
       width: 100%;
       max-height: 75vh;
@@ -904,14 +951,6 @@
       border-bottom: 1px dashed #2a303d;
     }
 
-    .post-actions {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      border-top: 1px solid #222631;
-      padding: 6px 8px;
-      gap: 6px;
-    }
-
     .action-btn {
       display: flex;
       align-items: center;
@@ -943,19 +982,6 @@
     }
 
     /* ===== KHU VỰC BÌNH LUẬN ===== */
-    .comments-section {
-      display: none;
-      border-top: 1px solid #222631;
-      background: #13161c;
-      padding: 14px 16px;
-      border-bottom-left-radius: 14px;
-      border-bottom-right-radius: 14px;
-    }
-
-    .comments-section.open {
-      display: block;
-    }
-
     .comment-form {
       display: flex;
       gap: 8px;
@@ -964,6 +990,7 @@
 
     .comment-input {
       flex: 1;
+      min-width: 0;
       padding: 10px 13px;
       background: #0f1115;
       border: 1px solid #2e3442;
@@ -1050,7 +1077,7 @@
     .comment-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 11px;
       padding-left: 6px;
       flex-wrap: wrap;
     }
@@ -1059,7 +1086,7 @@
       background: none;
       border: none;
       color: #94a3b8;
-      font-size: 0.8rem;
+      font-size: 0.79rem;
       font-weight: 500;
       cursor: pointer;
       display: inline-flex;
@@ -1076,6 +1103,14 @@
       color: #f43f5e;
     }
 
+    .c-btn.info {
+      color: #38bdf8;
+    }
+
+    .c-btn.info:hover {
+      color: #7dd3fc;
+    }
+
     .c-btn.danger {
       color: #f87171;
     }
@@ -1089,7 +1124,7 @@
     }
 
     .replies-wrap {
-      margin-left: 22px;
+      margin-left: 20px;
       padding-left: 12px;
       border-left: 2px solid #262b36;
       display: flex;
@@ -1124,6 +1159,123 @@
     .reply-form .comment-send-btn {
       padding: 0 12px;
       font-size: 0.82rem;
+    }
+
+    /* ===== TỐI ƯU GIAO DIỆN MÁY TÍNH (DESKTOP >= 960px) ===== */
+    @media (min-width: 960px) {
+      body {
+        padding: 16px 24px 64px;
+      }
+
+      #albumContainer {
+        max-width: 1120px;
+      }
+
+      header.album-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px 4px;
+      }
+
+      .header-top-row {
+        flex-wrap: nowrap;
+        gap: 12px;
+      }
+
+      .toolbar-row {
+        flex: 0 1 460px;
+      }
+
+      /* Bài viết dạng 2 cột ngang: Ảnh/Video bên trái, tương tác & bình luận bên phải */
+      .post-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) 370px;
+        align-items: stretch;
+        overflow: hidden;
+      }
+
+      .post-media {
+        order: unset;
+        min-height: 440px;
+        max-height: calc(100vh - 165px);
+        background: #080a0d;
+      }
+
+      .post-media img,
+      .post-media video,
+      .video-poster-wrap img {
+        max-height: calc(100vh - 165px);
+      }
+
+      .post-sidebar {
+        display: flex;
+        flex-direction: column;
+        border-left: 1px solid #222631;
+        background: #171a21;
+        max-height: calc(100vh - 165px);
+        min-height: 440px;
+      }
+
+      .post-head,
+      .post-caption,
+      .post-actions,
+      .comments-section {
+        order: unset;
+      }
+
+      .post-head {
+        flex-shrink: 0;
+      }
+
+      .post-caption {
+        flex-shrink: 0;
+        max-height: 115px;
+        overflow-y: auto;
+        border-bottom: 1px solid #222631;
+        padding-bottom: 10px;
+      }
+
+      .post-actions {
+        flex-shrink: 0;
+        border-top: none;
+        border-bottom: 1px solid #222631;
+      }
+
+      .comments-section {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        border-top: none;
+        border-radius: 0;
+      }
+
+      .comments-section:not(.open) {
+        display: flex;
+      }
+
+      .comments-section .comments-list {
+        flex: 1;
+      }
+
+      .feed.grid-mode {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+      }
+
+      .modal-box.post-detail-box {
+        max-width: 1040px;
+      }
+    }
+
+    @media (min-width: 660px) and (max-width: 959px) {
+      .feed.grid-mode {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
     }
 
     /* ===== LIGHTBOX ZOOM MƯỢT NHƯ ZALO ===== */
@@ -1272,7 +1424,7 @@
 
     .modal-box {
       width: 100%;
-      max-width: 580px;
+      max-width: 620px;
       max-height: 90vh;
       overflow-y: auto;
       background: #171a21;
@@ -1324,13 +1476,14 @@
     }
 
     .admin-tabs {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      display: flex;
+      flex-wrap: wrap;
       gap: 6px;
       margin-bottom: 16px;
     }
 
     .admin-tab {
+      flex: 1 1 92px;
       padding: 9px 6px;
       background: #12151b;
       border: 1px solid #2e3442;
@@ -1339,6 +1492,7 @@
       font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
+      text-align: center;
     }
 
     .admin-tab.active {
@@ -1353,6 +1507,96 @@
 
     .admin-panel.active {
       display: block;
+    }
+
+    /* Thẻ số liệu thống kê */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .stat-card {
+      background: #12151b;
+      border: 1px solid #272c38;
+      border-radius: 10px;
+      padding: 12px 10px;
+      text-align: center;
+    }
+
+    .stat-num {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #60a5fa;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-label {
+      font-size: 0.74rem;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    .section-subtitle {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 10px;
+    }
+
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+    }
+
+    .info-table tr {
+      border-bottom: 1px solid #232834;
+    }
+
+    .info-table td {
+      padding: 8px 6px;
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    .info-table td:first-child {
+      color: #94a3b8;
+      width: 38%;
+      font-weight: 500;
+    }
+
+    .info-table td:last-child {
+      color: #f1f5f9;
+    }
+
+    .visit-log-card {
+      background: #12151b;
+      border: 1px solid #272c38;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-size: 0.84rem;
+    }
+
+    .visit-log-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+
+    .visit-log-main {
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .visit-log-sub {
+      color: #94a3b8;
+      font-size: 0.78rem;
+      line-height: 1.45;
     }
 
     .form-group {
@@ -1470,6 +1714,12 @@
       cursor: pointer;
     }
 
+    .mini-btn.info {
+      background: rgba(14, 165, 233, 0.16);
+      border-color: #0284c7;
+      color: #7dd3fc;
+    }
+
     .mini-btn.danger {
       background: rgba(220, 38, 38, 0.2);
       border-color: #ef4444;
@@ -1505,9 +1755,6 @@
       .action-btn {
         font-size: 0.83rem;
         gap: 5px;
-      }
-      .admin-tabs {
-        grid-template-columns: repeat(2, 1fr);
       }
       .feed.grid-mode {
         gap: 4px;
@@ -1607,20 +1854,17 @@
         <div class="header-actions">
           <span class="count-badge" id="photoCount"></span>
           <button type="button" class="header-btn" id="openAdminBtn">Quản trị</button>
-          <button type="button" class="header-btn" id="backHomeBtn">Quay về trang chủ</button>
         </div>
       </div>
       <div class="toolbar-row">
         <div class="search-bar">
           <input
-            type="number"
-            inputmode="numeric"
+            type="text"
             id="postSearchInput"
             class="search-input"
-            placeholder="Tìm số bài đăng (vd: 13)..."
-            min="1"
+            placeholder="Tìm số bài hoặc nội dung caption..."
           />
-          <button type="button" class="search-clear-btn" id="clearSearchBtn">Tất cả</button>
+          <button type="button" class="search-clear-btn" id="clearSearchBtn" title="Xóa tìm kiếm">&times;</button>
         </div>
         <div class="view-switcher">
           <button type="button" class="view-btn active" id="viewFeedBtn" title="Dạng bài viết">
@@ -1649,6 +1893,17 @@
   <div class="modal-backdrop" id="postDetailModal">
     <div class="modal-box post-detail-box">
       <div id="postDetailBody"></div>
+    </div>
+  </div>
+
+  <!-- MODAL XEM THÔNG TIN NGƯỜI DÙNG (QTV) -->
+  <div class="modal-backdrop" id="userInfoModal" style="z-index: 2580;">
+    <div class="modal-box" style="max-width: 520px;">
+      <div class="modal-header">
+        <h2 id="userInfoModalTitle">Thông tin thiết bị</h2>
+        <button type="button" class="modal-close" id="closeUserInfoModal">&times;</button>
+      </div>
+      <div id="userInfoModalBody"></div>
     </div>
   </div>
 
@@ -1714,12 +1969,13 @@
       <div id="adminDashboard" style="display: none;">
         <div class="admin-tabs">
           <button type="button" class="admin-tab active" data-tab="tabPost">Đăng bài</button>
+          <button type="button" class="admin-tab" data-tab="tabStats">Thống kê</button>
           <button type="button" class="admin-tab" data-tab="tabComments">Bình luận</button>
           <button type="button" class="admin-tab" data-tab="tabBanned">Đã chặn</button>
           <button type="button" class="admin-tab" data-tab="tabSettings">Cài đặt</button>
         </div>
 
-        <!-- Tab 1: Đăng bài (Hỗ trợ tách link & đăng nhiều bài cùng lúc) -->
+        <!-- Tab 1: Đăng bài -->
         <div class="admin-panel active" id="tabPost">
           <div class="extract-box">
             <label for="rawUploadText" style="display:block;font-size:0.86rem;color:#93c5fd;margin-bottom:6px;font-weight:600;">
@@ -1728,7 +1984,7 @@
             <textarea
               id="rawUploadText"
               class="textarea-input"
-              style="min-height: 120px; font-size: 0.84rem;"
+              style="min-height: 110px; font-size: 0.84rem;"
               placeholder="Dán nguyên đoạn kết quả từ web upload (gồm tên file, dung lượng, link https://...) vào đây rồi bấm Tách link..."
             ></textarea>
             <div class="extract-actions">
@@ -1743,7 +1999,7 @@
               <textarea
                 id="postUrl"
                 class="textarea-input"
-                style="min-height: 100px; font-size: 0.86rem;"
+                style="min-height: 95px; font-size: 0.86rem;"
                 placeholder="https://files.catbox.moe/abc.jpg&#10;https://files.catbox.moe/xyz.mp4"
                 required
               ></textarea>
@@ -1769,14 +2025,24 @@
           </form>
         </div>
 
+        <!-- Tab 2: Thống kê lượt truy cập & 100 lượt gần nhất -->
+        <div class="admin-panel" id="tabStats">
+          <div class="stats-grid" id="statsSummaryGrid"></div>
+          <div class="section-subtitle">100 lượt truy cập gần nhất</div>
+          <div id="visitLogsList"></div>
+        </div>
+
+        <!-- Tab 3: Bình luận -->
         <div class="admin-panel" id="tabComments">
           <div id="recentCommentsList"></div>
         </div>
 
+        <!-- Tab 4: Đã chặn -->
         <div class="admin-panel" id="tabBanned">
           <div id="bannedUsersList"></div>
         </div>
 
+        <!-- Tab 5: Cài đặt -->
         <div class="admin-panel" id="tabSettings">
           <form id="settingsForm">
             <div class="form-group">
@@ -1844,6 +2110,7 @@
       getDatabase,
       ref,
       onValue,
+      off,
       push,
       update,
       remove,
@@ -1871,6 +2138,8 @@
     const LIKED_POSTS_KEY = "album_liked_posts";
     const LIKED_COMMENTS_KEY = "album_liked_comments";
     const VISITOR_ID_KEY = "kyuc_a3_visitor_id";
+    const VISIT_SESSION_KEY = "kyuc_a3_visit_logged";
+    const MAX_VISIT_LOGS = 100;
     const POSTS_PER_PAGE_FEED = 10;
     const POSTS_PER_PAGE_GRID = 24;
     const DEFAULT_OLD_POST_TIME = new Date("2026-11-19T19:00:00+07:00").getTime();
@@ -1880,7 +2149,7 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // ===== MÃ ĐỊNH DANH ẨN CỦA TRÌNH DUYỆT =====
+    // ===== MÃ ĐỊNH DANH & THU THẬP THÔNG TIN THIẾT BỊ =====
     function getOrCreateVisitorId() {
       let id = localStorage.getItem(VISITOR_ID_KEY);
       if (!id) {
@@ -1923,6 +2192,160 @@
     const myVisitorId = getOrCreateVisitorId();
     const myVisitorFp = computeDeviceFingerprint();
 
+    function detectBrowserName(ua) {
+      if (/Zalo/i.test(ua)) return "Zalo (Trình duyệt trong app)";
+      if (/FBAN|FBAV|FB_IAB/i.test(ua)) return /Messenger/i.test(ua) ? "Messenger (Trong app)" : "Facebook (Trong app)";
+      if (/TikTok/i.test(ua)) return "TikTok (Trong app)";
+      if (/Instagram/i.test(ua)) return "Instagram (Trong app)";
+      if (/coc_coc_browser/i.test(ua)) return "Cốc Cốc";
+      if (/Edg\//i.test(ua)) return "Microsoft Edge";
+      if (/OPR\/|Opera/i.test(ua)) return "Opera";
+      if (/SamsungBrowser/i.test(ua)) return "Samsung Internet";
+      if (/Firefox\/|FxiOS/i.test(ua)) return "Firefox";
+      if (/Chrome\/|CriOS/i.test(ua)) return "Google Chrome";
+      if (/Safari\//i.test(ua)) return "Safari";
+      return "Trình duyệt khác";
+    }
+
+    function detectBasicOS(ua) {
+      const iosMatch = ua.match(/OS (\d+[_\d]*) like Mac OS X/i);
+      if (/iPhone|iPad|iPod/i.test(ua)) {
+        return "iOS" + (iosMatch ? " " + iosMatch[1].replace(/_/g, ".") : "");
+      }
+      const androidMatch = ua.match(/Android\s+([0-9.]+)/i);
+      if (androidMatch) return "Android " + androidMatch[1];
+      if (/Windows NT 10\.0/i.test(ua)) return "Windows 10/11";
+      if (/Windows NT/i.test(ua)) return "Windows";
+      if (/Mac OS X/i.test(ua)) return "macOS";
+      if (/Linux/i.test(ua)) return "Linux";
+      return "Không rõ";
+    }
+
+    function detectDeviceType(ua) {
+      if (/iPad|Tablet|PlayBook|Silk/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua))) {
+        return "Máy tính bảng";
+      }
+      if (/Mobile|iPhone|iPod|Android/i.test(ua)) return "Điện thoại";
+      return "Máy tính";
+    }
+
+    async function collectVisitorInfo() {
+      const ua = navigator.userAgent || "";
+      let deviceModel = "";
+      let os = detectBasicOS(ua);
+
+      if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+        try {
+          const high = await navigator.userAgentData.getHighEntropyValues([
+            "model", "platform", "platformVersion"
+          ]);
+          if (high.model) deviceModel = high.model;
+          if (high.platform) {
+            if (high.platform === "Windows" && high.platformVersion) {
+              const major = parseInt(high.platformVersion.split(".")[0], 10);
+              os = major >= 13 ? "Windows 11" : "Windows 10";
+            } else if (high.platform === "Android" && high.platformVersion) {
+              os = `Android ${high.platformVersion}`;
+            } else if (high.platformVersion) {
+              os = `${high.platform} ${high.platformVersion}`;
+            }
+          }
+        } catch {}
+      }
+
+      if (!deviceModel) {
+        if (/iPhone/i.test(ua)) deviceModel = "iPhone";
+        else if (/iPad/i.test(ua)) deviceModel = "iPad";
+        else {
+          const androidModel = ua.match(/Android[^;]+;\s*([^;)]+?)(?:\s+Build|\))/i);
+          if (androidModel && androidModel[1] && androidModel[1].trim() !== "K") {
+            deviceModel = androidModel[1].trim();
+          } else {
+            deviceModel = detectDeviceType(ua);
+          }
+        }
+      }
+
+      const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      let network = "Không rõ";
+      if (conn) {
+        const parts = [];
+        if (conn.type && conn.type !== "unknown") parts.push(conn.type);
+        if (conn.effectiveType) parts.push(conn.effectiveType.toUpperCase());
+        if (conn.downlink) parts.push(`~${conn.downlink} Mbps`);
+        if (parts.length) network = parts.join(" • ");
+      }
+
+      return {
+        deviceType: detectDeviceType(ua),
+        deviceModel,
+        os,
+        browser: detectBrowserName(ua),
+        screen: `${screen.width} × ${screen.height} (DPR ${window.devicePixelRatio || 1})`,
+        viewport: `${window.innerWidth} × ${window.innerHeight}`,
+        language: navigator.language || "Không rõ",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Không rõ",
+        cores: navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} nhân` : "Không rõ",
+        memory: navigator.deviceMemory ? `~${navigator.deviceMemory} GB` : "Không rõ",
+        network,
+        referrer: document.referrer || "Truy cập trực tiếp",
+        visitorId: myVisitorId,
+        fp: myVisitorFp,
+        ua
+      };
+    }
+
+    let cachedVisitorInfoPromise = null;
+    function getMyVisitorInfo() {
+      if (!cachedVisitorInfoPromise) {
+        cachedVisitorInfoPromise = collectVisitorInfo();
+      }
+      return cachedVisitorInfoPromise;
+    }
+
+    // ===== KHÓA THỜI GIAN CHO THỐNG KÊ (NGÀY / TUẦN T2-CN / THÁNG / NĂM) =====
+    function getTimeKeys(date = new Date()) {
+      const pad = (n) => String(n).padStart(2, "0");
+      const year = date.getFullYear();
+      const month = pad(date.getMonth() + 1);
+      const day = pad(date.getDate());
+
+      // Tính số tuần ISO (Thứ 2 -> Chủ nhật)
+      const temp = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const dayNum = temp.getDay() || 7; // T2=1 .. CN=7
+      temp.setDate(temp.getDate() + 4 - dayNum);
+      const yearStart = new Date(temp.getFullYear(), 0, 1);
+      const weekNo = Math.ceil((((temp - yearStart) / 86400000) + 1) / 7);
+
+      return {
+        dayKey: `${year}-${month}-${day}`,
+        weekKey: `${temp.getFullYear()}-W${pad(weekNo)}`,
+        monthKey: `${year}-${month}`,
+        yearKey: `${year}`
+      };
+    }
+
+    async function recordPageVisitOnce() {
+      if (sessionStorage.getItem(VISIT_SESSION_KEY) === "1") return;
+      sessionStorage.setItem(VISIT_SESSION_KEY, "1");
+
+      try {
+        const info = await getMyVisitorInfo();
+        const keys = getTimeKeys(new Date());
+
+        runTransaction(ref(db, "analytics/counts/total"), (c) => (c || 0) + 1);
+        runTransaction(ref(db, `analytics/counts/days/${keys.dayKey}`), (c) => (c || 0) + 1);
+        runTransaction(ref(db, `analytics/counts/weeks/${keys.weekKey}`), (c) => (c || 0) + 1);
+        runTransaction(ref(db, `analytics/counts/months/${keys.monthKey}`), (c) => (c || 0) + 1);
+        runTransaction(ref(db, `analytics/counts/years/${keys.yearKey}`), (c) => (c || 0) + 1);
+
+        await push(ref(db, "analytics/logs"), {
+          ...info,
+          visitedAt: Date.now()
+        });
+      } catch {}
+    }
+
     // ===== DOM =====
     const toastEl = document.getElementById("toast");
     const loadingScreen = document.getElementById("loadingScreen");
@@ -1948,6 +2371,9 @@
     const viewGridBtn = document.getElementById("viewGridBtn");
     const postDetailModal = document.getElementById("postDetailModal");
     const postDetailBody = document.getElementById("postDetailBody");
+    const userInfoModal = document.getElementById("userInfoModal");
+    const userInfoModalTitle = document.getElementById("userInfoModalTitle");
+    const userInfoModalBody = document.getElementById("userInfoModalBody");
     const adminModal = document.getElementById("adminModal");
     const editPostModal = document.getElementById("editPostModal");
     const lightbox = document.getElementById("lightbox");
@@ -2041,7 +2467,7 @@
     let albumOpened = false;
     let sessionExpireTimer = null;
     let pinLockInterval = null;
-    let searchFilterNum = null;
+    let searchQuery = "";
     let editingPostId = null;
     let activeDetailPostId = null;
 
@@ -2054,6 +2480,9 @@
     let likesData = {};
     let commentsData = {};
     let bannedData = {};
+    let analyticsCounts = {};
+    let analyticsLogs = {};
+    let analyticsSubscribed = false;
 
     const openCommentPosts = new Set();
     const expandedReplies = new Set();
@@ -2098,10 +2527,20 @@
         .replace(/"/g, "&quot;");
     }
 
-    function getOptimizedImageUrl(originalUrl, width = 800) {
+    function normalizeSearch(str) {
+      return String(str || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "D")
+        .toLowerCase()
+        .trim();
+    }
+
+    function getOptimizedImageUrl(originalUrl, width = 900) {
       if (!originalUrl || !/^https?:\/\//i.test(originalUrl)) return originalUrl;
       if (originalUrl.includes("i.ytimg.com")) return originalUrl;
-      return `https://wsrv.nl/?url=${encodeURIComponent(originalUrl)}&w=${width}&q=80&output=webp`;
+      return `https://wsrv.nl/?url=${encodeURIComponent(originalUrl)}&w=${width}&q=82&output=webp`;
     }
 
     function formatCountdown(ms) {
@@ -2111,6 +2550,13 @@
       const s = totalSec % 60;
       const pad = (n) => String(n).padStart(2, "0");
       return `${pad(h)}:${pad(m)}:${pad(s)}`;
+    }
+
+    function formatFullDateTime(ts) {
+      if (!ts) return "Không rõ";
+      const d = new Date(ts);
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} • ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
     }
 
     function formatTime(ts) {
@@ -2160,6 +2606,136 @@
       return { type: "image", src: url, autoPoster: "" };
     }
 
+    // ===== HIỂN THỊ MODAL THÔNG TIN THIẾT BỊ =====
+    function showUserInfoModal(info, title = "Thông tin thiết bị", timestamp = null) {
+      userInfoModalTitle.textContent = title;
+      if (!info) {
+        userInfoModalBody.innerHTML = `<div class="empty-comments">Bình luận cũ này chưa ghi nhận thông tin thiết bị.</div>`;
+      } else {
+        const rows = [
+          ["Thời gian", timestamp ? formatFullDateTime(timestamp) : "Không rõ"],
+          ["Loại thiết bị", info.deviceType || "Không rõ"],
+          ["Dòng máy", info.deviceModel || "Không rõ"],
+          ["Hệ điều hành", info.os || "Không rõ"],
+          ["Trình duyệt / Nguồn", info.browser || "Không rõ"],
+          ["Độ phân giải màn hình", info.screen || "Không rõ"],
+          ["Khung hiển thị", info.viewport || "Không rõ"],
+          ["CPU / RAM ước tính", `${info.cores || "Không rõ"} • ${info.memory || "Không rõ"}`],
+          ["Kết nối mạng", info.network || "Không rõ"],
+          ["Ngôn ngữ / Múi giờ", `${info.language || "Không rõ"} • ${info.timezone || "Không rõ"}`],
+          ["Nguồn giới thiệu", info.referrer || "Truy cập trực tiếp"],
+          ["Mã trình duyệt", info.visitorId || "Không rõ"],
+          ["Mã nhận diện thiết bị", info.fp || "Không rõ"],
+          ["User-Agent gốc", info.ua || "Không rõ"]
+        ];
+        userInfoModalBody.innerHTML = `
+          <table class="info-table">
+            ${rows.map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`).join("")}
+          </table>
+        `;
+      }
+      userInfoModal.classList.add("open");
+    }
+
+    document.getElementById("closeUserInfoModal").addEventListener("click", () => {
+      userInfoModal.classList.remove("open");
+    });
+    userInfoModal.addEventListener("click", (e) => {
+      if (e.target === userInfoModal) userInfoModal.classList.remove("open");
+    });
+
+    // ===== RENDER THỐNG KÊ TRONG BẢNG QTV =====
+    function renderAnalyticsPanel() {
+      const grid = document.getElementById("statsSummaryGrid");
+      const list = document.getElementById("visitLogsList");
+      if (!grid || !list) return;
+
+      const keys = getTimeKeys(new Date());
+      const todayCount = analyticsCounts.days?.[keys.dayKey] || 0;
+      const weekCount = analyticsCounts.weeks?.[keys.weekKey] || 0;
+      const monthCount = analyticsCounts.months?.[keys.monthKey] || 0;
+      const yearCount = analyticsCounts.years?.[keys.yearKey] || 0;
+      const totalCount = analyticsCounts.total || 0;
+
+      grid.innerHTML = `
+        <div class="stat-card"><div class="stat-num">${todayCount}</div><div class="stat-label">Hôm nay</div></div>
+        <div class="stat-card"><div class="stat-num">${weekCount}</div><div class="stat-label">Tuần này (T2-CN)</div></div>
+        <div class="stat-card"><div class="stat-num">${monthCount}</div><div class="stat-label">Tháng này</div></div>
+        <div class="stat-card"><div class="stat-num">${yearCount}</div><div class="stat-label">Năm nay</div></div>
+        <div class="stat-card"><div class="stat-num">${totalCount}</div><div class="stat-label">Tổng cộng</div></div>
+      `;
+
+      const logs = Object.entries(analyticsLogs)
+        .map(([id, item]) => ({ id, ...item }))
+        .sort((a, b) => (b.visitedAt || 0) - (a.visitedAt || 0))
+        .slice(0, MAX_VISIT_LOGS);
+
+      if (logs.length === 0) {
+        list.innerHTML = `<div class="empty-comments">Chưa có dữ liệu truy cập nào được ghi nhận.</div>`;
+        return;
+      }
+
+      list.innerHTML = logs.map((item) => `
+        <div class="visit-log-card">
+          <div class="visit-log-top">
+            <span class="visit-log-main">${escapeHtml(item.deviceModel || item.deviceType || "Thiết bị")} • ${escapeHtml(item.os || "")}</span>
+            <span class="comment-time">${formatTime(item.visitedAt)}</span>
+          </div>
+          <div class="visit-log-sub">
+            ${escapeHtml(item.browser || "")} • ${escapeHtml(item.screen || "")} • ${escapeHtml(item.network || "")}
+          </div>
+          <div class="rc-actions" style="margin-top:8px;">
+            <button type="button" class="mini-btn info" data-view-visit-log="${item.id}">Xem đầy đủ</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    document.getElementById("visitLogsList").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-view-visit-log]");
+      if (btn && isAdmin) {
+        const log = analyticsLogs[btn.dataset.viewVisitLog];
+        if (log) showUserInfoModal(log, "Chi tiết lượt truy cập", log.visitedAt);
+      }
+    });
+
+    function subscribeAnalyticsForAdmin() {
+      if (analyticsSubscribed) return;
+      analyticsSubscribed = true;
+
+      onValue(ref(db, "analytics/counts"), (snap) => {
+        analyticsCounts = snap.val() || {};
+        if (isAdmin) renderAnalyticsPanel();
+      });
+
+      onValue(ref(db, "analytics/logs"), (snap) => {
+        analyticsLogs = snap.val() || {};
+        // Tự động giữ tối đa 100 lượt gần nhất, xóa lượt xa nhất
+        const entries = Object.entries(analyticsLogs)
+          .map(([id, item]) => ({ id, visitedAt: item?.visitedAt || 0 }))
+          .sort((a, b) => b.visitedAt - a.visitedAt);
+
+        if (isAdmin && entries.length > MAX_VISIT_LOGS) {
+          const removals = {};
+          entries.slice(MAX_VISIT_LOGS).forEach((old) => {
+            removals[old.id] = null;
+          });
+          update(ref(db, "analytics/logs"), removals);
+        }
+
+        if (isAdmin) renderAnalyticsPanel();
+      });
+    }
+
+    function unsubscribeAnalyticsForAdmin() {
+      if (!analyticsSubscribed) return;
+      analyticsSubscribed = false;
+      off(ref(db, "analytics/counts"));
+      off(ref(db, "analytics/logs"));
+      analyticsCounts = {};
+      analyticsLogs = {};
+    }
+
     function getAllPosts() {
       const staticList = STATIC_IMAGES.map((url, idx) => {
         const num = idx + 1;
@@ -2206,6 +2782,32 @@
         .sort((a, b) => b.postNumber - a.postNumber);
     }
 
+    function filterPostsByQuery(allPosts, rawQuery) {
+      const q = rawQuery.trim();
+      if (!q) return allPosts;
+
+      const normQ = normalizeSearch(q);
+      const isPureNum = /^\d+$/.test(q);
+      const exactNum = isPureNum ? parseInt(q, 10) : null;
+
+      const matched = allPosts.filter((p) => {
+        if (exactNum !== null && p.postNumber === exactNum) return true;
+        const labelNorm = normalizeSearch(`bài đăng ${p.postNumber}`);
+        const capNorm = normalizeSearch(p.caption || "");
+        return capNorm.includes(normQ) || labelNorm.includes(normQ);
+      });
+
+      if (exactNum !== null) {
+        matched.sort((a, b) => {
+          const aExact = a.postNumber === exactNum ? 1 : 0;
+          const bExact = b.postNumber === exactNum ? 1 : 0;
+          if (aExact !== bExact) return bExact - aExact;
+          return b.postNumber - a.postNumber;
+        });
+      }
+      return matched;
+    }
+
     function getPostById(postId) {
       return getAllPosts().find((p) => p.id === postId) || null;
     }
@@ -2242,8 +2844,9 @@
         const countEl = btn.querySelector(".comment-count");
         if (countEl) countEl.textContent = countComments(postId);
       });
-      openCommentPosts.forEach((postId) => renderCommentsForPost(postId));
-      if (activeDetailPostId) renderCommentsForPost(activeDetailPostId);
+      document.querySelectorAll("[data-comments-list]").forEach((el) => {
+        renderCommentsForPost(el.dataset.commentsList);
+      });
     }
 
     function renderCommentsForPost(postId) {
@@ -2299,6 +2902,7 @@
                         ${isRLiked ? "♥" : "♡"} ${r.likes}
                       </button>
                       <button type="button" class="c-btn" data-share-reply="${postId}|${c.id}|${r.id}">Chia sẻ</button>
+                      ${isAdmin ? `<button type="button" class="c-btn info" data-info-reply="${postId}|${c.id}|${r.id}">Xem thông tin</button>` : ""}
                       ${isAdmin ? `<button type="button" class="c-btn danger" data-delete-reply="${postId}|${c.id}|${r.id}">Xóa</button>` : ""}
                       ${canBanR ? `<button type="button" class="c-btn ban" data-ban-reply="${postId}|${c.id}|${r.id}">Xóa &amp; Chặn</button>` : ""}
                     </div>
@@ -2343,6 +2947,7 @@
                 </button>
                 <button type="button" class="c-btn" data-share-comment="${postId}|${c.id}">Chia sẻ</button>
                 <button type="button" class="c-btn" data-open-reply="${cKey}" data-post-id="${postId}">Trả lời</button>
+                ${isAdmin ? `<button type="button" class="c-btn info" data-info-comment="${postId}|${c.id}">Xem thông tin</button>` : ""}
                 ${isAdmin ? `<button type="button" class="c-btn danger" data-delete-comment="${postId}|${c.id}">Xóa</button>` : ""}
                 ${canBanC ? `<button type="button" class="c-btn ban" data-ban-comment="${postId}|${c.id}">Xóa &amp; Chặn</button>` : ""}
               </div>
@@ -2377,7 +2982,7 @@
       }
     }, true);
 
-    // ===== TẠO THẺ BÀI ĐĂNG =====
+    // ===== TẠO THẺ BÀI ĐĂNG (TƯƠNG THÍCH CẢ MOBILE DỌC & DESKTOP 2 CỘT NGANG) =====
     function createPostCard(post, isDetailModal = false) {
       const card = document.createElement("article");
       card.className = "post-card";
@@ -2404,48 +3009,50 @@
         : "";
 
       card.innerHTML = `
-        <div class="post-head">
-          <div>
-            <div class="post-title-row">
-              <span class="post-title">Bài đăng ${post.postNumber}</span>
-              ${post.hidden && isAdmin ? `<span class="hidden-badge">Đang ẩn</span>` : ""}
-            </div>
-            <div class="post-meta">${formatTime(post.createdAt)}</div>
-          </div>
-          <div class="post-head-right">
-            ${adminMenuHtml}
-            ${closeModalBtnHtml}
-          </div>
-        </div>
-        ${post.caption ? `<div class="post-caption">${escapeHtml(post.caption)}</div>` : ""}
         <div class="post-media"></div>
-        <div class="post-actions">
-          <button type="button" class="action-btn ${isLiked ? "liked" : ""}" data-like-post="${post.id}">
-            <svg viewBox="0 0 24 24" fill="${isLiked ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-            <span class="like-count">${likeCount}</span>
-          </button>
-          <button type="button" class="action-btn" data-toggle-comments="${post.id}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-            <span class="comment-count">${cCount}</span>
-          </button>
-          <button type="button" class="action-btn" data-share-post="${post.id}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-            </svg>
-            <span>Chia sẻ</span>
-          </button>
-        </div>
-        <div class="comments-section ${isOpen ? "open" : ""}" data-comments-sec="${post.id}">
-          <form class="comment-form" data-comment-form="${post.id}">
-            <input type="text" class="comment-input" placeholder="Viết bình luận ẩn danh..." maxlength="500" required />
-            <button type="submit" class="comment-send-btn">Gửi</button>
-          </form>
-          <div class="comments-list" data-comments-list="${post.id}"></div>
+        <div class="post-sidebar">
+          <div class="post-head">
+            <div>
+              <div class="post-title-row">
+                <span class="post-title">Bài đăng ${post.postNumber}</span>
+                ${post.hidden && isAdmin ? `<span class="hidden-badge">Đang ẩn</span>` : ""}
+              </div>
+              <div class="post-meta">${formatTime(post.createdAt)}</div>
+            </div>
+            <div class="post-head-right">
+              ${adminMenuHtml}
+              ${closeModalBtnHtml}
+            </div>
+          </div>
+          ${post.caption ? `<div class="post-caption">${escapeHtml(post.caption)}</div>` : ""}
+          <div class="post-actions">
+            <button type="button" class="action-btn ${isLiked ? "liked" : ""}" data-like-post="${post.id}">
+              <svg viewBox="0 0 24 24" fill="${isLiked ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+              <span class="like-count">${likeCount}</span>
+            </button>
+            <button type="button" class="action-btn" data-toggle-comments="${post.id}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span class="comment-count">${cCount}</span>
+            </button>
+            <button type="button" class="action-btn" data-share-post="${post.id}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+              <span>Chia sẻ</span>
+            </button>
+          </div>
+          <div class="comments-section ${isOpen ? "open" : ""}" data-comments-sec="${post.id}">
+            <form class="comment-form" data-comment-form="${post.id}">
+              <input type="text" class="comment-input" placeholder="Viết bình luận ẩn danh..." maxlength="500" required />
+              <button type="submit" class="comment-send-btn">Gửi</button>
+            </form>
+            <div class="comments-list" data-comments-list="${post.id}"></div>
+          </div>
         </div>
       `;
 
@@ -2458,7 +3065,7 @@
 
         if (media.type === "video") {
           if (poster) {
-            const optPoster = getOptimizedImageUrl(poster, 800);
+            const optPoster = getOptimizedImageUrl(poster, 900);
             mediaBox.innerHTML = `
               <div class="video-poster-wrap" data-play-media-type="video" data-play-media-src="${escapeHtml(media.src)}">
                 <img src="${optPoster}" loading="lazy" decoding="async" alt="Ảnh bìa video" />
@@ -2481,7 +3088,7 @@
           }
         } else if (media.type === "iframe") {
           if (poster) {
-            const optPoster = getOptimizedImageUrl(poster, 800);
+            const optPoster = getOptimizedImageUrl(poster, 900);
             mediaBox.innerHTML = `
               <div class="video-poster-wrap" data-play-media-type="iframe" data-play-media-src="${escapeHtml(media.src)}">
                 <img src="${optPoster}" loading="lazy" decoding="async" alt="Ảnh bìa video" />
@@ -2497,7 +3104,7 @@
           }
         } else {
           const img = document.createElement("img");
-          img.src = getOptimizedImageUrl(media.src, 800);
+          img.src = getOptimizedImageUrl(media.src, 900);
           img.loading = "lazy";
           img.decoding = "async";
           img.alt = `Bài đăng ${post.postNumber}`;
@@ -2510,9 +3117,8 @@
         }
       }
 
-      if (isOpen) {
-        setTimeout(() => renderCommentsForPost(post.id), 0);
-      }
+      // Render bình luận ngay để cột phải trên máy tính luôn có sẵn dữ liệu
+      setTimeout(() => renderCommentsForPost(post.id), 0);
       return card;
     }
 
@@ -2682,9 +3288,7 @@
       photoCountEl.textContent = `${allPosts.length} bài đăng`;
       document.title = SITE_TITLE;
 
-      const filtered = searchFilterNum !== null
-        ? allPosts.filter((p) => p.postNumber === searchFilterNum)
-        : allPosts;
+      const filtered = filterPostsByQuery(allPosts, searchQuery);
 
       const perPage = viewMode === "grid" ? POSTS_PER_PAGE_GRID : POSTS_PER_PAGE_FEED;
       const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
@@ -2699,8 +3303,8 @@
         paginationTop.style.display = "none";
         paginationBottom.style.display = "none";
         feedEl.innerHTML = `<div class="empty-feed">${
-          searchFilterNum !== null
-            ? `Không tìm thấy <strong>Bài đăng ${searchFilterNum}</strong>.`
+          searchQuery.trim()
+            ? `Không tìm thấy bài đăng nào khớp với "<strong>${escapeHtml(searchQuery.trim())}</strong>".`
             : "Chưa có bài đăng nào."
         }</div>`;
         return;
@@ -2750,8 +3354,8 @@
         viewGridBtn.classList.remove("active");
       }
 
-      if (searchFilterNum !== null) {
-        searchFilterNum = null;
+      if (searchQuery.trim()) {
+        searchQuery = "";
         postSearchInput.value = "";
         clearSearchBtn.classList.remove("show");
       }
@@ -3111,6 +3715,7 @@
             text: c.text,
             authorId: c.authorId || "",
             authorFp: c.authorFp || "",
+            authorInfo: c.authorInfo || null,
             createdAt: c.createdAt || 0
           });
           if (c.replies) {
@@ -3123,6 +3728,7 @@
                 text: r.text,
                 authorId: r.authorId || "",
                 authorFp: r.authorFp || "",
+                authorInfo: r.authorInfo || null,
                 createdAt: r.createdAt || 0
               });
             });
@@ -3149,6 +3755,7 @@
             <div class="rc-text">${escapeHtml(item.text)}</div>
             <div class="rc-actions">
               <button type="button" class="mini-btn" data-rc-view="${item.postId}|${item.cId}|${item.isReply ? item.rId : ""}">Xem bài</button>
+              <button type="button" class="mini-btn info" data-rc-info="${delKey}">Xem thông tin</button>
               <button type="button" class="mini-btn danger" data-rc-del="${delKey}">Xóa</button>
               ${canBan ? `<button type="button" class="mini-btn ban" data-rc-ban="${delKey}">Xóa &amp; Chặn</button>` : ""}
             </div>
@@ -3157,24 +3764,17 @@
       }).join("");
     }
 
-    // ===== TÌM KIẾM THEO SỐ BÀI =====
+    // ===== TÌM KIẾM SỐ BÀI & CAPTION =====
     postSearchInput.addEventListener("input", () => {
-      const val = postSearchInput.value.trim();
+      searchQuery = postSearchInput.value;
       currentPage = 1;
-      if (!val) {
-        searchFilterNum = null;
-        clearSearchBtn.classList.remove("show");
-      } else {
-        const num = parseInt(val, 10);
-        searchFilterNum = Number.isNaN(num) ? null : num;
-        clearSearchBtn.classList.add("show");
-      }
+      clearSearchBtn.classList.toggle("show", searchQuery.trim().length > 0);
       renderFeed();
     });
 
     clearSearchBtn.addEventListener("click", () => {
       postSearchInput.value = "";
-      searchFilterNum = null;
+      searchQuery = "";
       currentPage = 1;
       clearSearchBtn.classList.remove("show");
       renderFeed();
@@ -3199,11 +3799,8 @@
     }
 
     function scheduleRenderTransform(animate = false) {
-      if (animate) {
-        lbImg.classList.add("animate");
-      } else {
-        lbImg.classList.remove("animate");
-      }
+      if (animate) lbImg.classList.add("animate");
+      else lbImg.classList.remove("animate");
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         lbImg.style.transform = `translate3d(${panX.toFixed(2)}px, ${panY.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`;
@@ -3287,24 +3884,18 @@
     });
     window.addEventListener("mouseup", () => { isMouseDragging = false; });
 
-    let isPinching = false;
-    let pinchStartDist = 0;
-    let pinchStartScale = 1;
-    let pinchFocalX = 0;
-    let pinchFocalY = 0;
-    let isTouchPanning = false;
-    let touchPanStartX = 0;
-    let touchPanStartY = 0;
-    let lastTapTime = 0;
-    let lastTapX = 0, lastTapY = 0;
+    let isPinching = false, pinchStartDist = 0, pinchStartScale = 1, pinchFocalX = 0, pinchFocalY = 0;
+    let isTouchPanning = false, touchPanStartX = 0, touchPanStartY = 0;
+    let lastTapTime = 0, lastTapX = 0, lastTapY = 0;
 
     function getTouchMetrics(touches) {
       const dx = touches[0].clientX - touches[1].clientX;
       const dy = touches[0].clientY - touches[1].clientY;
-      const dist = Math.hypot(dx, dy);
-      const midX = (touches[0].clientX + touches[1].clientX) / 2;
-      const midY = (touches[0].clientY + touches[1].clientY) / 2;
-      return { dist, midX, midY };
+      return {
+        dist: Math.hypot(dx, dy),
+        midX: (touches[0].clientX + touches[1].clientX) / 2,
+        midY: (touches[0].clientY + touches[1].clientY) / 2
+      };
     }
 
     lbStage.addEventListener("touchstart", (e) => {
@@ -3327,11 +3918,8 @@
         const distTap = Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY);
         if (now - lastTapTime < 280 && distTap < 40) {
           lastTapTime = 0;
-          if (scale > 1.05) {
-            zoomToPoint(1, t.clientX, t.clientY, true);
-          } else {
-            zoomToPoint(2.5, t.clientX, t.clientY, true);
-          }
+          if (scale > 1.05) zoomToPoint(1, t.clientX, t.clientY, true);
+          else zoomToPoint(2.5, t.clientX, t.clientY, true);
           return;
         }
         lastTapTime = now;
@@ -3350,7 +3938,6 @@
         const rect = lbStage.getBoundingClientRect();
         const relX = midX - (rect.left + rect.width / 2);
         const relY = midY - (rect.top + rect.height / 2);
-
         scale = Math.max(0.85, Math.min(5, pinchStartScale * (dist / pinchStartDist)));
         panX = relX - pinchFocalX * scale;
         panY = relY - pinchFocalY * scale;
@@ -3391,16 +3978,14 @@
     }, { passive: true });
 
     lbStage.addEventListener("dblclick", (e) => {
-      if (scale > 1.05) {
-        zoomToPoint(1, e.clientX, e.clientY, true);
-      } else {
-        zoomToPoint(2.5, e.clientX, e.clientY, true);
-      }
+      if (scale > 1.05) zoomToPoint(1, e.clientX, e.clientY, true);
+      else zoomToPoint(2.5, e.clientX, e.clientY, true);
     });
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
-        if (lightbox.classList.contains("open")) closeLightbox();
+        if (userInfoModal.classList.contains("open")) userInfoModal.classList.remove("open");
+        else if (lightbox.classList.contains("open")) closeLightbox();
         else if (postDetailModal.classList.contains("open")) closePostDetailModal();
       }
     });
@@ -3538,6 +4123,11 @@
         const postId = toggleCmt.dataset.toggleComments;
         const card = toggleCmt.closest(".post-card");
         const sec = card.querySelector(`[data-comments-sec="${postId}"]`);
+        if (window.innerWidth >= 960) {
+          const input = sec.querySelector(".comment-input");
+          if (input) input.focus();
+          return;
+        }
         if (sec.classList.contains("open")) {
           openCommentPosts.delete(postId);
           sec.classList.remove("open");
@@ -3598,6 +4188,22 @@
       if (shareRep) {
         const [postId, cId, rId] = shareRep.dataset.shareReply.split("|");
         copyShareLink(postId, cId, rId);
+        return;
+      }
+
+      const infoCmt = e.target.closest("[data-info-comment]");
+      if (infoCmt && isAdmin) {
+        const [postId, cId] = infoCmt.dataset.infoComment.split("|");
+        const cObj = commentsData[postId]?.[cId];
+        showUserInfoModal(cObj?.authorInfo || null, `Thông tin người bình luận (${getPostLabel(postId)})`, cObj?.createdAt);
+        return;
+      }
+
+      const infoRep = e.target.closest("[data-info-reply]");
+      if (infoRep && isAdmin) {
+        const [postId, cId, rId] = infoRep.dataset.infoReply.split("|");
+        const rObj = commentsData[postId]?.[cId]?.replies?.[rId];
+        showUserInfoModal(rObj?.authorInfo || null, `Thông tin người trả lời (${getPostLabel(postId)})`, rObj?.createdAt);
         return;
       }
 
@@ -3684,10 +4290,12 @@
         const text = input.value.trim();
         if (!text) return;
         input.value = "";
+        const info = await getMyVisitorInfo();
         await push(ref(db, `comments/${postId}`), {
           text,
           authorId: myVisitorId,
           authorFp: myVisitorFp,
+          authorInfo: info,
           createdAt: Date.now(),
           likes: 0
         });
@@ -3705,10 +4313,12 @@
         const key = `${postId}__${cId}`;
         openReplyForms.delete(key);
         expandedReplies.add(key);
+        const info = await getMyVisitorInfo();
         await push(ref(db, `comments/${postId}/${cId}/replies`), {
           text,
           authorId: myVisitorId,
           authorFp: myVisitorFp,
+          authorInfo: info,
           createdAt: Date.now(),
           likes: 0
         });
@@ -3748,23 +4358,10 @@
       if (activeDetailPostId === savedId) openPostDetailModal(savedId);
     });
 
-    document.getElementById("backHomeBtn").addEventListener("click", () => {
-      if (isAdmin) {
-        showToast("Bạn đang ở quyền Quản trị viên. Hãy đăng xuất QTV để quay về màn hình khóa.");
-        return;
-      }
-      if (!/^\d{6}$/.test((appSettings.accessPassword || "").trim())) {
-        showToast("Trang hiện đang mở tự do không cần mật khẩu.");
-        return;
-      }
-      if (sessionExpireTimer) clearTimeout(sessionExpireTimer);
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-      window.location.href = window.location.pathname;
-    });
-
     function openAdminModal() {
       adminModal.classList.add("open");
       if (isAdmin) {
+        renderAnalyticsPanel();
         renderRecentComments();
         renderBannedUsers();
       }
@@ -3788,6 +4385,7 @@
         document.querySelectorAll(".admin-panel").forEach((p) => p.classList.remove("active"));
         tabBtn.classList.add("active");
         document.getElementById(tabBtn.dataset.tab).classList.add("active");
+        if (tabBtn.dataset.tab === "tabStats") renderAnalyticsPanel();
         if (tabBtn.dataset.tab === "tabComments") renderRecentComments();
         if (tabBtn.dataset.tab === "tabBanned") renderBannedUsers();
       });
@@ -3821,7 +4419,7 @@
       showToast("Đã đăng xuất Quản trị viên.");
     });
 
-    // ===== TÁCH LINK TỰ ĐỘNG TỪ KẾT QUẢ UPLOAD =====
+    // ===== TÁCH LINK TỰ ĐỘNG =====
     document.getElementById("extractLinksBtn").addEventListener("click", () => {
       const rawText = document.getElementById("rawUploadText").value || "";
       const matches = rawText.match(/https?:\/\/[^\s"'<>]+/gi) || [];
@@ -3940,6 +4538,19 @@
         return;
       }
 
+      const infoBtn = e.target.closest("[data-rc-info]");
+      if (infoBtn && isAdmin) {
+        const parts = infoBtn.dataset.rcInfo.split("|");
+        if (parts[0] === "comment") {
+          const cObj = commentsData[parts[1]]?.[parts[2]];
+          showUserInfoModal(cObj?.authorInfo || null, `Thông tin người bình luận (${getPostLabel(parts[1])})`, cObj?.createdAt);
+        } else {
+          const rObj = commentsData[parts[1]]?.[parts[2]]?.replies?.[parts[3]];
+          showUserInfoModal(rObj?.authorInfo || null, `Thông tin người trả lời (${getPostLabel(parts[1])})`, rObj?.createdAt);
+        }
+        return;
+      }
+
       const delBtn = e.target.closest("[data-rc-del]");
       if (delBtn && isAdmin) {
         if (!confirm("Xác nhận xóa bình luận này?")) return;
@@ -4044,6 +4655,7 @@
         loginForm.style.display = "none";
         dashboard.style.display = "block";
         title.textContent = "Bảng Quản Trị Viên";
+        subscribeAnalyticsForAdmin();
         renderRecentComments();
         renderBannedUsers();
       } else {
@@ -4052,6 +4664,7 @@
         loginForm.style.display = "block";
         dashboard.style.display = "none";
         title.textContent = "Đăng nhập Quản trị viên";
+        unsubscribeAnalyticsForAdmin();
       }
 
       evaluateAccess();
@@ -4059,6 +4672,9 @@
         scheduleRenderFeed();
       }
     });
+
+    // Ghi nhận lượt truy cập (mỗi phiên mở trình duyệt tính 1 lượt)
+    recordPageVisitOnce();
   </script>
 </body>
 </html>
