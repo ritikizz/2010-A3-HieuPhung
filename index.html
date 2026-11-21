@@ -700,7 +700,7 @@
       font-size: 0.95rem;
     }
 
-    /* ===== POST CARD (MOBILE: DỌC 1 CỘT | PC: 2 CỘT NGANG) ===== */
+    /* ===== POST CARD (MOBILE: DỌC TỰ NHIÊN | PC: LƯỚI 2 CỘT NGANG) ===== */
     .post-card {
       background: #171a21;
       border: 1px solid #262b36;
@@ -715,12 +715,7 @@
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
     }
 
-    .post-sidebar {
-      display: contents;
-    }
-
     .post-head {
-      order: 1;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -731,7 +726,6 @@
     }
 
     .post-caption {
-      order: 2;
       padding: 12px 16px 8px;
       font-size: 0.94rem;
       color: #e2e8f0;
@@ -741,7 +735,6 @@
     }
 
     .post-media {
-      order: 3;
       background: #0b0d11;
       display: flex;
       align-items: center;
@@ -751,7 +744,6 @@
     }
 
     .post-actions {
-      order: 4;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       border-top: 1px solid #222631;
@@ -760,7 +752,6 @@
     }
 
     .comments-section {
-      order: 5;
       display: none;
       border-top: 1px solid #222631;
       background: #13161c;
@@ -1188,17 +1179,20 @@
         flex: 0 1 460px;
       }
 
-      /* Bài viết dạng 2 cột ngang: Ảnh/Video bên trái, tương tác & bình luận bên phải */
+      /* Lưới 2 cột trực tiếp trên .post-card (không cần display: contents) */
       .post-card {
         display: grid;
         grid-template-columns: minmax(0, 1.55fr) 370px;
-        align-items: stretch;
+        grid-template-rows: auto auto auto minmax(0, 1fr);
+        max-height: calc(100vh - 165px);
+        min-height: 440px;
         overflow: hidden;
       }
 
       .post-media {
-        order: unset;
-        min-height: 440px;
+        grid-column: 1;
+        grid-row: 1 / 5;
+        height: 100%;
         max-height: calc(100vh - 165px);
         background: #080a0d;
       }
@@ -1209,52 +1203,41 @@
         max-height: calc(100vh - 165px);
       }
 
-      .post-sidebar {
-        display: flex;
-        flex-direction: column;
-        border-left: 1px solid #222631;
-        background: #171a21;
-        max-height: calc(100vh - 165px);
-        min-height: 440px;
-      }
-
-      .post-head,
-      .post-caption,
-      .post-actions,
-      .comments-section {
-        order: unset;
-      }
-
       .post-head {
-        flex-shrink: 0;
+        grid-column: 2;
+        grid-row: 1;
+        border-left: 1px solid #222631;
       }
 
       .post-caption {
-        flex-shrink: 0;
-        max-height: 115px;
+        grid-column: 2;
+        grid-row: 2;
+        border-left: 1px solid #222631;
+        max-height: 110px;
         overflow-y: auto;
         border-bottom: 1px solid #222631;
         padding-bottom: 10px;
       }
 
       .post-actions {
-        flex-shrink: 0;
+        grid-column: 2;
+        grid-row: 3;
+        border-left: 1px solid #222631;
         border-top: none;
         border-bottom: 1px solid #222631;
       }
 
-      .comments-section {
+      .comments-section,
+      .comments-section.open {
+        grid-column: 2;
+        grid-row: 4;
+        border-left: 1px solid #222631;
         display: flex;
         flex-direction: column;
-        flex: 1;
         min-height: 0;
         overflow-y: auto;
         border-top: none;
         border-radius: 0;
-      }
-
-      .comments-section:not(.open) {
-        display: flex;
       }
 
       .comments-section .comments-list {
@@ -1424,7 +1407,7 @@
 
     .modal-box {
       width: 100%;
-      max-width: 620px;
+      max-width: 640px;
       max-height: 90vh;
       overflow-y: auto;
       background: #171a21;
@@ -1509,33 +1492,100 @@
       display: block;
     }
 
-    /* Thẻ số liệu thống kê */
+    /* ===== THẺ THỐNG KÊ MÀU SẮC & CÂN ĐỐI ===== */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
       margin-bottom: 18px;
     }
 
     .stat-card {
-      background: #12151b;
-      border: 1px solid #272c38;
-      border-radius: 10px;
-      padding: 12px 10px;
+      border-radius: 12px;
+      padding: 14px 10px;
       text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.18s ease;
     }
 
+    .stat-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .stat-card.stat-total {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.35), rgba(124, 58, 237, 0.35));
+      border: 1px solid rgba(129, 140, 248, 0.55);
+      box-shadow: 0 8px 24px rgba(59, 130, 246, 0.16);
+    }
+
+    .stat-card.stat-total .stat-label {
+      margin-top: 0;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #e0e7ff;
+    }
+
+    .stat-card.stat-total .stat-sub {
+      font-size: 0.76rem;
+      color: #c7d2fe;
+      margin-top: 3px;
+    }
+
+    .stat-card.stat-total .stat-num {
+      font-size: 2rem;
+      color: #ffffff;
+      text-shadow: 0 2px 10px rgba(99, 102, 241, 0.5);
+    }
+
+    .stat-card.stat-today {
+      background: linear-gradient(160deg, rgba(16, 185, 129, 0.18), rgba(16, 185, 129, 0.05));
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .stat-card.stat-today .stat-num { color: #34d399; }
+
+    .stat-card.stat-week {
+      background: linear-gradient(160deg, rgba(14, 165, 233, 0.18), rgba(14, 165, 233, 0.05));
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+    .stat-card.stat-week .stat-num { color: #38bdf8; }
+
+    .stat-card.stat-month {
+      background: linear-gradient(160deg, rgba(245, 158, 11, 0.18), rgba(245, 158, 11, 0.05));
+      border: 1px solid rgba(251, 191, 36, 0.4);
+    }
+    .stat-card.stat-month .stat-num { color: #fbbf24; }
+
+    .stat-card.stat-year {
+      background: linear-gradient(160deg, rgba(244, 63, 94, 0.18), rgba(244, 63, 94, 0.05));
+      border: 1px solid rgba(251, 113, 133, 0.4);
+    }
+    .stat-card.stat-year .stat-num { color: #fb7185; }
+
     .stat-num {
-      font-size: 1.35rem;
-      font-weight: 700;
-      color: #60a5fa;
+      font-size: 1.45rem;
+      font-weight: 800;
       font-variant-numeric: tabular-nums;
+      line-height: 1.15;
     }
 
     .stat-label {
-      font-size: 0.74rem;
-      color: #94a3b8;
-      margin-top: 4px;
+      font-size: 0.76rem;
+      color: #cbd5e1;
+      margin-top: 5px;
+      font-weight: 500;
+    }
+
+    @media (max-width: 540px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     .section-subtitle {
@@ -1575,7 +1625,7 @@
       background: #12151b;
       border: 1px solid #272c38;
       border-radius: 10px;
-      padding: 10px 12px;
+      padding: 11px 13px;
       margin-bottom: 8px;
       font-size: 0.84rem;
     }
@@ -1702,6 +1752,7 @@
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     .mini-btn {
@@ -1730,6 +1781,11 @@
       background: rgba(234, 88, 12, 0.2);
       border-color: #f97316;
       color: #fdba74;
+    }
+
+    .mini-btn.muted {
+      opacity: 0.55;
+      cursor: default;
     }
 
     .logout-btn {
@@ -2276,12 +2332,14 @@
         if (parts.length) network = parts.join(" • ");
       }
 
+      const dpr = Number((window.devicePixelRatio || 1).toFixed(2));
+
       return {
         deviceType: detectDeviceType(ua),
         deviceModel,
         os,
         browser: detectBrowserName(ua),
-        screen: `${screen.width} × ${screen.height} (DPR ${window.devicePixelRatio || 1})`,
+        screen: `${screen.width} × ${screen.height} (DPR ${dpr})`,
         viewport: `${window.innerWidth} × ${window.innerHeight}`,
         language: navigator.language || "Không rõ",
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Không rõ",
@@ -2310,9 +2368,8 @@
       const month = pad(date.getMonth() + 1);
       const day = pad(date.getDate());
 
-      // Tính số tuần ISO (Thứ 2 -> Chủ nhật)
       const temp = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const dayNum = temp.getDay() || 7; // T2=1 .. CN=7
+      const dayNum = temp.getDay() || 7;
       temp.setDate(temp.getDate() + 4 - dayNum);
       const yearStart = new Date(temp.getFullYear(), 0, 1);
       const weekNo = Math.ceil((((temp - yearStart) / 86400000) + 1) / 7);
@@ -2500,14 +2557,18 @@
     const sharedToken = urlParams.get("t");
 
     // ===== KIỂM TRA BỊ CHẶN =====
-    function isCurrentVisitorBanned() {
-      if (isAdmin) return false;
+    function isVisitorBanned(visitorId, fp) {
       return Object.values(bannedData).some((b) => {
         if (!b) return false;
-        if (b.visitorId && b.visitorId === myVisitorId) return true;
-        if (b.fp && b.fp !== "fp_unknown" && b.fp === myVisitorFp) return true;
+        if (visitorId && b.visitorId && b.visitorId === visitorId) return true;
+        if (fp && fp !== "fp_unknown" && b.fp && b.fp === fp) return true;
         return false;
       });
+    }
+
+    function isCurrentVisitorBanned() {
+      if (isAdmin) return false;
+      return isVisitorBanned(myVisitorId, myVisitorFp);
     }
 
     // ===== TIỆN ÍCH =====
@@ -2575,6 +2636,11 @@
       return `${pad(d.getHours())}:${pad(d.getMinutes())} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
     }
 
+    function cleanScreenStr(str) {
+      if (!str) return "Không rõ";
+      return str.replace(/DPR\s+([0-9]+\.[0-9]{3,})/i, (_, num) => `DPR ${Number(parseFloat(num).toFixed(2))}`);
+    }
+
     function detectMedia(url, forcedType = "auto") {
       if (forcedType === "image") return { type: "image", src: url, autoPoster: "" };
       if (forcedType === "video") return { type: "video", src: url, autoPoster: "" };
@@ -2618,7 +2684,7 @@
           ["Dòng máy", info.deviceModel || "Không rõ"],
           ["Hệ điều hành", info.os || "Không rõ"],
           ["Trình duyệt / Nguồn", info.browser || "Không rõ"],
-          ["Độ phân giải màn hình", info.screen || "Không rõ"],
+          ["Độ phân giải màn hình", cleanScreenStr(info.screen)],
           ["Khung hiển thị", info.viewport || "Không rõ"],
           ["CPU / RAM ước tính", `${info.cores || "Không rõ"} • ${info.memory || "Không rõ"}`],
           ["Kết nối mạng", info.network || "Không rõ"],
@@ -2658,11 +2724,29 @@
       const totalCount = analyticsCounts.total || 0;
 
       grid.innerHTML = `
-        <div class="stat-card"><div class="stat-num">${todayCount}</div><div class="stat-label">Hôm nay</div></div>
-        <div class="stat-card"><div class="stat-num">${weekCount}</div><div class="stat-label">Tuần này (T2-CN)</div></div>
-        <div class="stat-card"><div class="stat-num">${monthCount}</div><div class="stat-label">Tháng này</div></div>
-        <div class="stat-card"><div class="stat-num">${yearCount}</div><div class="stat-label">Năm nay</div></div>
-        <div class="stat-card"><div class="stat-num">${totalCount}</div><div class="stat-label">Tổng cộng</div></div>
+        <div class="stat-card stat-total">
+          <div>
+            <div class="stat-label">Tổng lượt truy cập</div>
+            <div class="stat-sub">Thống kê tích lũy toàn thời gian</div>
+          </div>
+          <div class="stat-num">${totalCount}</div>
+        </div>
+        <div class="stat-card stat-today">
+          <div class="stat-num">${todayCount}</div>
+          <div class="stat-label">Hôm nay</div>
+        </div>
+        <div class="stat-card stat-week">
+          <div class="stat-num">${weekCount}</div>
+          <div class="stat-label">Tuần này (T2-CN)</div>
+        </div>
+        <div class="stat-card stat-month">
+          <div class="stat-num">${monthCount}</div>
+          <div class="stat-label">Tháng này</div>
+        </div>
+        <div class="stat-card stat-year">
+          <div class="stat-num">${yearCount}</div>
+          <div class="stat-label">Năm nay</div>
+        </div>
       `;
 
       const logs = Object.entries(analyticsLogs)
@@ -2675,27 +2759,55 @@
         return;
       }
 
-      list.innerHTML = logs.map((item) => `
-        <div class="visit-log-card">
-          <div class="visit-log-top">
-            <span class="visit-log-main">${escapeHtml(item.deviceModel || item.deviceType || "Thiết bị")} • ${escapeHtml(item.os || "")}</span>
-            <span class="comment-time">${formatTime(item.visitedAt)}</span>
+      list.innerHTML = logs.map((item) => {
+        const alreadyBanned = isVisitorBanned(item.visitorId, item.fp);
+        const canBan = Boolean(item.visitorId || (item.fp && item.fp !== "fp_unknown"));
+        const banBtnHtml = !canBan ? "" : (
+          alreadyBanned
+            ? `<button type="button" class="mini-btn muted" disabled>Đã chặn</button>`
+            : `<button type="button" class="mini-btn ban" data-ban-visit-log="${item.id}">Chặn</button>`
+        );
+        return `
+          <div class="visit-log-card">
+            <div class="visit-log-top">
+              <span class="visit-log-main">${escapeHtml(item.deviceModel || item.deviceType || "Thiết bị")} • ${escapeHtml(item.os || "")}</span>
+              <span class="comment-time">${formatTime(item.visitedAt)}</span>
+            </div>
+            <div class="visit-log-sub">
+              ${escapeHtml(item.browser || "")} • ${escapeHtml(cleanScreenStr(item.screen))} • ${escapeHtml(item.network || "")}
+            </div>
+            <div class="rc-actions" style="margin-top:8px;">
+              <button type="button" class="mini-btn info" data-view-visit-log="${item.id}">Xem đầy đủ</button>
+              ${banBtnHtml}
+            </div>
           </div>
-          <div class="visit-log-sub">
-            ${escapeHtml(item.browser || "")} • ${escapeHtml(item.screen || "")} • ${escapeHtml(item.network || "")}
-          </div>
-          <div class="rc-actions" style="margin-top:8px;">
-            <button type="button" class="mini-btn info" data-view-visit-log="${item.id}">Xem đầy đủ</button>
-          </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
     }
 
-    document.getElementById("visitLogsList").addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-view-visit-log]");
-      if (btn && isAdmin) {
-        const log = analyticsLogs[btn.dataset.viewVisitLog];
+    document.getElementById("visitLogsList").addEventListener("click", async (e) => {
+      const viewBtn = e.target.closest("[data-view-visit-log]");
+      if (viewBtn && isAdmin) {
+        const log = analyticsLogs[viewBtn.dataset.viewVisitLog];
         if (log) showUserInfoModal(log, "Chi tiết lượt truy cập", log.visitedAt);
+        return;
+      }
+
+      const banBtn = e.target.closest("[data-ban-visit-log]");
+      if (banBtn && isAdmin) {
+        const log = analyticsLogs[banBtn.dataset.banVisitLog];
+        if (!log) return;
+        const label = `${log.deviceModel || log.deviceType || "Thiết bị"} (${log.browser || "Trình duyệt"})`;
+        if (!confirm(`Chặn mọi lượt truy cập từ ${label}?`)) return;
+
+        await push(ref(db, "banned"), {
+          visitorId: log.visitorId || "",
+          fp: log.fp || "",
+          reasonText: `${log.deviceModel || log.deviceType || "Thiết bị"} • ${log.os || ""} • ${log.browser || ""}`,
+          postLabel: "Chặn từ Thống kê",
+          bannedAt: Date.now()
+        });
+        showToast("Đã chặn thiết bị này!");
       }
     });
 
@@ -2710,7 +2822,6 @@
 
       onValue(ref(db, "analytics/logs"), (snap) => {
         analyticsLogs = snap.val() || {};
-        // Tự động giữ tối đa 100 lượt gần nhất, xóa lượt xa nhất
         const entries = Object.entries(analyticsLogs)
           .map(([id, item]) => ({ id, visitedAt: item?.visitedAt || 0 }))
           .sort((a, b) => b.visitedAt - a.visitedAt);
@@ -2982,7 +3093,7 @@
       }
     }, true);
 
-    // ===== TẠO THẺ BÀI ĐĂNG (TƯƠNG THÍCH CẢ MOBILE DỌC & DESKTOP 2 CỘT NGANG) =====
+    // ===== TẠO THẺ BÀI ĐĂNG (KHÔNG DÙNG display: contents -> HOẠT ĐỘNG 100% TRÊN MỌI DI ĐỘNG) =====
     function createPostCard(post, isDetailModal = false) {
       const card = document.createElement("article");
       card.className = "post-card";
@@ -3009,50 +3120,48 @@
         : "";
 
       card.innerHTML = `
+        <div class="post-head">
+          <div>
+            <div class="post-title-row">
+              <span class="post-title">Bài đăng ${post.postNumber}</span>
+              ${post.hidden && isAdmin ? `<span class="hidden-badge">Đang ẩn</span>` : ""}
+            </div>
+            <div class="post-meta">${formatTime(post.createdAt)}</div>
+          </div>
+          <div class="post-head-right">
+            ${adminMenuHtml}
+            ${closeModalBtnHtml}
+          </div>
+        </div>
+        ${post.caption ? `<div class="post-caption">${escapeHtml(post.caption)}</div>` : ""}
         <div class="post-media"></div>
-        <div class="post-sidebar">
-          <div class="post-head">
-            <div>
-              <div class="post-title-row">
-                <span class="post-title">Bài đăng ${post.postNumber}</span>
-                ${post.hidden && isAdmin ? `<span class="hidden-badge">Đang ẩn</span>` : ""}
-              </div>
-              <div class="post-meta">${formatTime(post.createdAt)}</div>
-            </div>
-            <div class="post-head-right">
-              ${adminMenuHtml}
-              ${closeModalBtnHtml}
-            </div>
-          </div>
-          ${post.caption ? `<div class="post-caption">${escapeHtml(post.caption)}</div>` : ""}
-          <div class="post-actions">
-            <button type="button" class="action-btn ${isLiked ? "liked" : ""}" data-like-post="${post.id}">
-              <svg viewBox="0 0 24 24" fill="${isLiked ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-              <span class="like-count">${likeCount}</span>
-            </button>
-            <button type="button" class="action-btn" data-toggle-comments="${post.id}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              <span class="comment-count">${cCount}</span>
-            </button>
-            <button type="button" class="action-btn" data-share-post="${post.id}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-              </svg>
-              <span>Chia sẻ</span>
-            </button>
-          </div>
-          <div class="comments-section ${isOpen ? "open" : ""}" data-comments-sec="${post.id}">
-            <form class="comment-form" data-comment-form="${post.id}">
-              <input type="text" class="comment-input" placeholder="Viết bình luận ẩn danh..." maxlength="500" required />
-              <button type="submit" class="comment-send-btn">Gửi</button>
-            </form>
-            <div class="comments-list" data-comments-list="${post.id}"></div>
-          </div>
+        <div class="post-actions">
+          <button type="button" class="action-btn ${isLiked ? "liked" : ""}" data-like-post="${post.id}">
+            <svg viewBox="0 0 24 24" fill="${isLiked ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            <span class="like-count">${likeCount}</span>
+          </button>
+          <button type="button" class="action-btn" data-toggle-comments="${post.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span class="comment-count">${cCount}</span>
+          </button>
+          <button type="button" class="action-btn" data-share-post="${post.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            <span>Chia sẻ</span>
+          </button>
+        </div>
+        <div class="comments-section ${isOpen ? "open" : ""}" data-comments-sec="${post.id}">
+          <form class="comment-form" data-comment-form="${post.id}">
+            <input type="text" class="comment-input" placeholder="Viết bình luận ẩn danh..." maxlength="500" required />
+            <button type="submit" class="comment-send-btn">Gửi</button>
+          </form>
+          <div class="comments-list" data-comments-list="${post.id}"></div>
         </div>
       `;
 
@@ -3117,7 +3226,6 @@
         }
       }
 
-      // Render bình luận ngay để cột phải trên máy tính luôn có sẵn dữ liệu
       setTimeout(() => renderCommentsForPost(post.id), 0);
       return card;
     }
@@ -3682,7 +3790,7 @@
             <span>${escapeHtml(b.postLabel || "Bình luận")}</span>
             <span class="comment-time">${formatTime(b.bannedAt)}</span>
           </div>
-          <div class="rc-text">Nội dung vi phạm: "${escapeHtml(b.reasonText || "")}"</div>
+          <div class="rc-text">${escapeHtml(b.reasonText || "")}</div>
           <div class="rc-actions">
             <button type="button" class="mini-btn" data-unban-id="${b.id}">Bỏ chặn</button>
           </div>
@@ -4122,19 +4230,23 @@
       if (toggleCmt) {
         const postId = toggleCmt.dataset.toggleComments;
         const card = toggleCmt.closest(".post-card");
-        const sec = card.querySelector(`[data-comments-sec="${postId}"]`);
-        if (window.innerWidth >= 960) {
+        const sec = card ? card.querySelector(`[data-comments-sec="${postId}"]`) : null;
+        if (!sec) return;
+
+        if (window.matchMedia("(min-width: 960px)").matches) {
           const input = sec.querySelector(".comment-input");
           if (input) input.focus();
           return;
         }
-        if (sec.classList.contains("open")) {
-          openCommentPosts.delete(postId);
-          sec.classList.remove("open");
-        } else {
+
+        const isOpening = !sec.classList.contains("open");
+        if (isOpening) {
           openCommentPosts.add(postId);
           sec.classList.add("open");
           renderCommentsForPost(postId);
+        } else {
+          openCommentPosts.delete(postId);
+          sec.classList.remove("open");
         }
         return;
       }
@@ -4608,7 +4720,10 @@
     onValue(ref(db, "banned"), (snap) => {
       bannedData = snap.val() || {};
       bannedReady = true;
-      if (isAdmin) renderBannedUsers();
+      if (isAdmin) {
+        renderBannedUsers();
+        renderAnalyticsPanel();
+      }
       evaluateAccess();
     });
 
