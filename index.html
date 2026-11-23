@@ -1628,14 +1628,29 @@
           if (!sampleVisitorId && l.visitorId) sampleVisitorId = l.visitorId;
           if (!sampleFp && l.fp) sampleFp = l.fp;
           events.push({
-            const actMap = {
-            like_post: "Thả tim",
-            unlike_post: "Bỏ tim",
-            like_comment: "Thả tim bình luận tại",
-            unlike_comment: "Bỏ tim bình luận tại",
-            like_reply: "Thả tim trả lời tại",
-            unlike_reply: "Bỏ tim trả lời tại"
-          };
+            type: "visit", ts: l.visitedAt || 0, title: "Truy cập website",
+            detail: `${l.deviceModel || "Thiết bị"} (${l.os || ""}) • ${l.browser || ""} • IP: ${l.ip || "Không rõ"} (${l.isp || ""})`,
+            postId: null
+          });
+        }
+      });
+
+      const actMap = {
+        like_post: "Thả tim",
+        unlike_post: "Bỏ tim",
+        like_comment: "Thả tim bình luận tại",
+        unlike_comment: "Bỏ tim bình luận tại",
+        like_reply: "Thả tim trả lời tại",
+        unlike_reply: "Bỏ tim trả lời tại"
+      };
+
+      Object.values(analyticsLikeLogs).forEach((l) => {
+        if (!l) return;
+        if (matchesLookupQuery(l.authorInfo, l.authorId, l.authorFp, qLower)) {
+          likeCount++;
+          if (!sampleInfo && l.authorInfo) sampleInfo = l.authorInfo;
+          if (!sampleVisitorId && (l.authorId || l.authorInfo?.visitorId)) sampleVisitorId = l.authorId || l.authorInfo.visitorId;
+          if (!sampleFp && (l.authorFp || l.authorInfo?.fp)) sampleFp = l.authorFp || l.authorInfo.fp;
           const actTitle = `${actMap[l.action] || "Thả tim"} ${getPostLabel(l.postId)}`;
           const actDetail = (l.commentText ? `"${l.commentText}" • ` : "") + `IP: ${l.authorInfo?.ip || "Không rõ"} • ${l.authorInfo?.deviceModel || "Thiết bị"}`;
           events.push({
