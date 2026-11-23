@@ -1111,6 +1111,8 @@
         deviceModel,
         os,
         browser: detectBrowserName(ua),
+        referrer: document.referrer || "Truy cập trực tiếp",
+        entryUrl: window.location.href,
         visitorId: myVisitorId,
         fp: myVisitorFp
       };
@@ -1157,6 +1159,8 @@
           `👀 <b>Lượt truy cập mới</b>\n` +
           `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
           `• Trình duyệt: ${escapeHtml(info.browser)}\n` +
+          `• Nguồn chuyển hướng: ${escapeHtml(info.referrer)}\n` +
+          `• Link vào trang: ${escapeHtml(info.entryUrl)}\n` +
           `• IP: <code>${escapeHtml(info.ip)}</code>\n` +
           `• Nhà mạng: ${escapeHtml(info.isp)}\n` +
           `• Khu vực: ${escapeHtml(info.location)}\n` +
@@ -1368,6 +1372,8 @@
       } else {
         const rows = [
           ["Thời gian", timestamp ? formatFullDateTime(timestamp) : "Không rõ"],
+          ["Nguồn chuyển hướng", info.referrer || "Truy cập trực tiếp"],
+          ["Link vào trang", info.entryUrl || "Không rõ"],
           ["Địa chỉ IP", info.ip || "Không rõ"],
           ["Nhà mạng (ISP)", info.isp || "Không rõ"],
           ["Khu vực", info.location || "Không rõ"],
@@ -1517,7 +1523,9 @@
       Object.entries(analyticsLikeLogs).forEach(([likeId, l]) => {
         if (!l) return;
         flat.push({
-          kind: "like", likeId, postId: l.postId,
+          kind: "like", likeId, action: l.action || "like_post",
+          postId: l.postId, commentId: l.commentId || "", replyId: l.replyId || "",
+          commentText: l.commentText || "",
           authorId: l.authorId || l.authorInfo?.visitorId || "",
           authorFp: l.authorFp || l.authorInfo?.fp || "",
           authorInfo: l.authorInfo || null, createdAt: l.likedAt || 0
@@ -1531,6 +1539,15 @@
         return;
       }
 
+      const likeActionNames = {
+        like_post: "♥ Tim bài",
+        unlike_post: "💔 Bỏ tim bài",
+        like_comment: "♥ Tim bình luận",
+        unlike_comment: "💔 Bỏ tim bình luận",
+        like_reply: "♥ Tim trả lời",
+        unlike_reply: "💔 Bỏ tim trả lời"
+      };
+
       container.innerHTML = flat.slice(0, 80).map((item) => {
         if (item.kind === "like") {
           const alreadyBanned = isVisitorBanned(item.authorId, item.authorFp);
@@ -1540,19 +1557,21 @@
               ? `<button type="button" class="mini-btn muted" disabled>Đã chặn</button>`
               : `<button type="button" class="mini-btn ban" data-act-ban-like="${item.likeId}">Chặn</button>`
           );
-          const sub = item.authorInfo
+          const deviceSub = item.authorInfo
             ? `${item.authorInfo.deviceModel || "Thiết bị"} • IP: ${item.authorInfo.ip || "Không rõ"}`
             : "Người dùng ẩn danh";
+          const bodyText = item.commentText ? `"${item.commentText}"\n(${deviceSub})` : deviceSub;
+          const badgeText = likeActionNames[item.action] || "♥ Tim bài";
 
           return `
             <div class="recent-comment-card">
               <div class="rc-top">
-                <span><span class="activity-badge like">♥ Tim bài</span>${escapeHtml(getPostLabel(item.postId))}</span>
+                <span><span class="activity-badge like">${badgeText}</span>${escapeHtml(getPostLabel(item.postId))}</span>
                 <span class="comment-time">${formatTime(item.createdAt)}</span>
               </div>
-              <div class="rc-text" style="color:#cbd5e1;font-size:0.84rem;">${escapeHtml(sub)}</div>
+              <div class="rc-text" style="color:#cbd5e1;font-size:0.84rem;">${escapeHtml(bodyText)}</div>
               <div class="rc-actions">
-                <button type="button" class="mini-btn" data-rc-view="${item.postId}||">Xem bài</button>
+                <button type="button" class="mini-btn" data-rc-view="${item.postId}|${item.commentId}|${item.replyId}">Xem bài</button>
                 <button type="button" class="mini-btn info" data-act-info-like="${item.likeId}">Xem thông tin</button>
                 ${banBtn}
               </div>
@@ -1609,9 +1628,19 @@
           if (!sampleVisitorId && l.visitorId) sampleVisitorId = l.visitorId;
           if (!sampleFp && l.fp) sampleFp = l.fp;
           events.push({
-            type: "visit", ts: l.visitedAt || 0, title: "Truy cập website",
-            detail: `${l.deviceModel || "Thiết bị"} (${l.os || ""}) • ${l.browser || ""} • IP: ${l.ip || "Không rõ"} (${l.isp || ""})`,
-            postId: null
+            const actMap = {
+            like_post: "Thả tim",
+            unlike_post: "Bỏ tim",
+            like_comment: "Thả tim bình luận tại",
+            unlike_comment: "Bỏ tim bình luận tại",
+            like_reply: "Thả tim trả lời tại",
+            unlike_reply: "Bỏ tim trả lời tại"
+          };
+          const actTitle = `${actMap[l.action] || "Thả tim"} ${getPostLabel(l.postId)}`;
+          const actDetail = (l.commentText ? `"${l.commentText}" • ` : "") + `IP: ${l.authorInfo?.ip || "Không rõ"} • ${l.authorInfo?.deviceModel || "Thiết bị"}`;
+          events.push({
+            type: "like", ts: l.likedAt || 0, title: actTitle, detail: actDetail,
+            postId: l.postId, cId: l.commentId || "", rId: l.replyId || ""
           });
         }
       });
@@ -1848,6 +1877,14 @@
       document.querySelectorAll("[data-comments-list]").forEach((el) => renderCommentsForPost(el.dataset.commentsList));
     }
 
+    const editingCommentKeys = new Set();
+    const SELF_EDIT_WINDOW_MS = 10 * 60 * 1000;
+
+    function canSelfManageComment(item) {
+      if (!item || !item.authorId || item.authorId !== myVisitorId) return false;
+      return (Date.now() - (item.createdAt || 0)) <= SELF_EDIT_WINDOW_MS;
+    }
+
     function renderCommentsForPost(postId) {
       const lists = document.querySelectorAll(`[data-comments-list="${postId}"]`);
       if (!lists.length) return;
@@ -1865,6 +1902,8 @@
           const repliesArr = c.replies ? Object.entries(c.replies).map(([rid, r]) => ({ id: rid, ...r, likes: r.likes || 0 })).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)) : [];
           const isExpanded = expandedReplies.has(cKey);
           const showReplyForm = openReplyForms.has(cKey);
+          const isSelfC = canSelfManageComment(c);
+          const isEditingC = isSelfC && editingCommentKeys.has(cKey);
 
           let repliesHtml = "";
           if (repliesArr.length > 0) {
@@ -1875,15 +1914,31 @@
                 const rKey = `${postId}__${c.id}__${r.id}`;
                 const isRLiked = likedComments.has(rKey);
                 const canBanR = isAdmin && (r.authorId || r.authorFp);
+                const isSelfR = canSelfManageComment(r);
+                const isEditingR = isSelfR && editingCommentKeys.has(rKey);
+
+                const rBodyHtml = isEditingR ? `
+                  <form class="reply-form" data-save-edit-reply="${postId}|${c.id}|${r.id}" style="margin-top:6px;">
+                    <input type="text" class="comment-input" value="${escapeHtml(r.text)}" maxlength="500" required />
+                    <button type="submit" class="comment-send-btn">Lưu</button>
+                    <button type="button" class="mini-btn" data-cancel-edit="${rKey}" data-post-id="${postId}">Hủy</button>
+                  </form>
+                ` : `<div class="comment-text">${escapeHtml(r.text)}</div>`;
+
                 return `
                   <div class="comment-item">
                     <div class="comment-bubble" id="comment-${r.id}">
-                      <div class="comment-head"><span class="comment-author">Ẩn danh</span><span class="comment-time">${formatTime(r.createdAt)}</span></div>
-                      <div class="comment-text">${escapeHtml(r.text)}</div>
+                      <div class="comment-head">
+                        <span class="comment-author">Ẩn danh</span>
+                        <span class="comment-time">${formatTime(r.createdAt)}${r.editedAt ? " (đã sửa)" : ""}</span>
+                      </div>
+                      ${rBodyHtml}
                     </div>
                     <div class="comment-actions">
                       <button type="button" class="c-btn ${isRLiked ? "liked" : ""}" data-like-reply="${postId}|${c.id}|${r.id}">${isRLiked ? "♥" : "♡"} ${r.likes}</button>
                       <button type="button" class="c-btn" data-share-reply="${postId}|${c.id}|${r.id}">Chia sẻ</button>
+                      ${isSelfR ? `<button type="button" class="c-btn info" data-start-edit="${rKey}" data-post-id="${postId}">Sửa</button>` : ""}
+                      ${isSelfR && !isAdmin ? `<button type="button" class="c-btn danger" data-self-delete-reply="${postId}|${c.id}|${r.id}">Xóa</button>` : ""}
                       ${isAdmin ? `<button type="button" class="c-btn info" data-info-reply="${postId}|${c.id}|${r.id}">Xem thông tin</button>` : ""}
                       ${isAdmin ? `<button type="button" class="c-btn danger" data-delete-reply="${postId}|${c.id}|${r.id}">Xóa</button>` : ""}
                       ${canBanR ? `<button type="button" class="c-btn ban" data-ban-reply="${postId}|${c.id}|${r.id}">Xóa &amp; Chặn</button>` : ""}
@@ -1904,17 +1959,30 @@
             </div>
           ` : "";
 
+          const cBodyHtml = isEditingC ? `
+            <form class="reply-form" data-save-edit-comment="${postId}|${c.id}" style="margin-top:6px;">
+              <input type="text" class="comment-input" value="${escapeHtml(c.text)}" maxlength="500" required />
+              <button type="submit" class="comment-send-btn">Lưu</button>
+              <button type="button" class="mini-btn" data-cancel-edit="${cKey}" data-post-id="${postId}">Hủy</button>
+            </form>
+          ` : `<div class="comment-text">${escapeHtml(c.text)}</div>`;
+
           const canBanC = isAdmin && (c.authorId || c.authorFp);
           return `
             <div class="comment-item">
               <div class="comment-bubble" id="comment-${c.id}">
-                <div class="comment-head"><span class="comment-author">Ẩn danh</span><span class="comment-time">${formatTime(c.createdAt)}</span></div>
-                <div class="comment-text">${escapeHtml(c.text)}</div>
+                <div class="comment-head">
+                  <span class="comment-author">Ẩn danh</span>
+                  <span class="comment-time">${formatTime(c.createdAt)}${c.editedAt ? " (đã sửa)" : ""}</span>
+                </div>
+                ${cBodyHtml}
               </div>
               <div class="comment-actions">
                 <button type="button" class="c-btn ${isCLiked ? "liked" : ""}" data-like-comment="${postId}|${c.id}">${isCLiked ? "♥" : "♡"} ${c.likes}</button>
                 <button type="button" class="c-btn" data-share-comment="${postId}|${c.id}">Chia sẻ</button>
                 <button type="button" class="c-btn" data-open-reply="${cKey}" data-post-id="${postId}">Trả lời</button>
+                ${isSelfC ? `<button type="button" class="c-btn info" data-start-edit="${cKey}" data-post-id="${postId}">Sửa</button>` : ""}
+                ${isSelfC && !isAdmin ? `<button type="button" class="c-btn danger" data-self-delete-comment="${postId}|${c.id}">Xóa</button>` : ""}
                 ${isAdmin ? `<button type="button" class="c-btn info" data-info-comment="${postId}|${c.id}">Xem thông tin</button>` : ""}
                 ${isAdmin ? `<button type="button" class="c-btn danger" data-delete-comment="${postId}|${c.id}">Xóa</button>` : ""}
                 ${canBanC ? `<button type="button" class="c-btn ban" data-ban-comment="${postId}|${c.id}">Xóa &amp; Chặn</button>` : ""}
@@ -1927,6 +1995,10 @@
       }
       lists.forEach((el) => { el.innerHTML = html; });
     }
+
+    setInterval(() => {
+      if (albumOpened) updateAllCommentSections();
+    }, 30000);
 
     function cleanupMediaInContainer(container) {
       container.querySelectorAll("video").forEach((v) => {
@@ -2727,20 +2799,19 @@
 
         runTransaction(ref(db, `likes/${postId}`), (curr) => Math.max(0, (curr || 0) + (already ? -1 : 1)));
 
-        if (!already) {
-          const info = await getMyVisitorInfo();
-          push(ref(db, "analytics/likeLogs"), {
-            postId, authorId: myVisitorId, authorFp: myVisitorFp, authorInfo: info, likedAt: Date.now()
-          }).catch(() => {});
+        const action = already ? "unlike_post" : "like_post";
+        const info = await getMyVisitorInfo();
+        push(ref(db, "analytics/likeLogs"), {
+          action, postId, authorId: myVisitorId, authorFp: myVisitorFp, authorInfo: info, likedAt: Date.now()
+        }).catch(() => {});
 
-          sendTelegramNotify(
-            `❤️ <b>Lượt tim mới tại ${escapeHtml(getPostLabel(postId))}</b>\n` +
-            `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
-            `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
-            `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
-            `• Xem bài: ${escapeHtml(buildDirectUrl(postId))}`
-          );
-        }
+        sendTelegramNotify(
+          `${already ? "💔 <b>Đã bỏ tim" : "❤️ <b>Lượt tim mới tại"} ${escapeHtml(getPostLabel(postId))}</b>\n` +
+          `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
+          `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
+          `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
+          `• Xem bài: ${escapeHtml(buildDirectUrl(postId))}`
+        );
         return;
       }
 
@@ -2761,7 +2832,20 @@
       }
 
       const sharePost = e.target.closest("[data-share-post]");
-      if (sharePost) { copyShareLink(sharePost.dataset.sharePost); return; }
+      if (sharePost) {
+        const postId = sharePost.dataset.sharePost;
+        copyShareLink(postId);
+        getMyVisitorInfo().then((info) => {
+          sendTelegramNotify(
+            `🔗 <b>Người dùng bấm chia sẻ ${escapeHtml(getPostLabel(postId))}</b>\n` +
+            `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
+            `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
+            `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
+            `• Link bài: ${escapeHtml(buildDirectUrl(postId))}`
+          );
+        });
+        return;
+      }
 
       const likeCmt = e.target.closest("[data-like-comment]");
       if (likeCmt) {
@@ -2770,6 +2854,23 @@
         if (already) likedComments.delete(key); else likedComments.add(key);
         localStorage.setItem(LIKED_COMMENTS_KEY, JSON.stringify([...likedComments]));
         runTransaction(ref(db, `comments/${postId}/${cId}/likes`), (curr) => Math.max(0, (curr || 0) + (already ? -1 : 1)));
+
+        const cText = commentsData[postId]?.[cId]?.text || "";
+        const action = already ? "unlike_comment" : "like_comment";
+        const info = await getMyVisitorInfo();
+        push(ref(db, "analytics/likeLogs"), {
+          action, postId, commentId: cId, commentText: cText,
+          authorId: myVisitorId, authorFp: myVisitorFp, authorInfo: info, likedAt: Date.now()
+        }).catch(() => {});
+
+        sendTelegramNotify(
+          `${already ? "💔 <b>Bỏ tim bình luận" : "❤️ <b>Tim bình luận"} tại ${escapeHtml(getPostLabel(postId))}</b>\n` +
+          `💬 Bình luận: "${escapeHtml(cText)}"\n` +
+          `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
+          `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
+          `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
+          `• Xem trực tiếp: ${escapeHtml(buildDirectUrl(postId, cId))}`
+        );
         return;
       }
 
@@ -2780,13 +2881,123 @@
         if (already) likedComments.delete(key); else likedComments.add(key);
         localStorage.setItem(LIKED_COMMENTS_KEY, JSON.stringify([...likedComments]));
         runTransaction(ref(db, `comments/${postId}/${cId}/replies/${rId}/likes`), (curr) => Math.max(0, (curr || 0) + (already ? -1 : 1)));
+
+        const rText = commentsData[postId]?.[cId]?.replies?.[rId]?.text || "";
+        const action = already ? "unlike_reply" : "like_reply";
+        const info = await getMyVisitorInfo();
+        push(ref(db, "analytics/likeLogs"), {
+          action, postId, commentId: cId, replyId: rId, commentText: rText,
+          authorId: myVisitorId, authorFp: myVisitorFp, authorInfo: info, likedAt: Date.now()
+        }).catch(() => {});
+
+        sendTelegramNotify(
+          `${already ? "💔 <b>Bỏ tim câu trả lời" : "❤️ <b>Tim câu trả lời"} tại ${escapeHtml(getPostLabel(postId))}</b>\n` +
+          `💬 Nội dung: "${escapeHtml(rText)}"\n` +
+          `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
+          `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
+          `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
+          `• Xem trực tiếp: ${escapeHtml(buildDirectUrl(postId, cId, rId))}`
+        );
         return;
       }
 
       const shareCmt = e.target.closest("[data-share-comment]");
-      if (shareCmt) { const [p, c] = shareCmt.dataset.shareComment.split("|"); copyShareLink(p, c); return; }
+      if (shareCmt) {
+        const [p, c] = shareCmt.dataset.shareComment.split("|");
+        const cText = commentsData[p]?.[c]?.text || "";
+        copyShareLink(p, c);
+        getMyVisitorInfo().then((info) => {
+          sendTelegramNotify(
+            `🔗 <b>Người dùng bấm chia sẻ bình luận tại ${escapeHtml(getPostLabel(p))}</b>\n` +
+            `💬 Bình luận: "${escapeHtml(cText)}"\n` +
+            `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
+            `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
+            `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
+            `• Link trực tiếp: ${escapeHtml(buildDirectUrl(p, c))}`
+          );
+        });
+        return;
+      }
+
       const shareRep = e.target.closest("[data-share-reply]");
-      if (shareRep) { const [p, c, r] = shareRep.dataset.shareReply.split("|"); copyShareLink(p, c, r); return; }
+      if (shareRep) {
+        const [p, c, r] = shareRep.dataset.shareReply.split("|");
+        const rText = commentsData[p]?.[c]?.replies?.[r]?.text || "";
+        copyShareLink(p, c, r);
+        getMyVisitorInfo().then((info) => {
+          sendTelegramNotify(
+            `🔗 <b>Người dùng bấm chia sẻ câu trả lời tại ${escapeHtml(getPostLabel(p))}</b>\n` +
+            `💬 Nội dung: "${escapeHtml(rText)}"\n` +
+            `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
+            `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
+            `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
+            `• Link trực tiếp: ${escapeHtml(buildDirectUrl(p, c, r))}`
+          );
+        });
+        return;
+      }
+
+      const startEditBtn = e.target.closest("[data-start-edit]");
+      if (startEditBtn) {
+        editingCommentKeys.add(startEditBtn.dataset.startEdit);
+        renderCommentsForPost(startEditBtn.dataset.postId);
+        return;
+      }
+
+      const cancelEditBtn = e.target.closest("[data-cancel-edit]");
+      if (cancelEditBtn) {
+        editingCommentKeys.delete(cancelEditBtn.dataset.cancelEdit);
+        renderCommentsForPost(cancelEditBtn.dataset.postId);
+        return;
+      }
+
+      const selfDelCmt = e.target.closest("[data-self-delete-comment]");
+      if (selfDelCmt) {
+        const [p, c] = selfDelCmt.dataset.selfDeleteComment.split("|");
+        const cObj = commentsData[p]?.[c];
+        if (!canSelfManageComment(cObj)) {
+          showToast("Đã hết thời hạn 10 phút để xóa bình luận này.");
+          renderCommentsForPost(p);
+          return;
+        }
+        if (!confirm("Xóa bình luận này của bạn?")) return;
+        const deletedText = cObj.text || "";
+        await remove(ref(db, `comments/${p}/${c}`));
+        showToast("Đã xóa bình luận của bạn.");
+        const info = await getMyVisitorInfo();
+        sendTelegramNotify(
+          `🗑️ <b>Người dùng tự xóa bình luận tại ${escapeHtml(getPostLabel(p))}</b>\n` +
+          `• Nội dung đã xóa: "${escapeHtml(deletedText)}"\n` +
+          `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
+          `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
+          `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>`
+        );
+        return;
+      }
+
+      const selfDelRep = e.target.closest("[data-self-delete-reply]");
+      if (selfDelRep) {
+        const [p, c, r] = selfDelRep.dataset.selfDeleteReply.split("|");
+        const rObj = commentsData[p]?.[c]?.replies?.[r];
+        if (!canSelfManageComment(rObj)) {
+          showToast("Đã hết thời hạn 10 phút để xóa câu trả lời này.");
+          renderCommentsForPost(p);
+          return;
+        }
+        if (!confirm("Xóa câu trả lời này của bạn?")) return;
+        const deletedText = rObj.text || "";
+        await remove(ref(db, `comments/${p}/${c}/replies/${r}`));
+        showToast("Đã xóa câu trả lời của bạn.");
+        const info = await getMyVisitorInfo();
+        sendTelegramNotify(
+          `🗑️ <b>Người dùng tự xóa câu trả lời tại ${escapeHtml(getPostLabel(p))}</b>\n` +
+          `• Nội dung đã xóa: "${escapeHtml(deletedText)}"\n` +
+          `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
+          `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
+          `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>`
+        );
+        return;
+      }
 
       const infoCmt = e.target.closest("[data-info-comment]");
       if (infoCmt && isAdmin) {
@@ -2887,6 +3098,64 @@
           `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
           `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
           `• Xem trực tiếp: ${escapeHtml(buildDirectUrl(postId, cId, pushedRef.key))}`
+        );
+        return;
+      }
+
+      const editCmtForm = e.target.closest("[data-save-edit-comment]");
+      if (editCmtForm) {
+        e.preventDefault();
+        const [postId, cId] = editCmtForm.dataset.saveEditComment.split("|");
+        const cObj = commentsData[postId]?.[cId];
+        editingCommentKeys.delete(`${postId}__${cId}`);
+        if (!canSelfManageComment(cObj)) {
+          showToast("Đã hết thời hạn 10 phút để sửa bình luận này.");
+          renderCommentsForPost(postId);
+          return;
+        }
+        const newText = editCmtForm.querySelector(".comment-input").value.trim();
+        if (!newText || newText === cObj.text) { renderCommentsForPost(postId); return; }
+        const oldText = cObj.text || "";
+        await update(ref(db, `comments/${postId}/${cId}`), { text: newText, editedAt: Date.now() });
+        showToast("Đã cập nhật bình luận!");
+        const info = await getMyVisitorInfo();
+        sendTelegramNotify(
+          `✏️ <b>Người dùng đã sửa bình luận tại ${escapeHtml(getPostLabel(postId))}</b>\n` +
+          `• Nội dung cũ: "${escapeHtml(oldText)}"\n` +
+          `• Nội dung mới: "${escapeHtml(newText)}"\n` +
+          `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
+          `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
+          `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
+          `• Xem trực tiếp: ${escapeHtml(buildDirectUrl(postId, cId))}`
+        );
+        return;
+      }
+
+      const editRepForm = e.target.closest("[data-save-edit-reply]");
+      if (editRepForm) {
+        e.preventDefault();
+        const [postId, cId, rId] = editRepForm.dataset.saveEditReply.split("|");
+        const rObj = commentsData[postId]?.[cId]?.replies?.[rId];
+        editingCommentKeys.delete(`${postId}__${cId}__${rId}`);
+        if (!canSelfManageComment(rObj)) {
+          showToast("Đã hết thời hạn 10 phút để sửa câu trả lời này.");
+          renderCommentsForPost(postId);
+          return;
+        }
+        const newText = editRepForm.querySelector(".comment-input").value.trim();
+        if (!newText || newText === rObj.text) { renderCommentsForPost(postId); return; }
+        const oldText = rObj.text || "";
+        await update(ref(db, `comments/${postId}/${cId}/replies/${rId}`), { text: newText, editedAt: Date.now() });
+        showToast("Đã cập nhật câu trả lời!");
+        const info = await getMyVisitorInfo();
+        sendTelegramNotify(
+          `✏️ <b>Người dùng đã sửa câu trả lời tại ${escapeHtml(getPostLabel(postId))}</b>\n` +
+          `• Nội dung cũ: "${escapeHtml(oldText)}"\n` +
+          `• Nội dung mới: "${escapeHtml(newText)}"\n` +
+          `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
+          `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
+          `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
+          `• Xem trực tiếp: ${escapeHtml(buildDirectUrl(postId, cId, rId))}`
         );
       }
     }
