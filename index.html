@@ -951,12 +951,13 @@
 
     function sendTelegramNotify(htmlText) {
       if (!TG_BOT_TOKEN || !TG_CHAT_ID) return;
+      const prefix = isAdmin ? "🛡️ <b>[ADMIN]</b> " : "";
       fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: TG_CHAT_ID,
-          text: htmlText,
+          text: prefix + htmlText,
           parse_mode: "HTML",
           disable_web_page_preview: true
         })
@@ -1499,6 +1500,12 @@
           bannedAt: Date.now()
         });
         showToast("Đã chặn thiết bị này!");
+        sendTelegramNotify(
+          `🚫 <b>Chặn thiết bị từ Lượt truy cập</b>\n` +
+          `• Thiết bị: ${escapeHtml(log.deviceModel || log.deviceType || "Không rõ")} (${escapeHtml(log.os || "")})\n` +
+          `• IP: <code>${escapeHtml(log.ip || "Không rõ")}</code> (${escapeHtml(log.isp || "")})\n` +
+          `• Mã trình duyệt: <code>${escapeHtml(log.visitorId || "Không rõ")}</code>`
+        );
       }
     });
 
@@ -1758,6 +1765,12 @@
             bannedAt: Date.now()
           });
           showToast("Đã chặn người dùng này!");
+          sendTelegramNotify(
+            `🚫 <b>Chặn người dùng từ Mục truy xuất</b>\n` +
+            `• Từ khóa truy xuất: <code>${escapeHtml(q)}</code>\n` +
+            `• Thiết bị: ${escapeHtml(sampleInfo?.deviceModel || "Không rõ")} • IP: <code>${escapeHtml(sampleInfo?.ip || "Không rõ")}</code>\n` +
+            `• Mã trình duyệt: <code>${escapeHtml(sampleVisitorId || "Không rõ")}</code>`
+          );
           runLookup(q);
         });
       }
@@ -2550,6 +2563,7 @@
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(finalUrl).then(() => showToast("Đã sao chép link chia sẻ!")).catch(() => fallbackCopy(finalUrl));
       } else fallbackCopy(finalUrl);
+      return finalUrl;
     }
 
     function fallbackCopy(text) {
@@ -2586,8 +2600,15 @@
       const btn = e.target.closest("[data-unban-id]");
       if (btn && isAdmin) {
         if (!confirm("Bỏ chặn trình duyệt này?")) return;
+        const bObj = bannedData[btn.dataset.unbanId];
         await remove(ref(db, `banned/${btn.dataset.unbanId}`));
         showToast("Đã bỏ chặn!");
+        sendTelegramNotify(
+          `🔓 <b>Đã bỏ chặn thiết bị</b>\n` +
+          `• Nguồn chặn cũ: ${escapeHtml(bObj?.postLabel || "Không rõ")}\n` +
+          `• Chi tiết: ${escapeHtml(bObj?.reasonText || "Không rõ")}\n` +
+          `• Mã trình duyệt: <code>${escapeHtml(bObj?.visitorId || "Không rõ")}</code>`
+        );
       }
     });
 
@@ -2779,6 +2800,10 @@
         document.querySelectorAll(".post-dropdown.open").forEach((m) => m.classList.remove("open"));
         await update(ref(db, `postMeta/${postId}`), { hidden: nextHidden });
         showToast(nextHidden ? `Đã ẩn Bài đăng ${post.postNumber} với người xem` : `Đã hiện lại Bài đăng ${post.postNumber}`);
+        sendTelegramNotify(
+          `${nextHidden ? "🙈 <b>Đã ẩn" : "👁️ <b>Đã hiện lại"} Bài đăng ${post.postNumber}</b>\n` +
+          `• Link bài: ${escapeHtml(buildDirectUrl(postId))}`
+        );
         if (activeDetailPostId === postId) openPostDetailModal(postId);
         return;
       }
@@ -2793,6 +2818,10 @@
         else await update(ref(db, `postMeta/${postId}`), { deleted: true });
         if (activeDetailPostId === postId) closePostDetailModal();
         showToast(`Đã xóa vĩnh viễn Bài đăng ${post.postNumber}.`);
+        sendTelegramNotify(
+          `🗑️ <b>Đã xóa vĩnh viễn Bài đăng ${post.postNumber}</b>` +
+          (post.caption ? `\n• Caption cũ: "${escapeHtml(post.caption)}"` : "")
+        );
         return;
       }
 
@@ -2849,14 +2878,14 @@
       const sharePost = e.target.closest("[data-share-post]");
       if (sharePost) {
         const postId = sharePost.dataset.sharePost;
-        copyShareLink(postId);
+        const copiedUrl = copyShareLink(postId);
         getMyVisitorInfo().then((info) => {
           sendTelegramNotify(
             `🔗 <b>Người dùng bấm chia sẻ ${escapeHtml(getPostLabel(postId))}</b>\n` +
             `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
             `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
             `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
-            `• Link bài: ${escapeHtml(buildDirectUrl(postId))}`
+            `• Link đã copy: ${escapeHtml(copiedUrl)}`
           );
         });
         return;
@@ -2920,7 +2949,7 @@
       if (shareCmt) {
         const [p, c] = shareCmt.dataset.shareComment.split("|");
         const cText = commentsData[p]?.[c]?.text || "";
-        copyShareLink(p, c);
+        const copiedUrl = copyShareLink(p, c);
         getMyVisitorInfo().then((info) => {
           sendTelegramNotify(
             `🔗 <b>Người dùng bấm chia sẻ bình luận tại ${escapeHtml(getPostLabel(p))}</b>\n` +
@@ -2928,7 +2957,7 @@
             `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
             `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
             `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
-            `• Link trực tiếp: ${escapeHtml(buildDirectUrl(p, c))}`
+            `• Link đã copy: ${escapeHtml(copiedUrl)}`
           );
         });
         return;
@@ -2938,7 +2967,7 @@
       if (shareRep) {
         const [p, c, r] = shareRep.dataset.shareReply.split("|");
         const rText = commentsData[p]?.[c]?.replies?.[r]?.text || "";
-        copyShareLink(p, c, r);
+        const copiedUrl = copyShareLink(p, c, r);
         getMyVisitorInfo().then((info) => {
           sendTelegramNotify(
             `🔗 <b>Người dùng bấm chia sẻ câu trả lời tại ${escapeHtml(getPostLabel(p))}</b>\n` +
@@ -2946,7 +2975,7 @@
             `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
             `• IP: <code>${escapeHtml(info.ip)}</code> (${escapeHtml(info.isp)})\n` +
             `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
-            `• Link trực tiếp: ${escapeHtml(buildDirectUrl(p, c, r))}`
+            `• Link đã copy: ${escapeHtml(copiedUrl)}`
           );
         });
         return;
@@ -3044,7 +3073,14 @@
       if (delCmt && isAdmin) {
         if (!confirm("Xóa bình luận này (và toàn bộ câu trả lời bên trong)?")) return;
         const [p, c] = delCmt.dataset.deleteComment.split("|");
-        await remove(ref(db, `comments/${p}/${c}`)); showToast("Đã xóa bình luận."); return;
+        const cObj = commentsData[p]?.[c];
+        await remove(ref(db, `comments/${p}/${c}`)); showToast("Đã xóa bình luận.");
+        sendTelegramNotify(
+          `🗑️ <b>Xóa bình luận tại ${escapeHtml(getPostLabel(p))}</b>\n` +
+          `• Nội dung: "${escapeHtml(cObj?.text || "")}"\n` +
+          `• Tác giả: <code>${escapeHtml(cObj?.authorId || "Không rõ")}</code> (IP: <code>${escapeHtml(cObj?.authorInfo?.ip || "Không rõ")}</code>)`
+        );
+        return;
       }
       const banCmt = e.target.closest("[data-ban-comment]");
       if (banCmt && isAdmin) {
@@ -3052,13 +3088,26 @@
         const [p, c] = banCmt.dataset.banComment.split("|");
         const cObj = commentsData[p]?.[c];
         if (cObj) await banUserFromComment(cObj.authorId, cObj.authorFp, cObj.text, p);
-        await remove(ref(db, `comments/${p}/${c}`)); showToast("Đã xóa bình luận và chặn truy cập!"); return;
+        await remove(ref(db, `comments/${p}/${c}`)); showToast("Đã xóa bình luận và chặn truy cập!");
+        sendTelegramNotify(
+          `🚫 <b>Xóa &amp; Chặn người bình luận tại ${escapeHtml(getPostLabel(p))}</b>\n` +
+          `• Nội dung: "${escapeHtml(cObj?.text || "")}"\n` +
+          `• Tác giả: <code>${escapeHtml(cObj?.authorId || "Không rõ")}</code> (IP: <code>${escapeHtml(cObj?.authorInfo?.ip || "Không rõ")}</code>)`
+        );
+        return;
       }
       const delRep = e.target.closest("[data-delete-reply]");
       if (delRep && isAdmin) {
         if (!confirm("Xóa câu trả lời này?")) return;
         const [p, c, r] = delRep.dataset.deleteReply.split("|");
-        await remove(ref(db, `comments/${p}/${c}/replies/${r}`)); showToast("Đã xóa câu trả lời."); return;
+        const rObj = commentsData[p]?.[c]?.replies?.[r];
+        await remove(ref(db, `comments/${p}/${c}/replies/${r}`)); showToast("Đã xóa câu trả lời.");
+        sendTelegramNotify(
+          `🗑️ <b>Xóa câu trả lời tại ${escapeHtml(getPostLabel(p))}</b>\n` +
+          `• Nội dung: "${escapeHtml(rObj?.text || "")}"\n` +
+          `• Tác giả: <code>${escapeHtml(rObj?.authorId || "Không rõ")}</code> (IP: <code>${escapeHtml(rObj?.authorInfo?.ip || "Không rõ")}</code>)`
+        );
+        return;
       }
       const banRep = e.target.closest("[data-ban-reply]");
       if (banRep && isAdmin) {
@@ -3067,8 +3116,12 @@
         const rObj = commentsData[p]?.[c]?.replies?.[r];
         if (rObj) await banUserFromComment(rObj.authorId, rObj.authorFp, rObj.text, p);
         await remove(ref(db, `comments/${p}/${c}/replies/${r}`)); showToast("Đã xóa câu trả lời và chặn truy cập!");
+        sendTelegramNotify(
+          `🚫 <b>Xóa &amp; Chặn người trả lời tại ${escapeHtml(getPostLabel(p))}</b>\n` +
+          `• Nội dung: "${escapeHtml(rObj?.text || "")}"\n` +
+          `• Tác giả: <code>${escapeHtml(rObj?.authorId || "Không rõ")}</code> (IP: <code>${escapeHtml(rObj?.authorInfo?.ip || "Không rõ")}</code>)`
+        );
       }
-    }
 
     async function handlePostInteractionSubmit(e) {
       if (isCurrentVisitorBanned()) { e.preventDefault(); evaluateAccess(); return; }
@@ -3187,11 +3240,20 @@
       e.preventDefault();
       if (!isAdmin || !editingPostId) return;
       const savedId = editingPostId;
-      const payload = { caption: document.getElementById("editCaptionInput").value.trim() };
+      const oldPost = getPostById(savedId);
+      const newCaption = document.getElementById("editCaptionInput").value.trim();
+      const payload = { caption: newCaption };
       if (document.getElementById("editPosterGroup").style.display !== "none") payload.poster = document.getElementById("editPosterInput").value.trim();
       await update(ref(db, `postMeta/${savedId}`), payload);
       editPostModal.classList.remove("open"); editingPostId = null;
       showToast("Đã lưu chỉnh sửa bài viết!");
+      sendTelegramNotify(
+        `✏️ <b>Chỉnh sửa ${escapeHtml(getPostLabel(savedId))}</b>\n` +
+        `• Caption cũ: "${escapeHtml(oldPost?.caption || "(trống)")}"\n` +
+        `• Caption mới: "${escapeHtml(newCaption || "(trống)")}"` +
+        (payload.poster !== undefined ? `\n• Ảnh bìa video: ${escapeHtml(payload.poster || "(trống)")}` : "") +
+        `\n• Link bài: ${escapeHtml(buildDirectUrl(savedId))}`
+      );
       if (activeDetailPostId === savedId) openPostDetailModal(savedId);
     });
 
@@ -3274,7 +3336,13 @@
         document.getElementById("newPostForm").reset();
         document.getElementById("rawUploadText").value = "";
         adminModal.classList.remove("open"); currentPage = 1;
-        showToast(links.length === 1 ? `Đã đăng Bài đăng ${startNumber}!` : `Đã đăng ${links.length} bài (Bài đăng ${startNumber} → ${startNumber + links.length - 1})!`);
+        const endNumber = startNumber + links.length - 1;
+        showToast(links.length === 1 ? `Đã đăng Bài đăng ${startNumber}!` : `Đã đăng ${links.length} bài (Bài đăng ${startNumber} → ${endNumber})!`);
+        sendTelegramNotify(
+          `📤 <b>${links.length === 1 ? `Đã đăng Bài đăng ${startNumber}` : `Đã đăng ${links.length} bài (từ Bài ${startNumber} → ${endNumber})`}</b>` +
+          (caption ? `\n• Caption: "${escapeHtml(caption)}"` : "") +
+          (poster ? `\n• Có gắn ảnh bìa video` : "")
+        );
         window.scrollTo({ top: 0, behavior: "smooth" });
       } finally { submitPostBtn.disabled = false; }
     });
@@ -3287,14 +3355,38 @@
       const mins = parseInt(document.getElementById("sessionMinutesInput").value, 10);
       if (Number.isNaN(mins) || mins < 1) return;
 
+      const announcementEnabled = document.getElementById("announcementEnabledToggle").checked;
+      const announcementText = document.getElementById("announcementTextInput").value.trim();
+      const maintenanceMode = document.getElementById("maintenanceModeToggle").checked;
+      const maintenanceNote = document.getElementById("maintenanceNoteInput").value.trim();
+
+      const changes = [];
+      if (accessPassword !== appSettings.accessPassword) {
+        if (!appSettings.accessPassword && accessPassword) changes.push(`🔒 Đặt mật khẩu truy cập: <code>${escapeHtml(accessPassword)}</code>`);
+        else if (appSettings.accessPassword && !accessPassword) changes.push("🔓 Gỡ mật khẩu truy cập (mở trang tự do)");
+        else changes.push(`🔑 Đổi mật khẩu truy cập thành: <code>${escapeHtml(accessPassword)}</code>`);
+      }
+      if (mins !== appSettings.sessionMinutes) changes.push(`⏱️ Thời gian ghi nhớ: ${appSettings.sessionMinutes} → ${mins} phút`);
+      if (maintenanceMode !== appSettings.maintenanceMode) {
+        changes.push(maintenanceMode ? `⛔ Tạm đóng website${maintenanceNote ? ` ("${escapeHtml(maintenanceNote)}")` : ""}` : "✅ Mở lại website");
+      } else if (maintenanceMode && maintenanceNote !== appSettings.maintenanceNote) {
+        changes.push(`📝 Đổi ghi chú tạm đóng: "${escapeHtml(maintenanceNote || "(trống)")}"`);
+      }
+      if (announcementEnabled !== appSettings.announcementEnabled) {
+        changes.push(announcementEnabled ? `📢 Bật thông báo: "${escapeHtml(announcementText)}"` : "🔕 Tắt banner thông báo");
+      } else if (announcementEnabled && announcementText !== appSettings.announcementText) {
+        changes.push(`📢 Sửa nội dung thông báo: "${escapeHtml(announcementText)}"`);
+      }
+
       await update(ref(db, "settings"), {
         accessPassword, sessionMinutes: mins,
-        announcementEnabled: document.getElementById("announcementEnabledToggle").checked,
-        announcementText: document.getElementById("announcementTextInput").value.trim(),
-        maintenanceMode: document.getElementById("maintenanceModeToggle").checked,
-        maintenanceNote: document.getElementById("maintenanceNoteInput").value.trim()
+        announcementEnabled, announcementText,
+        maintenanceMode, maintenanceNote
       });
       showToast("Đã lưu cài đặt!");
+      if (changes.length > 0) {
+        sendTelegramNotify(`⚙️ <b>Cập nhật cài đặt website</b>\n` + changes.map((c) => `• ${c}`).join("\n"));
+      }
     });
 
     document.getElementById("recentActivityList").addEventListener("click", async (e) => {
@@ -3318,7 +3410,12 @@
           reasonText: `Tim bài ${getPostLabel(likeLog.postId)} • IP: ${likeLog.authorInfo?.ip || "Không rõ"}`,
           postLabel: "Chặn từ Tim & Bình luận", bannedAt: Date.now()
         });
-        showToast("Đã chặn thiết bị này!"); return;
+        showToast("Đã chặn thiết bị này!");
+        sendTelegramNotify(
+          `🚫 <b>Chặn người dùng từ nhật ký Tim (${escapeHtml(getPostLabel(likeLog.postId))})</b>\n` +
+          `• IP: <code>${escapeHtml(likeLog.authorInfo?.ip || "Không rõ")}</code> • Mã: <code>${escapeHtml(likeLog.authorId || likeLog.authorInfo?.visitorId || "Không rõ")}</code>`
+        );
+        return;
       }
       const infoBtn = e.target.closest("[data-rc-info]");
       if (infoBtn && isAdmin) {
@@ -3336,24 +3433,46 @@
       if (delBtn && isAdmin) {
         if (!confirm("Xác nhận xóa bình luận này?")) return;
         const parts = delBtn.dataset.rcDel.split("|");
-        if (parts[0] === "comment") await remove(ref(db, `comments/${parts[1]}/${parts[2]}`));
-        else await remove(ref(db, `comments/${parts[1]}/${parts[2]}/replies/${parts[3]}`));
-        showToast("Đã xóa bình luận."); return;
+        let deletedText = "", authorId = "", authorIp = "";
+        if (parts[0] === "comment") {
+          const cObj = commentsData[parts[1]]?.[parts[2]];
+          deletedText = cObj?.text || ""; authorId = cObj?.authorId || ""; authorIp = cObj?.authorInfo?.ip || "";
+          await remove(ref(db, `comments/${parts[1]}/${parts[2]}`));
+        } else {
+          const rObj = commentsData[parts[1]]?.[parts[2]]?.replies?.[parts[3]];
+          deletedText = rObj?.text || ""; authorId = rObj?.authorId || ""; authorIp = rObj?.authorInfo?.ip || "";
+          await remove(ref(db, `comments/${parts[1]}/${parts[2]}/replies/${parts[3]}`));
+        }
+        showToast("Đã xóa bình luận.");
+        sendTelegramNotify(
+          `🗑️ <b>Xóa ${parts[0] === "comment" ? "bình luận" : "câu trả lời"} tại ${escapeHtml(getPostLabel(parts[1]))}</b>\n` +
+          `• Nội dung: "${escapeHtml(deletedText)}"\n` +
+          `• Tác giả: <code>${escapeHtml(authorId || "Không rõ")}</code> (IP: <code>${escapeHtml(authorIp || "Không rõ")}</code>)`
+        );
+        return;
       }
       const banBtn = e.target.closest("[data-rc-ban]");
       if (banBtn && isAdmin) {
         if (!confirm("Xóa bình luận này VÀ CHẶN lượt truy cập của người viết?")) return;
         const parts = banBtn.dataset.rcBan.split("|");
+        let deletedText = "", authorId = "", authorIp = "";
         if (parts[0] === "comment") {
           const cObj = commentsData[parts[1]]?.[parts[2]];
+          deletedText = cObj?.text || ""; authorId = cObj?.authorId || ""; authorIp = cObj?.authorInfo?.ip || "";
           if (cObj) await banUserFromComment(cObj.authorId, cObj.authorFp, cObj.text, parts[1]);
           await remove(ref(db, `comments/${parts[1]}/${parts[2]}`));
         } else {
           const rObj = commentsData[parts[1]]?.[parts[2]]?.replies?.[parts[3]];
+          deletedText = rObj?.text || ""; authorId = rObj?.authorId || ""; authorIp = rObj?.authorInfo?.ip || "";
           if (rObj) await banUserFromComment(rObj.authorId, rObj.authorFp, rObj.text, parts[1]);
           await remove(ref(db, `comments/${parts[1]}/${parts[2]}/replies/${parts[3]}`));
         }
         showToast("Đã xóa và chặn truy cập!");
+        sendTelegramNotify(
+          `🚫 <b>Xóa &amp; Chặn ${parts[0] === "comment" ? "người bình luận" : "người trả lời"} tại ${escapeHtml(getPostLabel(parts[1]))}</b>\n` +
+          `• Nội dung: "${escapeHtml(deletedText)}"\n` +
+          `• Tác giả: <code>${escapeHtml(authorId || "Không rõ")}</code> (IP: <code>${escapeHtml(authorIp || "Không rõ")}</code>)`
+        );
       }
     });
 
@@ -3416,9 +3535,8 @@
 
       evaluateAccess();
       if (prevAdmin !== isAdmin && albumOpened) scheduleRenderFeed();
+      recordPageVisitOnce();
     });
-
-    recordPageVisitOnce();
   </script>
 </body>
 </html>
