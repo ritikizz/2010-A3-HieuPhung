@@ -1667,20 +1667,7 @@
         }
       });
 
-      Object.values(analyticsLikeLogs).forEach((l) => {
-        if (!l) return;
-        if (matchesLookupQuery(l.authorInfo, l.authorId, l.authorFp, qLower)) {
-          likeCount++;
-          if (!sampleInfo && l.authorInfo) sampleInfo = l.authorInfo;
-          if (!sampleVisitorId && (l.authorId || l.authorInfo?.visitorId)) sampleVisitorId = l.authorId || l.authorInfo.visitorId;
-          if (!sampleFp && (l.authorFp || l.authorInfo?.fp)) sampleFp = l.authorFp || l.authorInfo.fp;
-          events.push({
-            type: "like", ts: l.likedAt || 0, title: `Thả tim ${getPostLabel(l.postId)}`,
-            detail: `IP: ${l.authorInfo?.ip || "Không rõ"} • ${l.authorInfo?.deviceModel || "Thiết bị"}`,
-            postId: l.postId
-          });
-        }
-      });
+      
 
       Object.entries(commentsData).forEach(([postId, postComments]) => {
         if (!postComments) return;
@@ -3122,7 +3109,7 @@
           `• Tác giả: <code>${escapeHtml(rObj?.authorId || "Không rõ")}</code> (IP: <code>${escapeHtml(rObj?.authorInfo?.ip || "Không rõ")}</code>)`
         );
       }
-
+    }
     async function handlePostInteractionSubmit(e) {
       if (isCurrentVisitorBanned()) { e.preventDefault(); evaluateAccess(); return; }
 
