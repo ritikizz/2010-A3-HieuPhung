@@ -598,6 +598,63 @@
       .action-btn { font-size: 0.83rem; gap: 5px; }
       .feed.grid-mode { gap: 4px; }
     }
+    /* ===== ĐỘ TIN CẬY PHIÊN (XANH / VÀNG / CAM / ĐỎ) ===== */
+    .trust-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.72rem; font-weight: 700; padding: 2px 8px;
+      border-radius: 999px; white-space: nowrap; vertical-align: middle;
+    }
+    .trust-pill.green { background: rgba(34, 197, 94, 0.16); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.45); }
+    .trust-pill.yellow { background: rgba(234, 179, 8, 0.16); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.45); }
+    .trust-pill.orange { background: rgba(249, 115, 22, 0.16); color: #fb923c; border: 1px solid rgba(251, 146, 60, 0.45); }
+    .trust-pill.red { background: rgba(239, 68, 68, 0.18); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.5); }
+
+    .trust-box {
+      background: #12151b; border: 1px solid #2b3140; border-radius: 12px;
+      padding: 13px 14px; margin-bottom: 14px;
+    }
+    .trust-box-top {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+    }
+    .trust-overall-title { font-size: 0.9rem; font-weight: 700; color: #f8fafc; }
+    .trust-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .trust-metric {
+      background: #171a21; border: 1px solid #262b36; border-radius: 10px; padding: 9px 11px;
+    }
+    .trust-metric-head {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.8rem; color: #cbd5e1; margin-bottom: 6px; font-weight: 600;
+    }
+    .trust-bar-track {
+      width: 100%; height: 6px; border-radius: 999px; background: #262b36; overflow: hidden;
+    }
+    .trust-bar-fill { height: 100%; border-radius: 999px; transition: width 0.25s ease; }
+    .trust-bar-fill.green { background: #22c55e; }
+    .trust-bar-fill.yellow { background: #eab308; }
+    .trust-bar-fill.orange { background: #f97316; }
+    .trust-bar-fill.red { background: #ef4444; }
+    .trust-detail-panel {
+      display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #262b36;
+      font-size: 0.8rem; line-height: 1.5;
+    }
+    .trust-detail-panel.open { display: block; }
+    .trust-detail-group-title {
+      font-weight: 700; color: #93c5fd; margin: 8px 0 5px; font-size: 0.81rem;
+    }
+    .trust-detail-group-title:first-child { margin-top: 0; }
+    .trust-check-item {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 8px; padding: 5px 8px; border-radius: 7px; margin-bottom: 4px;
+      background: #171a21; border: 1px solid #232834;
+    }
+    .trust-check-item.ok { border-left: 3px solid #22c55e; }
+    .trust-check-item.warn { border-left: 3px solid #eab308; }
+    .trust-check-item.bad { border-left: 3px solid #ef4444; }
+    .trust-check-delta { font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+    .trust-check-delta.ok { color: #4ade80; }
+    .trust-check-delta.warn { color: #facc15; }
+    .trust-check-delta.bad { color: #f87171; }
   </style>
 </head>
 <body>
@@ -1040,32 +1097,330 @@
       return "Máy tính";
     }
 
+    function getTrustLevel(score) {
+      const s = typeof score === "number" ? score : 0;
+      if (s >= 80) return { cls: "green", label: "Tin cậy cao", emoji: "🟢" };
+      if (s >= 60) return { cls: "yellow", label: "Cần lưu ý", emoji: "🟡" };
+      if (s >= 35) return { cls: "orange", label: "Nghi vấn", emoji: "🟠" };
+      return { cls: "red", label: "Nghi vấn cao", emoji: "🔴" };
+    }
+
+    function formatTrustBadgeHtml(trust, compact = false) {
+      if (!trust || typeof trust.overall !== "number") return "";
+      const lv = getTrustLevel(trust.overall);
+      if (compact) {
+        return `<span class="trust-pill ${lv.cls}" title="Thiết bị: ${trust.device?.score ?? "?"}% | Mạng: ${trust.network?.score ?? "?"}%">${lv.emoji} Tin cậy ${trust.overall}%</span>`;
+      }
+      return `<span class="trust-pill ${lv.cls}">${lv.emoji} ${trust.overall}% • ${lv.label}</span>`;
+    }
+
+    function formatTrustTelegramLine(info) {
+      const t = info?.trust;
+      if (!t || typeof t.overall !== "number") return "";
+      const lv = getTrustLevel(t.overall);
+      const flags = [];
+      (t.device?.checks || []).forEach((c) => { if (c.status !== "ok") flags.push(c.name); });
+      (t.network?.checks || []).forEach((c) => { if (c.status !== "ok") flags.push(c.name); });
+      const warnNote = flags.length ? ` ⚠️ (${escapeHtml(flags.slice(0, 3).join(", "))})` : "";
+      return `\n• Độ tin cậy: ${lv.emoji} <b>${t.overall}%</b> (Thiết bị: ${t.device?.score ?? 0}% | Mạng: ${t.network?.score ?? 0}%)${warnNote}`;
+    }
+
+    function getWebGLInfo() {
+      try {
+        const canvas = document.createElement("canvas");
+        const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        if (!gl) return { renderer: "Không hỗ trợ WebGL", vendor: "" };
+        const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+        if (dbg) {
+          return {
+            renderer: String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || "Không rõ"),
+            vendor: String(gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL) || "")
+          };
+        }
+        return {
+          renderer: String(gl.getParameter(gl.RENDERER) || "Không rõ"),
+          vendor: String(gl.getParameter(gl.VENDOR) || "")
+        };
+      } catch {
+        return { renderer: "Không đọc được", vendor: "" };
+      }
+    }
+
+    function getTimezoneOffsetMinutes(tz) {
+      if (!tz) return null;
+      try {
+        const now = new Date();
+        const utcDate = new Date(now.toLocaleString("en-US", { timeZone: "UTC" }));
+        const tzDate = new Date(now.toLocaleString("en-US", { timeZone: tz }));
+        return Math.round((tzDate - utcDate) / 60000);
+      } catch {
+        return null;
+      }
+    }
+
+    function evaluateDeviceTrust(ua, detectedOs) {
+      let score = 100;
+      const checks = [];
+      const platform = navigator.platform || "";
+      const vendor = navigator.vendor || "";
+      const maxTouch = navigator.maxTouchPoints || 0;
+      const webdriver = Boolean(navigator.webdriver);
+      const finePointer = window.matchMedia ? window.matchMedia("(pointer: fine)").matches : false;
+      const hasHover = window.matchMedia ? window.matchMedia("(hover: hover)").matches : false;
+      const hasWindowChrome = typeof window.chrome !== "undefined";
+      const gpu = getWebGLInfo();
+      const gpuStr = gpu.renderer || "Không rõ";
+
+      const claimsIOS = /iPhone|iPad|iPod/i.test(ua);
+      const claimsAndroid = /Android/i.test(ua);
+      const claimsMobile = /Mobile|iPhone|iPod/i.test(ua) || (claimsAndroid && /Mobile/i.test(ua));
+      const claimsWindows = /Windows NT/i.test(ua);
+      const claimsMac = /Macintosh|Mac OS X/i.test(ua) && !claimsIOS;
+
+      // 1. Đối chiếu Card đồ họa (GPU qua WebGL)
+      const isDesktopGpu = /Direct3D|D3D11|NVIDIA|GeForce|GTX|RTX|Radeon|AMD|Intel|Microsoft Basic Render/i.test(gpuStr);
+      const isSoftwareGpu = /SwiftShader|llvmpipe|Software Adapter|Mesa OffScreen/i.test(gpuStr);
+
+      if (isSoftwareGpu) {
+        score -= 40;
+        checks.push({ name: "GPU thực tế (WebGL)", status: "bad", delta: -40, note: `GPU phần mềm/ảo (${gpuStr}) — dấu hiệu trình duyệt ảo/Bot` });
+      } else if (claimsIOS && isDesktopGpu) {
+        score -= 45;
+        checks.push({ name: "GPU thực tế (WebGL)", status: "bad", delta: -45, note: `Khai iOS nhưng GPU thuộc máy tính (${gpuStr})` });
+      } else if (claimsIOS && gpuStr !== "Không rõ" && gpuStr !== "Không đọc được" && !/Apple/i.test(gpuStr)) {
+        score -= 20;
+        checks.push({ name: "GPU thực tế (WebGL)", status: "warn", delta: -20, note: `Khai iOS nhưng không phải Apple GPU (${gpuStr})` });
+      } else if (claimsAndroid && isDesktopGpu) {
+        score -= 45;
+        checks.push({ name: "GPU thực tế (WebGL)", status: "bad", delta: -45, note: `Khai Android nhưng GPU thuộc máy tính (${gpuStr})` });
+      } else {
+        checks.push({ name: "GPU thực tế (WebGL)", status: "ok", delta: 0, note: `Khớp thiết bị (${gpuStr})` });
+      }
+
+      // 2. Đối chiếu Platform, Vendor & nhân trình duyệt
+      let pvDelta = 0;
+      const pvNotes = [];
+      if (claimsIOS && /Win|Linux/i.test(platform)) { pvDelta -= 35; pvNotes.push(`khai iOS nhưng platform là ${platform}`); }
+      if (claimsIOS && vendor && !/Apple/i.test(vendor)) { pvDelta -= 25; pvNotes.push(`vendor là "${vendor}" thay vì Apple`); }
+      if (claimsIOS && hasWindowChrome) { pvDelta -= 20; pvNotes.push(`tồn tại window.chrome trên máy khai iOS`); }
+      if (claimsAndroid && /Win|MacIntel/i.test(platform)) { pvDelta -= 35; pvNotes.push(`khai Android nhưng platform là ${platform}`); }
+      if (claimsWindows && platform && !/Win/i.test(platform)) { pvDelta -= 30; pvNotes.push(`khai Windows nhưng platform là ${platform}`); }
+      if (claimsMac && platform && /Win|Linux/i.test(platform)) { pvDelta -= 30; pvNotes.push(`khai macOS nhưng platform là ${platform}`); }
+
+      if (pvDelta < 0) {
+        score += pvDelta;
+        checks.push({ name: "Nền tảng & Nhân trình duyệt", status: "bad", delta: pvDelta, note: `Lệch thông số: ${pvNotes.join("; ")}` });
+      } else {
+        checks.push({ name: "Nền tảng & Nhân trình duyệt", status: "ok", delta: 0, note: `Đồng bộ (platform: ${platform || "ẩn"}, vendor: ${vendor || "ẩn"})` });
+      }
+
+      // 3. Cảm ứng & Con trỏ chuột
+      if (claimsMobile && maxTouch === 0) {
+        score -= 25;
+        checks.push({ name: "Cảm ứng & Con trỏ", status: "bad", delta: -25, note: "Khai điện thoại nhưng màn hình không hỗ trợ cảm ứng (0 điểm chạm)" });
+      } else if (claimsMobile && finePointer && hasHover) {
+        score -= 15;
+        checks.push({ name: "Cảm ứng & Con trỏ", status: "warn", delta: -15, note: "Khai điện thoại nhưng phát hiện con trỏ chuột (pointer: fine)" });
+      } else {
+        checks.push({ name: "Cảm ứng & Con trỏ", status: "ok", delta: 0, note: `Khớp (${maxTouch} điểm chạm, ${finePointer ? "con trỏ chuột" : "cảm ứng"})` });
+      }
+
+      // 4. Dấu hiệu tự động hóa (WebDriver / Headless / Bot)
+      if (webdriver || /HeadlessChrome/i.test(ua)) {
+        score -= 50;
+        checks.push({ name: "Trình duyệt tự động", status: "bad", delta: -50, note: "Phát hiện cờ điều khiển tự động (webdriver / Headless)" });
+      } else if (/Linux/i.test(detectedOs) && /Chrome/i.test(ua) && !claimsAndroid) {
+        score -= 15;
+        checks.push({ name: "Trình duyệt tự động", status: "warn", delta: -15, note: "Tổ hợp Linux + Chrome (thường gặp trên VPS/Bot quét)" });
+      } else {
+        checks.push({ name: "Trình duyệt tự động", status: "ok", delta: 0, note: "Không phát hiện dấu hiệu bot tự động" });
+      }
+
+      return {
+        score: Math.max(0, Math.min(100, score)),
+        gpu: gpuStr,
+        platform: platform || "Không rõ",
+        checks
+      };
+    }
+
     async function fetchNetworkMeta() {
-      try {
-        const res = await fetch("https://ipwho.is/", { cache: "no-store" });
-        if (res.ok) {
-          const d = await res.json();
-          if (d && d.ip) {
-            const loc = [d.city, d.region, d.country].filter(Boolean).join(", ");
-            return {
-              ip: d.ip,
-              isp: (d.connection && (d.connection.isp || d.connection.org)) || "Không rõ",
-              location: loc || "Không rõ"
-            };
-          }
+      const fetchJson = async (url, timeoutMs = 4500) => {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, { cache: "no-store", signal: ctrl.signal });
+          if (!res.ok) return null;
+          return await res.json();
+        } catch {
+          return null;
+        } finally {
+          clearTimeout(timer);
         }
-      } catch {}
-      try {
-        const res = await fetch("https://ipapi.co/json/", { cache: "no-store" });
-        if (res.ok) {
-          const d = await res.json();
-          if (d && d.ip) {
-            const loc = [d.city, d.region, d.country_name].filter(Boolean).join(", ");
-            return { ip: d.ip, isp: d.org || "Không rõ", location: loc || "Không rõ" };
-          }
+      };
+
+      // Cách 3: Ưu tiên API chuyên tra cứu VPN/Proxy/Datacenter/Tor (ipapi.is)
+      const d1 = await fetchJson("https://api.ipapi.is/", 4500);
+      if (d1 && d1.ip) {
+        const loc = [d1.location?.city, d1.location?.state, d1.location?.country].filter(Boolean).join(", ");
+        return {
+          ip: d1.ip,
+          isp: d1.asn?.org || d1.company?.name || "Không rõ",
+          location: loc || "Không rõ",
+          countryCode: d1.location?.country_code || "",
+          ipTimezone: d1.location?.timezone || "",
+          apiChecked: true,
+          apiSource: "ipapi.is",
+          isVpn: Boolean(d1.is_vpn),
+          isProxy: Boolean(d1.is_proxy),
+          isDatacenter: Boolean(d1.is_datacenter || d1.company?.type === "hosting" || d1.asn?.type === "hosting"),
+          isTor: Boolean(d1.is_tor),
+          isAbuser: Boolean(d1.is_abuser)
+        };
+      }
+
+      // Dự phòng 1: ipwho.is
+      const d2 = await fetchJson("https://ipwho.is/", 4000);
+      if (d2 && d2.ip) {
+        const loc = [d2.city, d2.region, d2.country].filter(Boolean).join(", ");
+        return {
+          ip: d2.ip,
+          isp: (d2.connection && (d2.connection.isp || d2.connection.org)) || "Không rõ",
+          location: loc || "Không rõ",
+          countryCode: d2.country_code || "",
+          ipTimezone: d2.timezone?.id || "",
+          apiChecked: false,
+          apiSource: "ipwho.is",
+          isVpn: false, isProxy: false, isDatacenter: false, isTor: false, isAbuser: false
+        };
+      }
+
+      // Dự phòng 2: ipapi.co
+      const d3 = await fetchJson("https://ipapi.co/json/", 4000);
+      if (d3 && d3.ip) {
+        const loc = [d3.city, d3.region, d3.country_name].filter(Boolean).join(", ");
+        return {
+          ip: d3.ip,
+          isp: d3.org || "Không rõ",
+          location: loc || "Không rõ",
+          countryCode: d3.country_code || "",
+          ipTimezone: d3.timezone || "",
+          apiChecked: false,
+          apiSource: "ipapi.co",
+          isVpn: false, isProxy: false, isDatacenter: false, isTor: false, isAbuser: false
+        };
+      }
+
+      return {
+        ip: "Không rõ", isp: "Không rõ", location: "Không rõ",
+        countryCode: "", ipTimezone: "", apiChecked: false, apiSource: "none",
+        isVpn: false, isProxy: false, isDatacenter: false, isTor: false, isAbuser: false
+      };
+    }
+
+    function evaluateNetworkTrust(netMeta) {
+      let score = 100;
+      const checks = [];
+      const clientTz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      const clientLang = (navigator.language || "").toLowerCase();
+      const clientOffset = -new Date().getTimezoneOffset();
+      const ipOffset = getTimezoneOffsetMinutes(netMeta.ipTimezone);
+      const isVnClient = clientLang.startsWith("vi") || /Saigon|Ho_Chi_Minh/i.test(clientTz);
+
+      // Cách 1: So sánh độ lệch Múi giờ & Ngôn ngữ
+      if (ipOffset !== null && Math.abs(clientOffset - ipOffset) >= 120) {
+        score -= 35;
+        checks.push({
+          name: "Cách 1: Múi giờ & Ngôn ngữ",
+          status: "bad",
+          delta: -35,
+          note: `Lệch múi giờ: máy là ${clientTz || "không rõ"} nhưng IP thuộc ${netMeta.ipTimezone} (${netMeta.countryCode || "?"})`
+        });
+      } else if (isVnClient && netMeta.countryCode && netMeta.countryCode !== "VN") {
+        score -= 25;
+        checks.push({
+          name: "Cách 1: Múi giờ & Ngôn ngữ",
+          status: "warn",
+          delta: -25,
+          note: `Máy cài ngôn ngữ/giờ Việt Nam nhưng IP ở nước ngoài (${netMeta.countryCode})`
+        });
+      } else if (netMeta.ipTimezone || netMeta.countryCode) {
+        checks.push({
+          name: "Cách 1: Múi giờ & Ngôn ngữ",
+          status: "ok",
+          delta: 0,
+          note: `Khớp khu vực (Máy: ${clientTz || clientLang}, IP: ${netMeta.countryCode || netMeta.ipTimezone})`
+        });
+      } else {
+        score -= 10;
+        checks.push({
+          name: "Cách 1: Múi giờ & Ngôn ngữ",
+          status: "warn",
+          delta: -10,
+          note: "Không lấy được múi giờ của địa chỉ IP để đối chiếu"
+        });
+      }
+
+      // Cách 2: Soi tên Nhà mạng / Datacenter / VPS
+      const ispStr = netMeta.isp || "Không rõ";
+      const ispDcRegex = /Cloudflare|DigitalOcean|Amazon|AWS|Google Cloud|Google LLC|Microsoft|Azure|Oracle|OVH|Vultr|Linode|Akamai|Hetzner|M247|Datacamp|Alibaba|Tencent|Choopa|Leaseweb|Scaleway|Contabo|Stark|Nord|Proton|Mullvad|Surfshark|ExpressVPN|VPN|Proxy|Hosting|Datacenter|Server|VPS|PacketHub|Alex Largman/i;
+      const ispVnResRegex = /Viettel|VNPT|FPT|Mobifone|Vinaphone|SCTV|CMC|Vietnamobile|NetNam|SPT|HTVC/i;
+
+      if (ispStr === "Không rõ") {
+        score -= 10;
+        checks.push({ name: "Cách 2: Phân tích Nhà mạng", status: "warn", delta: -10, note: "Không đọc được tên nhà mạng (ISP)" });
+      } else if (ispDcRegex.test(ispStr)) {
+        score -= 35;
+        checks.push({ name: "Cách 2: Phân tích Nhà mạng", status: "bad", delta: -35, note: `Nhà mạng thuộc nhóm Cloud/VPS/VPN (${ispStr})` });
+      } else if (ispVnResRegex.test(ispStr)) {
+        checks.push({ name: "Cách 2: Phân tích Nhà mạng", status: "ok", delta: 0, note: `Nhà mạng dân cư/4G Việt Nam (${ispStr})` });
+      } else {
+        checks.push({ name: "Cách 2: Phân tích Nhà mạng", status: "ok", delta: 0, note: `Nhà mạng phổ thông (${ispStr})` });
+      }
+
+      // Cách 3: Cơ sở dữ liệu VPN / Proxy / Datacenter / Tor (ipapi.is)
+      if (netMeta.apiChecked) {
+        let apiDelta = 0;
+        const found = [];
+        if (netMeta.isTor) { apiDelta -= 60; found.push("Tor"); }
+        if (netMeta.isVpn) { apiDelta -= 45; found.push("VPN"); }
+        if (netMeta.isProxy) { apiDelta -= 45; found.push("Proxy"); }
+        if (netMeta.isDatacenter) { apiDelta -= 35; found.push("Datacenter/VPS"); }
+        if (netMeta.isAbuser) { apiDelta -= 15; found.push("IP bị cảnh báo spam"); }
+
+        if (found.length > 0) {
+          score += apiDelta;
+          checks.push({
+            name: "Cách 3: Tra cứu CSDL IP",
+            status: "bad",
+            delta: apiDelta,
+            note: `CSDL ipapi.is gắn cờ: ${found.join(", ")}`
+          });
+        } else {
+          checks.push({
+            name: "Cách 3: Tra cứu CSDL IP",
+            status: "ok",
+            delta: 0,
+            note: "CSDL ipapi.is xác nhận IP sạch (không VPN/Proxy/Datacenter/Tor)"
+          });
         }
-      } catch {}
-      return { ip: "Không rõ", isp: "Không rõ", location: "Không rõ" };
+      } else {
+        checks.push({
+          name: "Cách 3: Tra cứu CSDL IP",
+          status: "warn",
+          delta: 0,
+          note: `API chuyên sâu tạm bận (dùng ${netMeta.apiSource}), chỉ xét theo Cách 1 & 2`
+        });
+      }
+
+      return {
+        score: Math.max(0, Math.min(100, score)),
+        clientTz,
+        clientLang,
+        ipTimezone: netMeta.ipTimezone || "",
+        countryCode: netMeta.countryCode || "",
+        checks
+      };
     }
 
     async function collectVisitorInfo() {
@@ -1105,6 +1460,12 @@
         }
       }
 
+      const deviceTrust = evaluateDeviceTrust(ua, os);
+      const networkTrust = evaluateNetworkTrust(netMeta);
+      let overall = Math.round((deviceTrust.score + networkTrust.score) / 2);
+      const minSide = Math.min(deviceTrust.score, networkTrust.score);
+      if (minSide < 40) overall = Math.min(overall, minSide + 15);
+
       return {
         ip: netMeta.ip,
         isp: netMeta.isp,
@@ -1115,7 +1476,12 @@
         referrer: document.referrer || "Truy cập trực tiếp",
         entryUrl: window.location.href,
         visitorId: myVisitorId,
-        fp: myVisitorFp
+        fp: myVisitorFp,
+        trust: {
+          overall,
+          device: deviceTrust,
+          network: networkTrust
+        }
       };
     }
 
@@ -1157,7 +1523,8 @@
         await push(ref(db, "analytics/logs"), { ...info, visitedAt: Date.now() });
 
         sendTelegramNotify(
-          `👀 <b>Lượt truy cập mới</b>\n` +
+          `👀 <b>Lượt truy cập mới</b>` +
+          `${formatTrustTelegramLine(info)}\n` +
           `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
           `• Trình duyệt: ${escapeHtml(info.browser)}\n` +
           `• Nguồn chuyển hướng: ${escapeHtml(info.referrer)}\n` +
@@ -1366,6 +1733,59 @@
     }
 
     // ===== MODAL THÔNG TIN HỮU DỤNG =====
+    function buildTrustBoxHtml(trust) {
+      if (!trust || typeof trust.overall !== "number") {
+        return `<div class="trust-box" style="color:#94a3b8;font-size:0.82rem;">Phiên cũ này chưa có dữ liệu chấm Độ tin cậy.</div>`;
+      }
+      const ovLv = getTrustLevel(trust.overall);
+      const devScore = trust.device?.score ?? 0;
+      const netScore = trust.network?.score ?? 0;
+      const devLv = getTrustLevel(devScore);
+      const netLv = getTrustLevel(netScore);
+
+      const renderChecks = (arr) => (arr || []).map((c) => {
+        const deltaStr = c.delta < 0 ? `${c.delta}%` : (c.status === "ok" ? "Đạt" : "Lưu ý");
+        return `
+          <div class="trust-check-item ${c.status}">
+            <div><strong>${escapeHtml(c.name)}:</strong> ${escapeHtml(c.note)}</div>
+            <span class="trust-check-delta ${c.status}">${deltaStr}</span>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <div class="trust-box">
+          <div class="trust-box-top">
+            <span class="trust-overall-title">Độ tin cậy phiên</span>
+            <span class="trust-pill ${ovLv.cls}">${ovLv.emoji} ${trust.overall}% • ${ovLv.label}</span>
+          </div>
+          <div class="trust-grid">
+            <div class="trust-metric">
+              <div class="trust-metric-head">
+                <span>Thiết bị</span>
+                <span class="trust-pill ${devLv.cls}">${devScore}%</span>
+              </div>
+              <div class="trust-bar-track"><div class="trust-bar-fill ${devLv.cls}" style="width:${devScore}%"></div></div>
+            </div>
+            <div class="trust-metric">
+              <div class="trust-metric-head">
+                <span>Mạng (3 lớp)</span>
+                <span class="trust-pill ${netLv.cls}">${netScore}%</span>
+              </div>
+              <div class="trust-bar-track"><div class="trust-bar-fill ${netLv.cls}" style="width:${netScore}%"></div></div>
+            </div>
+          </div>
+          <button type="button" class="mini-btn info" data-toggle-trust-detail>Xem chi tiết cách tính ▾</button>
+          <div class="trust-detail-panel" id="trustDetailPanel">
+            <div class="trust-detail-group-title">1. Phân tích Thiết bị (khởi điểm 100% → còn ${devScore}%)</div>
+            ${renderChecks(trust.device?.checks)}
+            <div class="trust-detail-group-title">2. Phân tích Mạng (khởi điểm 100% → còn ${netScore}%)</div>
+            ${renderChecks(trust.network?.checks)}
+          </div>
+        </div>
+      `;
+    }
+
     function showUserInfoModal(info, title = "Thông tin truy cập", timestamp = null) {
       userInfoModalTitle.textContent = title;
       if (!info) {
@@ -1380,12 +1800,14 @@
           ["Khu vực", info.location || "Không rõ"],
           ["Dòng máy", info.deviceModel || info.deviceType || "Không rõ"],
           ["Hệ điều hành", info.os || "Không rõ"],
+          ["Card đồ họa (GPU)", info.trust?.device?.gpu || "Chưa ghi nhận"],
           ["Trình duyệt / Nguồn", info.browser || "Không rõ"],
           ["Mã trình duyệt", info.visitorId || "Không rõ"],
           ["Mã nhận diện thiết bị", info.fp || "Không rõ"]
         ];
         const quickKey = (info.ip && info.ip !== "Không rõ") ? info.ip : (info.visitorId || "");
         userInfoModalBody.innerHTML = `
+          ${buildTrustBoxHtml(info.trust)}
           <table class="info-table">
             ${rows.map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`).join("")}
           </table>
@@ -1400,6 +1822,17 @@
     }
 
     userInfoModalBody.addEventListener("click", (e) => {
+      const toggleTrustBtn = e.target.closest("[data-toggle-trust-detail]");
+      if (toggleTrustBtn) {
+        const panel = document.getElementById("trustDetailPanel");
+        if (panel) {
+          const opening = !panel.classList.contains("open");
+          panel.classList.toggle("open", opening);
+          toggleTrustBtn.textContent = opening ? "Ẩn chi tiết cách tính ▴" : "Xem chi tiết cách tính ▾";
+        }
+        return;
+      }
+
       const btn = e.target.closest("[data-quick-lookup]");
       if (btn && isAdmin) {
         const key = btn.dataset.quickLookup;
@@ -1413,9 +1846,6 @@
         runLookup(key);
       }
     });
-
-    document.getElementById("closeUserInfoModal").addEventListener("click", () => userInfoModal.classList.remove("open"));
-    userInfoModal.addEventListener("click", (e) => { if (e.target === userInfoModal) userInfoModal.classList.remove("open"); });
 
     // ===== TAB LƯỢT TRUY CẬP =====
     function renderVisitsPanel() {
@@ -1463,9 +1893,9 @@
         return `
           <div class="visit-log-card">
             <div class="visit-log-top">
-              <span class="visit-log-main">${escapeHtml(item.deviceModel || item.deviceType || "Thiết bị")} • ${escapeHtml(item.os || "")}</span>
-              <span class="comment-time">${formatTime(item.visitedAt)}</span>
-            </div>
+         <span class="visit-log-main">${escapeHtml(item.deviceModel || item.deviceType || "Thiết bị")} • ${escapeHtml(item.os || "")} ${formatTrustBadgeHtml(item.trust, true)}</span>
+         <span class="comment-time">${formatTime(item.visitedAt)}</span>
+       </div>
             <div class="visit-log-sub">
               ${escapeHtml(ipLine)}<br/>
               ${escapeHtml(item.browser || "")} • Mã: ${escapeHtml(item.visitorId || "Không rõ")}
@@ -1572,9 +2002,9 @@
 
           return `
             <div class="recent-comment-card">
-              <div class="rc-top">
+             <div class="rc-top">
                 <span><span class="activity-badge like">${badgeText}</span>${escapeHtml(getPostLabel(item.postId))}</span>
-                <span class="comment-time">${formatTime(item.createdAt)}</span>
+                <span class="comment-time">${formatTrustBadgeHtml(item.authorInfo?.trust, true)} ${formatTime(item.createdAt)}</span>
               </div>
               <div class="rc-text" style="color:#cbd5e1;font-size:0.84rem;">${escapeHtml(bodyText)}</div>
               <div class="rc-actions">
@@ -1593,7 +2023,7 @@
           <div class="recent-comment-card">
             <div class="rc-top">
               <span><span class="activity-badge comment">${isReply ? "Trả lời" : "Bình luận"}</span>${escapeHtml(getPostLabel(item.postId))}</span>
-              <span class="comment-time">${formatTime(item.createdAt)}</span>
+              <span class="comment-time">${formatTrustBadgeHtml(item.authorInfo?.trust, true)} ${formatTime(item.createdAt)}</span>
             </div>
             <div class="rc-text">${escapeHtml(item.text)}</div>
             <div class="rc-actions">
