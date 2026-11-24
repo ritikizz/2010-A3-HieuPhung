@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     /* ==========================================================================
-       MẪU 14 (V2): NEO-BRUTALISM NĂNG ĐỘNG — CÂN BẰNG BỐ CỤC & TỐI ƯU HIỆU NĂNG
+       MẪU 14 (V3): NEO-BRUTALISM NĂNG ĐỘNG — TỐI ƯU KHUNG VIDEO ĐỨNG & GIAO DIỆN GỌN SẠCH
        ========================================================================== */
     :root {
       --nb-bg: #FFFBEB;
@@ -696,10 +696,10 @@
       line-height: 1.48; white-space: pre-wrap; word-break: break-word;
     }
 
-    /* Hàng nút thao tác bình luận: luôn nằm gọn trên 1 dòng duy nhất, đồng đều & phân biệt màu rõ ràng */
+    /* Hàng thao tác bình luận: chữ màu phân biệt sạch mắt, không khung ô vuông, gọn trên 1 dòng */
     .comment-actions {
-      display: flex; align-items: center; gap: 4px;
-      padding: 1px 2px 2px;
+      display: flex; align-items: center; gap: 11px;
+      padding: 2px 4px;
       flex-wrap: nowrap;
       overflow-x: auto;
       scrollbar-width: none;
@@ -707,68 +707,52 @@
     .comment-actions::-webkit-scrollbar { display: none; }
 
     .c-btn {
-      height: 23px;
-      padding: 0 6px;
-      border-radius: 6px;
-      border: 1.5px solid var(--nb-ink);
-      background: var(--nb-surface);
-      color: var(--nb-ink);
-      font-size: 0.69rem;
-      font-weight: 800;
-      line-height: 1;
+      background: transparent;
+      border: none;
+      padding: 2px 0;
+      color: var(--nb-muted);
+      font-size: 0.77rem;
+      font-weight: 700;
+      line-height: 1.25;
       white-space: nowrap;
       flex-shrink: 0;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
       gap: 3px;
-      transition: transform 0.08s ease, background 0.12s ease;
+      transition: color 0.12s ease, opacity 0.12s ease;
     }
-    .c-btn:hover { transform: translateY(-1px); background: var(--nb-yellow-soft); color: var(--nb-ink); }
-    .c-btn:active { transform: translateY(0); }
+    .c-btn:hover { text-decoration: underline; text-underline-offset: 2px; color: var(--nb-ink); }
 
     /* Tim */
-    .c-btn.liked { background: var(--nb-pink); color: #FFFFFF; border-color: var(--nb-ink); }
-    .c-btn.liked:hover { background: #F43F5E; color: #FFFFFF; }
+    .c-btn.liked { color: #E11D48; font-weight: 800; }
+    .c-btn.liked:hover { color: #BE123C; }
 
-    /* Chia sẻ (Tím lavender sắc nét) */
+    /* Chia sẻ (Tím đậm) */
     .c-btn[data-share-comment],
-    .c-btn[data-share-reply] {
-      background: #F3E8FF; color: #6B21A8;
-    }
+    .c-btn[data-share-reply] { color: #7C3AED; }
     .c-btn[data-share-comment]:hover,
-    .c-btn[data-share-reply]:hover {
-      background: #E9D5FF; color: #581C87;
-    }
+    .c-btn[data-share-reply]:hover { color: #5B21B6; }
 
-    /* Trả lời (Xanh lá mint tách biệt hoàn toàn với Chia sẻ) */
-    .c-btn[data-open-reply] {
-      background: #DCFCE7; color: #15803D;
-    }
-    .c-btn[data-open-reply]:hover {
-      background: #BBF7D0; color: #166534;
-    }
+    /* Trả lời (Xanh lá đậm) */
+    .c-btn[data-open-reply] { color: #15803D; }
+    .c-btn[data-open-reply]:hover { color: #166534; }
 
-    /* Sửa (Vàng kem) */
-    .c-btn[data-start-edit] {
-      background: #FEF9C3; color: #A16207;
-    }
-    .c-btn[data-start-edit]:hover {
-      background: #FEF08A; color: #854D0E;
-    }
+    /* Sửa (Vàng hổ phách đậm) */
+    .c-btn[data-start-edit] { color: #B45309; }
+    .c-btn[data-start-edit]:hover { color: #92400E; }
 
-    /* Thông tin (Xanh dương cyan) */
-    .c-btn.info { background: #E0F2FE; color: #0369A1; }
-    .c-btn.info:hover { background: #BAE6FD; color: #075985; }
+    /* Thông tin (Xanh dương đậm) */
+    .c-btn.info { color: #0284C7; }
+    .c-btn.info:hover { color: #0369A1; }
 
-    /* Xóa (Đỏ hồng nhạt) */
-    .c-btn.danger { background: #FEE2E2; color: #B91C1C; }
-    .c-btn.danger:hover { background: #FECACA; color: #991B1B; }
+    /* Xóa (Đỏ đậm) */
+    .c-btn.danger { color: #DC2626; }
+    .c-btn.danger:hover { color: #991B1B; }
 
-    /* Xóa & Chặn (Cam nhạt) */
-    .c-btn.ban { background: #FFEDD5; color: #C2410C; }
-    .c-btn.ban:hover { background: #FED7AA; color: #9A3412; }
+    /* Xóa & Chặn (Cam đậm) */
+    .c-btn.ban { color: #EA580C; }
+    .c-btn.ban:hover { color: #9A3412; }
 
     .replies-wrap {
       margin-left: 14px; padding-left: 10px;
@@ -799,24 +783,33 @@
       .header-top-row { flex-wrap: nowrap; }
       header.album-header h1 { white-space: nowrap; flex: 0 1 auto; }
 
-      .feed:not(.grid-mode) { max-width: 960px; margin: 0 auto; }
+      .feed:not(.grid-mode) { max-width: 960px; margin: 0 auto; align-items: center; }
 
+      /* Khung bài viết tự ôm cân đối theo tỷ lệ thực tế của ảnh/video (hết tình trạng video đứng lọt thỏm) */
       .post-card {
-        display: grid; grid-template-columns: minmax(0, 1fr) 396px;
+        width: fit-content; max-width: 100%; margin: 0 auto;
+        display: grid; grid-template-columns: minmax(300px, auto) 396px;
         grid-template-rows: auto auto auto minmax(0, 1fr);
-        max-height: min(76vh, 620px); min-height: 430px; overflow: hidden;
+        max-height: min(82vh, 660px); min-height: 430px; overflow: hidden;
       }
       .post-media {
         grid-column: 1; grid-row: 1 / 5; height: 100%;
-        max-height: min(76vh, 620px); min-height: 430px;
-        padding: 18px;
+        max-height: min(82vh, 660px); min-height: 430px;
+        max-width: min(56vw, 560px);
+        padding: 12px;
       }
+      .post-media.is-embed { width: min(56vw, 560px); }
+      .post-media .hidden-media-box { min-width: 340px; }
       .post-media > img,
       .post-media > video,
       .post-media > .video-poster-wrap,
       .post-media > .video-poster-wrap img {
-        max-height: calc(min(76vh, 620px) - 40px);
-        max-width: 100%;
+        max-height: calc(min(82vh, 660px) - 24px);
+        max-width: calc(min(56vw, 560px) - 24px);
+      }
+      .post-media > video.portrait-video {
+        height: calc(min(82vh, 660px) - 24px);
+        width: auto;
       }
 
       .post-head {
@@ -847,20 +840,24 @@
       .feed.grid-mode { grid-template-columns: repeat(5, 1fr); gap: 14px; }
       .modal-box.post-detail-box { width: fit-content; max-width: min(94vw, 980px); }
       #postDetailModal .post-card {
-        grid-template-columns: minmax(380px, auto) 396px;
+        grid-template-columns: minmax(300px, auto) 396px;
         max-height: min(84vh, 660px); min-height: 430px;
       }
       #postDetailModal .post-media {
         max-height: min(84vh, 660px); max-width: min(56vw, 580px);
-        min-width: 380px; padding: 18px;
+        min-width: 300px; padding: 12px;
       }
       #postDetailModal .post-media.is-embed { width: min(56vw, 580px); }
       #postDetailModal .post-media > img,
       #postDetailModal .post-media > video,
       #postDetailModal .post-media > .video-poster-wrap,
       #postDetailModal .post-media > .video-poster-wrap img {
-        max-height: calc(min(84vh, 660px) - 40px);
-        max-width: calc(min(56vw, 580px) - 40px);
+        max-height: calc(min(84vh, 660px) - 24px);
+        max-width: calc(min(56vw, 580px) - 24px);
+      }
+      #postDetailModal .post-media > video.portrait-video {
+        height: calc(min(84vh, 660px) - 24px);
+        width: auto;
       }
     }
 
@@ -1022,6 +1019,7 @@
     }
     .activity-badge.visit { background: var(--nb-cyan-soft); }
     .activity-badge.like { background: var(--nb-pink-soft); }
+    .activity-badge.unlike { background: var(--nb-orange-soft); }
     .activity-badge.comment { background: var(--nb-mint-soft); }
 
     .section-subtitle { font-size: 0.9rem; font-weight: 800; color: var(--nb-ink); margin-bottom: 10px; }
@@ -2964,12 +2962,12 @@
       }
 
       const likeActionNames = {
-        like_post: "♥ Tim bài",
-        unlike_post: "💔 Bỏ tim bài",
-        like_comment: "♥ Tim bình luận",
-        unlike_comment: "💔 Bỏ tim bình luận",
-        like_reply: "♥ Tim trả lời",
-        unlike_reply: "💔 Bỏ tim trả lời"
+        like_post: "Tim bài",
+        unlike_post: "Bỏ tim bài",
+        like_comment: "Tim bình luận",
+        unlike_comment: "Bỏ tim bình luận",
+        like_reply: "Tim trả lời",
+        unlike_reply: "Bỏ tim trả lời"
       };
 
       container.innerHTML = flat.slice(0, 80).map((item) => {
@@ -2985,12 +2983,13 @@
             ? `${item.authorInfo.deviceModel || "Thiết bị"} • IP: ${item.authorInfo.ip || "Không rõ"}`
             : "Người dùng ẩn danh";
           const bodyText = item.commentText ? `"${item.commentText}"\n(${deviceSub})` : deviceSub;
-          const badgeText = likeActionNames[item.action] || "♥ Tim bài";
+          const badgeText = likeActionNames[item.action] || "Tim bài";
+          const isUnlikeAction = String(item.action || "").startsWith("unlike");
 
           return `
             <div class="recent-comment-card">
              <div class="rc-top">
-                <span><span class="activity-badge like">${badgeText}</span>${escapeHtml(getPostLabel(item.postId))}</span>
+                <span><span class="activity-badge ${isUnlikeAction ? "unlike" : "like"}">${badgeText}</span>${escapeHtml(getPostLabel(item.postId))}</span>
                 <span class="comment-time">${formatTrustBadgeHtml(item.authorInfo?.trust, true)} ${formatTime(item.createdAt)}</span>
               </div>
               <div class="rc-text" style="color:#cbd5e1;font-size:0.84rem;">${escapeHtml(bodyText)}</div>
@@ -3142,7 +3141,7 @@
       `;
 
       const listHtml = events.map((ev) => {
-        const badgeLabel = ev.type === "visit" ? "Truy cập" : (ev.type === "like" ? "♥ Tim" : "Bình luận");
+        const badgeLabel = ev.type === "visit" ? "Truy cập" : (ev.type === "like" ? "Tim" : "Bình luận");
         return `
           <div class="visit-log-card">
             <div class="visit-log-top">
@@ -3582,6 +3581,9 @@
             const previewUrl = media.src.includes("#") ? media.src : `${media.src}#t=0.1`;
             const vid = document.createElement("video");
             vid.controls = true; vid.playsInline = true; vid.preload = "metadata"; vid.src = previewUrl;
+            vid.addEventListener("loadedmetadata", () => {
+              if (vid.videoHeight > vid.videoWidth) vid.classList.add("portrait-video");
+            });
             mediaBox.appendChild(vid);
             if (!isDetailModal) videoAutoPauseObserver.observe(vid);
           }
@@ -4203,6 +4205,9 @@
           mediaBox.innerHTML = "";
           const vid = document.createElement("video");
           vid.controls = true; vid.autoplay = true; vid.playsInline = true; vid.preload = "auto"; vid.src = mSrc;
+          vid.addEventListener("loadedmetadata", () => {
+            if (vid.videoHeight > vid.videoWidth) vid.classList.add("portrait-video");
+          });
           mediaBox.appendChild(vid);
           if (!mediaBox.closest("#postDetailBody")) videoAutoPauseObserver.observe(vid);
         } else {
