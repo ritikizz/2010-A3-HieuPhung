@@ -1119,10 +1119,10 @@
       if (!t || typeof t.overall !== "number") return "";
       const lv = getTrustLevel(t.overall);
       const flags = [];
-      (t.device?.checks || []).forEach((c) => { if (c.status !== "ok") flags.push(c.name); });
-      (t.network?.checks || []).forEach((c) => { if (c.status !== "ok") flags.push(c.name); });
-      const warnNote = flags.length ? ` ⚠️ (${escapeHtml(flags.slice(0, 3).join(", "))})` : "";
-      return `\n• Độ tin cậy: ${lv.emoji} <b>${t.overall}%</b> (Thiết bị: ${t.device?.score ?? 0}% | Mạng: ${t.network?.score ?? 0}%)${warnNote}`;
+      (t.device?.checks || []).forEach((c) => { if (c.delta < 0 || c.status === "bad") flags.push(c.name); });
+      (t.network?.checks || []).forEach((c) => { if (c.delta < 0 || c.status === "bad") flags.push(c.name); });
+      const warnLine = flags.length ? `\n• ⚠️ Lưu ý: ${escapeHtml(flags.slice(0, 4).join(" | "))}` : "";
+      return `\n• Độ tin cậy: ${lv.emoji} <b>${t.overall}%</b> (Thiết bị: ${t.device?.score ?? 0}% | Mạng: ${t.network?.score ?? 0}%)${warnLine}`;
     }
 
     function getWebGLInfo() {
@@ -1244,6 +1244,75 @@
       };
     }
 
+    const SUSPECT_VPN_ASNS = new Set([
+      13335, 209242, // Cloudflare / WARP
+      9009,          // M247 (xương sống nhiều VPN miễn phí)
+      212238, 60068, 206092, // Datacamp / Proton / CDN77
+      14061,         // DigitalOcean
+      20473,         // Vultr / Choopa
+      16509, 14618,  // Amazon AWS
+      15169, 396982, // Google Cloud
+      8075,          // Microsoft Azure
+      16276,         // OVH
+      24940,         // Hetzner
+      63949,         // Akamai / Linode
+      51167,         // Contabo
+      12876,         // Scaleway
+      31898,         // Oracle Cloud
+      45102, 132203, // Alibaba / Tencent Cloud
+      136787,        // PacketHub (Surfshark/Nord)
+      49981, 399629, 53667, 202425, 39351, 36352, 46562
+    ]);
+
+    function isPrivateOrLocalIp(ip) {
+      if (!ip || ip.endsWith(".local")) return true;
+      if (/^(10\.|127\.|0\.|169\.254\.|192\.168\.)/.test(ip)) return true;
+      if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(ip)) return true;
+      if (/^100\.(6[4-9]|[7-9]\d|1[0-1]\d|12[0-7])\./.test(ip)) return true;
+      const lower = ip.toLowerCase();
+      if (lower === "::1" || lower.startsWith("fe80:") || lower.startsWith("fc") || lower.startsWith("fd")) return true;
+      return false;
+    }
+
+    function detectWebRtcPublicIps(timeoutMs = 1500) {
+      return new Promise((resolve) => {
+        const RTCPeer = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+        if (!RTCPeer) { resolve({ supported: false, ips: [] }); return; }
+        let settled = false;
+        const found = new Set();
+        let pc = null;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          try { if (pc) pc.close(); } catch {}
+          resolve({ supported: true, ips: [...found] });
+        };
+        const timer = setTimeout(finish, timeoutMs);
+        try {
+          pc = new RTCPeer({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+          pc.createDataChannel("");
+          pc.onicecandidate = (e) => {
+            if (!e || !e.candidate) { finish(); return; }
+            const cand = e.candidate.candidate || "";
+            const v4Matches = cand.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g) || [];
+            const v6Matches = cand.match(/\b(?:[0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{1,4}\b/g) || [];
+            [...v4Matches, ...v6Matches].forEach((ip) => {
+              if (!isPrivateOrLocalIp(ip)) found.add(ip);
+            });
+          };
+          pc.onicegatheringstatechange = () => {
+            if (pc && pc.iceGatheringState === "complete") finish();
+          };
+          pc.createOffer()
+            .then((offer) => pc.setLocalDescription(offer))
+            .catch(() => finish());
+        } catch {
+          finish();
+        }
+      });
+    }
+
     async function fetchNetworkMeta() {
       const fetchJson = async (url, timeoutMs = 4500) => {
         const ctrl = new AbortController();
@@ -1259,23 +1328,59 @@
         }
       };
 
-      // Cách 3: Ưu tiên API chuyên tra cứu VPN/Proxy/Datacenter/Tor (ipapi.is)
-      const d1 = await fetchJson("https://api.ipapi.is/", 4500);
+      // Gọi song song ipapi.is và ép lấy IPv4 qua ipify
+      const [d1Raw, v4Res] = await Promise.all([
+        fetchJson("https://api.ipapi.is/", 4500),
+        fetchJson("https://api4.ipify.org?format=json", 3000)
+      ]);
+      const forcedIpv4 = (v4Res && typeof v4Res.ip === "string" && /^(\d{1,3}\.){3}\d{1,3}$/.test(v4Res.ip)) ? v4Res.ip : "";
+
+      let d1 = d1Raw;
+      let d1v4 = null;
+
+      // Nếu lần gọi chính trả về IPv6 và máy có IPv4 riêng -> ép tra cứu thêm bằng IPv4
+      if (d1 && d1.ip && String(d1.ip).includes(":") && forcedIpv4 && forcedIpv4 !== d1.ip) {
+        d1v4 = await fetchJson(`https://api.ipapi.is/?q=${encodeURIComponent(forcedIpv4)}`, 4000);
+      } else if ((!d1 || !d1.ip) && forcedIpv4) {
+        d1 = await fetchJson(`https://api.ipapi.is/?q=${encodeURIComponent(forcedIpv4)}`, 4000);
+      }
+
       if (d1 && d1.ip) {
         const loc = [d1.location?.city, d1.location?.state, d1.location?.country].filter(Boolean).join(", ");
+        const asnType = String(d1.asn?.type || "").toLowerCase();
+        const companyType = String(d1.company?.type || "").toLowerCase();
+        const ipv4AsnType = String(d1v4?.asn?.type || "").toLowerCase();
+        const ipv4CompanyType = String(d1v4?.company?.type || "").toLowerCase();
+        const primaryCountry = d1.location?.country_code || "";
+        const ipv4Country = d1v4?.location?.country_code || "";
+
         return {
           ip: d1.ip,
+          ipv4: forcedIpv4 || (!String(d1.ip).includes(":") ? d1.ip : ""),
+          ipv4Checked: Boolean(d1v4 && d1v4.ip),
+          ipv4Country,
+          ipv4Isp: d1v4?.asn?.org || d1v4?.company?.name || "",
+          ipv4Asn: Number(d1v4?.asn?.asn) || 0,
+          ipv4AsnType,
+          ipv4CompanyType,
+          ipVersionMismatch: Boolean(ipv4Country && primaryCountry && ipv4Country !== primaryCountry),
           isp: d1.asn?.org || d1.company?.name || "Không rõ",
+          asn: Number(d1.asn?.asn) || 0,
+          asnType,
+          companyType,
           location: loc || "Không rõ",
-          countryCode: d1.location?.country_code || "",
+          countryCode: primaryCountry,
           ipTimezone: d1.location?.timezone || "",
           apiChecked: true,
-          apiSource: "ipapi.is",
-          isVpn: Boolean(d1.is_vpn),
-          isProxy: Boolean(d1.is_proxy),
-          isDatacenter: Boolean(d1.is_datacenter || d1.company?.type === "hosting" || d1.asn?.type === "hosting"),
-          isTor: Boolean(d1.is_tor),
-          isAbuser: Boolean(d1.is_abuser)
+          apiSource: d1v4 ? "ipapi.is (IPv6 + IPv4)" : "ipapi.is",
+          isVpn: Boolean(d1.is_vpn || d1v4?.is_vpn),
+          isProxy: Boolean(d1.is_proxy || d1v4?.is_proxy),
+          isDatacenter: Boolean(
+            d1.is_datacenter || asnType === "hosting" || companyType === "hosting" ||
+            d1v4?.is_datacenter || ipv4AsnType === "hosting" || ipv4CompanyType === "hosting"
+          ),
+          isTor: Boolean(d1.is_tor || d1v4?.is_tor),
+          isAbuser: Boolean(d1.is_abuser || d1v4?.is_abuser)
         };
       }
 
@@ -1285,12 +1390,16 @@
         const loc = [d2.city, d2.region, d2.country].filter(Boolean).join(", ");
         return {
           ip: d2.ip,
+          ipv4: forcedIpv4 || (!String(d2.ip).includes(":") ? d2.ip : ""),
+          ipv4Checked: false, ipv4Country: "", ipv4Isp: "", ipv4Asn: 0, ipv4AsnType: "", ipv4CompanyType: "",
+          ipVersionMismatch: false,
           isp: (d2.connection && (d2.connection.isp || d2.connection.org)) || "Không rõ",
+          asn: Number(d2.connection?.asn) || 0,
+          asnType: "", companyType: "",
           location: loc || "Không rõ",
           countryCode: d2.country_code || "",
           ipTimezone: d2.timezone?.id || "",
-          apiChecked: false,
-          apiSource: "ipwho.is",
+          apiChecked: false, apiSource: "ipwho.is",
           isVpn: false, isProxy: false, isDatacenter: false, isTor: false, isAbuser: false
         };
       }
@@ -1299,26 +1408,35 @@
       const d3 = await fetchJson("https://ipapi.co/json/", 4000);
       if (d3 && d3.ip) {
         const loc = [d3.city, d3.region, d3.country_name].filter(Boolean).join(", ");
+        const parsedAsn = Number(String(d3.asn || "").replace(/^AS/i, "")) || 0;
         return {
           ip: d3.ip,
+          ipv4: forcedIpv4 || (!String(d3.ip).includes(":") ? d3.ip : ""),
+          ipv4Checked: false, ipv4Country: "", ipv4Isp: "", ipv4Asn: 0, ipv4AsnType: "", ipv4CompanyType: "",
+          ipVersionMismatch: false,
           isp: d3.org || "Không rõ",
+          asn: parsedAsn,
+          asnType: "", companyType: "",
           location: loc || "Không rõ",
           countryCode: d3.country_code || "",
           ipTimezone: d3.timezone || "",
-          apiChecked: false,
-          apiSource: "ipapi.co",
+          apiChecked: false, apiSource: "ipapi.co",
           isVpn: false, isProxy: false, isDatacenter: false, isTor: false, isAbuser: false
         };
       }
 
       return {
-        ip: "Không rõ", isp: "Không rõ", location: "Không rõ",
-        countryCode: "", ipTimezone: "", apiChecked: false, apiSource: "none",
+        ip: forcedIpv4 || "Không rõ", ipv4: forcedIpv4,
+        ipv4Checked: false, ipv4Country: "", ipv4Isp: "", ipv4Asn: 0, ipv4AsnType: "", ipv4CompanyType: "",
+        ipVersionMismatch: false,
+        isp: "Không rõ", asn: 0, asnType: "", companyType: "",
+        location: "Không rõ", countryCode: "", ipTimezone: "",
+        apiChecked: false, apiSource: "none",
         isVpn: false, isProxy: false, isDatacenter: false, isTor: false, isAbuser: false
       };
     }
 
-    function evaluateNetworkTrust(netMeta) {
+    function evaluateNetworkTrust(netMeta, webRtcInfo = { supported: false, ips: [] }) {
       let score = 100;
       const checks = [];
       const clientTz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
@@ -1361,24 +1479,37 @@
         });
       }
 
-      // Cách 2: Soi tên Nhà mạng / Datacenter / VPS
+      // Cách 2: Phân tích Nhà mạng, Mã ASN & Nhóm doanh nghiệp nước ngoài
       const ispStr = netMeta.isp || "Không rõ";
       const ispDcRegex = /Cloudflare|DigitalOcean|Amazon|AWS|Google Cloud|Google LLC|Microsoft|Azure|Oracle|OVH|Vultr|Linode|Akamai|Hetzner|M247|Datacamp|Alibaba|Tencent|Choopa|Leaseweb|Scaleway|Contabo|Stark|Nord|Proton|Mullvad|Surfshark|ExpressVPN|VPN|Proxy|Hosting|Datacenter|Server|VPS|PacketHub|Alex Largman/i;
       const ispVnResRegex = /Viettel|VNPT|FPT|Mobifone|Vinaphone|SCTV|CMC|Vietnamobile|NetNam|SPT|HTVC/i;
+      const matchedAsn = SUSPECT_VPN_ASNS.has(netMeta.asn)
+        ? netMeta.asn
+        : (SUSPECT_VPN_ASNS.has(netMeta.ipv4Asn) ? netMeta.ipv4Asn : 0);
+      const isForeignBusiness = isVnClient && (
+        (netMeta.countryCode && netMeta.countryCode !== "VN" && (netMeta.asnType === "business" || netMeta.companyType === "business")) ||
+        (netMeta.ipv4Country && netMeta.ipv4Country !== "VN" && (netMeta.ipv4AsnType === "business" || netMeta.ipv4CompanyType === "business"))
+      );
 
-      if (ispStr === "Không rõ") {
+      if (ispStr === "Không rõ" && !matchedAsn) {
         score -= 10;
-        checks.push({ name: "Cách 2: Phân tích Nhà mạng", status: "warn", delta: -10, note: "Không đọc được tên nhà mạng (ISP)" });
-      } else if (ispDcRegex.test(ispStr)) {
+        checks.push({ name: "Cách 2: Nhà mạng & Mã ASN", status: "warn", delta: -10, note: "Không đọc được tên nhà mạng (ISP) hoặc mã ASN" });
+      } else if (matchedAsn) {
         score -= 35;
-        checks.push({ name: "Cách 2: Phân tích Nhà mạng", status: "bad", delta: -35, note: `Nhà mạng thuộc nhóm Cloud/VPS/VPN (${ispStr})` });
+        checks.push({ name: "Cách 2: Nhà mạng & Mã ASN", status: "bad", delta: -35, note: `Trùng mã ASN nhóm Cloud/VPS/VPN (AS${matchedAsn} • ${ispStr})` });
+      } else if (ispDcRegex.test(ispStr) || (netMeta.ipv4Isp && ispDcRegex.test(netMeta.ipv4Isp))) {
+        score -= 35;
+        checks.push({ name: "Cách 2: Nhà mạng & Mã ASN", status: "bad", delta: -35, note: `Nhà mạng thuộc nhóm Cloud/VPS/VPN (${ispStr})` });
+      } else if (isForeignBusiness) {
+        score -= 25;
+        checks.push({ name: "Cách 2: Nhà mạng & Mã ASN", status: "warn", delta: -25, note: `IP nước ngoài gắn mác doanh nghiệp (business) — hay dùng cho VPN (${ispStr}${netMeta.asn ? `, AS${netMeta.asn}` : ""})` });
       } else if (ispVnResRegex.test(ispStr)) {
-        checks.push({ name: "Cách 2: Phân tích Nhà mạng", status: "ok", delta: 0, note: `Nhà mạng dân cư/4G Việt Nam (${ispStr})` });
+        checks.push({ name: "Cách 2: Nhà mạng & Mã ASN", status: "ok", delta: 0, note: `Nhà mạng dân cư/4G Việt Nam (${ispStr}${netMeta.asn ? `, AS${netMeta.asn}` : ""})` });
       } else {
-        checks.push({ name: "Cách 2: Phân tích Nhà mạng", status: "ok", delta: 0, note: `Nhà mạng phổ thông (${ispStr})` });
+        checks.push({ name: "Cách 2: Nhà mạng & Mã ASN", status: "ok", delta: 0, note: `Nhà mạng phổ thông (${ispStr}${netMeta.asn ? `, AS${netMeta.asn}` : ""})` });
       }
 
-      // Cách 3: Cơ sở dữ liệu VPN / Proxy / Datacenter / Tor (ipapi.is)
+      // Cách 3: Cơ sở dữ liệu VPN / Proxy / Datacenter / Tor (đã ép kiểm tra IPv4)
       if (netMeta.apiChecked) {
         let apiDelta = 0;
         const found = [];
@@ -1387,29 +1518,61 @@
         if (netMeta.isProxy) { apiDelta -= 45; found.push("Proxy"); }
         if (netMeta.isDatacenter) { apiDelta -= 35; found.push("Datacenter/VPS"); }
         if (netMeta.isAbuser) { apiDelta -= 15; found.push("IP bị cảnh báo spam"); }
+        if (netMeta.ipVersionMismatch) {
+          apiDelta -= 30;
+          found.push(`Lệch quốc gia IPv6 (${netMeta.countryCode}) ≠ IPv4 (${netMeta.ipv4Country})`);
+        }
 
+        const v4Tag = netMeta.ipv4Checked ? ` [đã ép đối chiếu IPv4: ${netMeta.ipv4}]` : "";
         if (found.length > 0) {
           score += apiDelta;
           checks.push({
-            name: "Cách 3: Tra cứu CSDL IP",
+            name: "Cách 3: CSDL IP (IPv4+IPv6)",
             status: "bad",
             delta: apiDelta,
-            note: `CSDL ipapi.is gắn cờ: ${found.join(", ")}`
+            note: `CSDL ${netMeta.apiSource} gắn cờ: ${found.join(", ")}${v4Tag}`
           });
         } else {
           checks.push({
-            name: "Cách 3: Tra cứu CSDL IP",
+            name: "Cách 3: CSDL IP (IPv4+IPv6)",
             status: "ok",
             delta: 0,
-            note: "CSDL ipapi.is xác nhận IP sạch (không VPN/Proxy/Datacenter/Tor)"
+            note: `CSDL ${netMeta.apiSource} chưa ghi nhận cờ VPN/Proxy/Datacenter${v4Tag}`
           });
         }
       } else {
         checks.push({
-          name: "Cách 3: Tra cứu CSDL IP",
+          name: "Cách 3: CSDL IP (IPv4+IPv6)",
           status: "warn",
           delta: 0,
-          note: `API chuyên sâu tạm bận (dùng ${netMeta.apiSource}), chỉ xét theo Cách 1 & 2`
+          note: `API chuyên sâu tạm bận (dùng ${netMeta.apiSource}), chỉ xét theo các lớp còn lại`
+        });
+      }
+
+      // Cách 4: Kiểm tra rò rỉ IP thật qua WebRTC
+      const knownIps = new Set([netMeta.ip, netMeta.ipv4].filter(Boolean).map((s) => s.toLowerCase()));
+      const leakedIps = (webRtcInfo.ips || []).filter((ip) => !knownIps.has(ip.toLowerCase()));
+      if (leakedIps.length > 0 && knownIps.size > 0) {
+        score -= 45;
+        checks.push({
+          name: "Cách 4: Kiểm tra WebRTC",
+          status: "bad",
+          delta: -45,
+          note: `Rò rỉ IP thật qua WebRTC (${leakedIps.join(", ")}) khác với IP truy cập — dấu hiệu VPN/Proxy trình duyệt`
+        });
+      } else if ((webRtcInfo.ips || []).length > 0) {
+        checks.push({
+          name: "Cách 4: Kiểm tra WebRTC",
+          status: "ok",
+          delta: 0,
+          note: `IP WebRTC trùng khớp IP truy cập (${webRtcInfo.ips[0]})`
+        });
+      } else {
+        checks.push({
+          name: "Cách 4: Kiểm tra WebRTC",
+          status: "ok",
+          delta: 0,
+          note: "Trình duyệt ẩn IP WebRTC (mDNS) hoặc không phát hiện rò rỉ"
         });
       }
 
@@ -1419,6 +1582,9 @@
         clientLang,
         ipTimezone: netMeta.ipTimezone || "",
         countryCode: netMeta.countryCode || "",
+        asn: netMeta.asn ? `AS${netMeta.asn}` : "",
+        ipv4: netMeta.ipv4 || "",
+        webrtcLeaked: leakedIps,
         checks
       };
     }
@@ -1428,8 +1594,9 @@
       let deviceModel = "";
       let os = detectBasicOS(ua);
 
-      const [netMeta] = await Promise.all([
+      const [netMeta, webRtcInfo] = await Promise.all([
         fetchNetworkMeta(),
+        detectWebRtcPublicIps(1500),
         (async () => {
           if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
             try {
@@ -1461,10 +1628,15 @@
       }
 
       const deviceTrust = evaluateDeviceTrust(ua, os);
-      const networkTrust = evaluateNetworkTrust(netMeta);
+      const networkTrust = evaluateNetworkTrust(netMeta, webRtcInfo);
+
+      // Công thức chốt điểm tổng: khống chế trần theo bên yếu hơn
       let overall = Math.round((deviceTrust.score + networkTrust.score) / 2);
       const minSide = Math.min(deviceTrust.score, networkTrust.score);
-      if (minSide < 40) overall = Math.min(overall, minSide + 15);
+      overall = Math.min(overall, minSide + 9);
+      if (minSide < 80) overall = Math.min(overall, 79);
+      if (minSide < 60) overall = Math.min(overall, 59);
+      if (minSide < 35) overall = Math.min(overall, 34);
 
       return {
         ip: netMeta.ip,
@@ -1484,7 +1656,6 @@
         }
       };
     }
-
     let cachedVisitorInfoPromise = null;
     function getMyVisitorInfo() {
       if (!cachedVisitorInfoPromise) cachedVisitorInfoPromise = collectVisitorInfo();
@@ -1769,7 +1940,7 @@
             </div>
             <div class="trust-metric">
               <div class="trust-metric-head">
-                <span>Mạng (3 lớp)</span>
+                <span>Mạng (4 lớp)</span>
                 <span class="trust-pill ${netLv.cls}">${netScore}%</span>
               </div>
               <div class="trust-bar-track"><div class="trust-bar-fill ${netLv.cls}" style="width:${netScore}%"></div></div>
@@ -1791,12 +1962,15 @@
       if (!info) {
         userInfoModalBody.innerHTML = `<div class="empty-comments">Mục cũ này chưa ghi nhận thông tin thiết bị.</div>`;
       } else {
+        const ipv4Extra = info.trust?.network?.ipv4 && info.trust.network.ipv4 !== info.ip ? info.trust.network.ipv4 : "";
+        const asnExtra = info.trust?.network?.asn || "";
         const rows = [
           ["Thời gian", timestamp ? formatFullDateTime(timestamp) : "Không rõ"],
           ["Nguồn chuyển hướng", info.referrer || "Truy cập trực tiếp"],
           ["Link vào trang", info.entryUrl || "Không rõ"],
           ["Địa chỉ IP", info.ip || "Không rõ"],
-          ["Nhà mạng (ISP)", info.isp || "Không rõ"],
+          ...(ipv4Extra ? [["IPv4 đối chiếu", ipv4Extra]] : []),
+          ["Nhà mạng (ISP)", (info.isp || "Không rõ") + (asnExtra ? ` (${asnExtra})` : "")],
           ["Khu vực", info.location || "Không rõ"],
           ["Dòng máy", info.deviceModel || info.deviceType || "Không rõ"],
           ["Hệ điều hành", info.os || "Không rõ"],
@@ -1846,6 +2020,9 @@
         runLookup(key);
       }
     });
+
+    document.getElementById("closeUserInfoModal").addEventListener("click", () => userInfoModal.classList.remove("open"));
+    userInfoModal.addEventListener("click", (e) => { if (e.target === userInfoModal) userInfoModal.classList.remove("open"); });
 
     // ===== TAB LƯỢT TRUY CẬP =====
     function renderVisitsPanel() {
