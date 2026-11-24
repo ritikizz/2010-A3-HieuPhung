@@ -738,13 +738,15 @@
     .c-btn[data-open-reply] { color: #15803D; }
     .c-btn[data-open-reply]:hover { color: #166534; }
 
-    /* Sửa (Vàng hổ phách đậm) */
-    .c-btn[data-start-edit] { color: #B45309; }
-    .c-btn[data-start-edit]:hover { color: #92400E; }
-
     /* Thông tin (Xanh dương đậm) */
     .c-btn.info { color: #0284C7; }
     .c-btn.info:hover { color: #0369A1; }
+
+    /* Sửa (Vàng nâu đậm - đè lên .info để tách màu rõ ràng) */
+    .c-btn.info[data-start-edit],
+    .c-btn[data-start-edit] { color: #A16207; }
+    .c-btn.info[data-start-edit]:hover,
+    .c-btn[data-start-edit]:hover { color: #854D0E; }
 
     /* Xóa (Đỏ đậm) */
     .c-btn.danger { color: #DC2626; }
