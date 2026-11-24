@@ -655,6 +655,14 @@
     .trust-check-delta.ok { color: #4ade80; }
     .trust-check-delta.warn { color: #facc15; }
     .trust-check-delta.bad { color: #f87171; }
+    .visit-search-wrap { position: relative; display: flex; align-items: center; margin-bottom: 12px; }
+    .visit-code-badge {
+      display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.74rem; font-weight: 700; letter-spacing: 0.6px;
+      padding: 2px 7px; border-radius: 6px; margin-right: 6px;
+      background: rgba(59, 130, 246, 0.16); color: #93c5fd; border: 1px solid rgba(96, 165, 250, 0.4);
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body>
@@ -896,7 +904,11 @@
         <!-- Tab 2: Lượt truy cập -->
         <div class="admin-panel" id="tabVisits">
           <div class="stats-grid" id="statsSummaryGrid"></div>
-          <div class="section-subtitle">100 lượt truy cập gần nhất</div>
+          <div class="visit-search-wrap">
+            <input type="text" id="visitSearchInput" class="search-input" placeholder="Tìm mã truy cập (6 ký tự), IP, mã thiết bị (fp_), mã trình duyệt (v_)..." />
+            <button type="button" class="search-clear-btn" id="clearVisitSearchBtn" title="Xóa tìm kiếm">&times;</button>
+          </div>
+          <div class="section-subtitle" id="visitLogsSubtitle">100 lượt truy cập gần nhất</div>
           <div id="visitLogsList"></div>
         </div>
 
@@ -1158,16 +1170,21 @@
       }
     }
 
-    function evaluateDeviceTrust(ua, detectedOs) {
+    function evaluateDeviceTrust(ua, detectedOs, uaHints = {}) {
       let score = 100;
       const checks = [];
       const platform = navigator.platform || "";
       const vendor = navigator.vendor || "";
+      const oscpu = navigator.oscpu || "";
       const maxTouch = navigator.maxTouchPoints || 0;
       const webdriver = Boolean(navigator.webdriver);
       const finePointer = window.matchMedia ? window.matchMedia("(pointer: fine)").matches : false;
       const hasHover = window.matchMedia ? window.matchMedia("(hover: hover)").matches : false;
       const hasWindowChrome = typeof window.chrome !== "undefined";
+      const hasUaData = Boolean(navigator.userAgentData);
+      const isV8 = typeof Error.captureStackTrace === "function";
+      const isGecko = typeof navigator.oscpu === "string" || (typeof CSS !== "undefined" && Boolean(CSS.supports && CSS.supports("-moz-appearance", "none")));
+      const isWebKit = !isV8 && !isGecko && /Apple/i.test(vendor);
       const gpu = getWebGLInfo();
       const gpuStr = gpu.renderer || "Không rõ";
 
@@ -1176,9 +1193,12 @@
       const claimsMobile = /Mobile|iPhone|iPod/i.test(ua) || (claimsAndroid && /Mobile/i.test(ua));
       const claimsWindows = /Windows NT/i.test(ua);
       const claimsMac = /Macintosh|Mac OS X/i.test(ua) && !claimsIOS;
+      const claimsLinux = /Linux|X11/i.test(ua) && !claimsAndroid;
 
-      // 1. Đối chiếu Card đồ họa (GPU qua WebGL)
+      // 1. Đối chiếu Card đồ họa (GPU qua WebGL) — bắt cả Mobile↔PC lẫn Windows↔macOS/Linux
       const isDesktopGpu = /Direct3D|D3D11|NVIDIA|GeForce|GTX|RTX|Radeon|AMD|Intel|Microsoft Basic Render/i.test(gpuStr);
+      const isDirect3DGpu = /Direct3D|D3D11|Microsoft Basic Render/i.test(gpuStr);
+      const isAppleGpu = /Apple GPU|Apple M\d/i.test(gpuStr);
       const isSoftwareGpu = /SwiftShader|llvmpipe|Software Adapter|Mesa OffScreen/i.test(gpuStr);
 
       if (isSoftwareGpu) {
@@ -1193,28 +1213,127 @@
       } else if (claimsAndroid && isDesktopGpu) {
         score -= 45;
         checks.push({ name: "GPU thực tế (WebGL)", status: "bad", delta: -45, note: `Khai Android nhưng GPU thuộc máy tính (${gpuStr})` });
+      } else if ((claimsMac || claimsLinux) && isDirect3DGpu) {
+        score -= 45;
+        checks.push({ name: "GPU thực tế (WebGL)", status: "bad", delta: -45, note: `Khai ${claimsMac ? "macOS" : "Linux"} nhưng GPU chạy Direct3D của Windows (${gpuStr})` });
+      } else if ((claimsWindows || claimsLinux) && isAppleGpu) {
+        score -= 45;
+        checks.push({ name: "GPU thực tế (WebGL)", status: "bad", delta: -45, note: `Khai ${claimsWindows ? "Windows" : "Linux"} nhưng GPU là chip Apple (${gpuStr})` });
       } else {
         checks.push({ name: "GPU thực tế (WebGL)", status: "ok", delta: 0, note: `Khớp thiết bị (${gpuStr})` });
       }
 
-      // 2. Đối chiếu Platform, Vendor & nhân trình duyệt
-      let pvDelta = 0;
-      const pvNotes = [];
-      if (claimsIOS && /Win|Linux/i.test(platform)) { pvDelta -= 35; pvNotes.push(`khai iOS nhưng platform là ${platform}`); }
-      if (claimsIOS && vendor && !/Apple/i.test(vendor)) { pvDelta -= 25; pvNotes.push(`vendor là "${vendor}" thay vì Apple`); }
-      if (claimsIOS && hasWindowChrome) { pvDelta -= 20; pvNotes.push(`tồn tại window.chrome trên máy khai iOS`); }
-      if (claimsAndroid && /Win|MacIntel/i.test(platform)) { pvDelta -= 35; pvNotes.push(`khai Android nhưng platform là ${platform}`); }
-      if (claimsWindows && platform && !/Win/i.test(platform)) { pvDelta -= 30; pvNotes.push(`khai Windows nhưng platform là ${platform}`); }
-      if (claimsMac && platform && /Win|Linux/i.test(platform)) { pvDelta -= 30; pvNotes.push(`khai macOS nhưng platform là ${platform}`); }
+      // 2. Đối chiếu Hệ điều hành, Platform & Client Hints (bắt PC↔PC khác HĐH hoặc giả Windows cũ)
+      let osDelta = 0;
+      const osNotes = [];
+      const hintPlatform = String(uaHints.platform || navigator.userAgentData?.platform || "").toLowerCase();
+      const hintPlatformVer = String(uaHints.platformVersion || "");
 
-      if (pvDelta < 0) {
-        score += pvDelta;
-        checks.push({ name: "Nền tảng & Nhân trình duyệt", status: "bad", delta: pvDelta, note: `Lệch thông số: ${pvNotes.join("; ")}` });
-      } else {
-        checks.push({ name: "Nền tảng & Nhân trình duyệt", status: "ok", delta: 0, note: `Đồng bộ (platform: ${platform || "ẩn"}, vendor: ${vendor || "ẩn"})` });
+      if (claimsIOS && /Win|Linux/i.test(platform)) { osDelta -= 35; osNotes.push(`khai iOS nhưng platform là ${platform}`); }
+      if (claimsAndroid && /Win|MacIntel/i.test(platform)) { osDelta -= 35; osNotes.push(`khai Android nhưng platform là ${platform}`); }
+      if (claimsWindows && platform && !/Win/i.test(platform)) { osDelta -= 35; osNotes.push(`khai Windows nhưng platform là ${platform}`); }
+      if (claimsMac && platform && !/Mac/i.test(platform)) { osDelta -= 35; osNotes.push(`khai macOS nhưng platform là ${platform}`); }
+      if (claimsLinux && platform && !/Linux|X11/i.test(platform)) { osDelta -= 35; osNotes.push(`khai Linux nhưng platform là ${platform}`); }
+
+      if (hintPlatform) {
+        if (claimsWindows && !hintPlatform.includes("win")) { osDelta -= 35; osNotes.push(`UA khai Windows nhưng Client Hints báo ${hintPlatform}`); }
+        if (claimsMac && !hintPlatform.includes("mac")) { osDelta -= 35; osNotes.push(`UA khai macOS nhưng Client Hints báo ${hintPlatform}`); }
+        if (claimsLinux && !hintPlatform.includes("linux")) { osDelta -= 35; osNotes.push(`UA khai Linux nhưng Client Hints báo ${hintPlatform}`); }
+        if (claimsIOS && !hintPlatform.includes("ios")) { osDelta -= 35; osNotes.push(`UA khai iOS nhưng Client Hints báo ${hintPlatform}`); }
+        if (claimsAndroid && !hintPlatform.includes("android")) { osDelta -= 35; osNotes.push(`UA khai Android nhưng Client Hints báo ${hintPlatform}`); }
+        if (claimsWindows && hintPlatform.includes("win") && hintPlatformVer) {
+          const verMajor = parseInt(hintPlatformVer.split(".")[0], 10);
+          if (!Number.isNaN(verMajor) && verMajor >= 1 && /Windows NT [56]\./i.test(ua)) {
+            osDelta -= 35;
+            osNotes.push("UA khai Windows 7/8/XP cũ nhưng nhân máy là Windows 10/11");
+          }
+        }
       }
 
-      // 3. Cảm ứng & Con trỏ chuột
+      if (oscpu) {
+        if (claimsWindows && !/Win/i.test(oscpu)) { osDelta -= 35; osNotes.push(`UA khai Windows nhưng oscpu là ${oscpu}`); }
+        if (claimsMac && !/Mac/i.test(oscpu)) { osDelta -= 35; osNotes.push(`UA khai macOS nhưng oscpu là ${oscpu}`); }
+        if (claimsLinux && !/Linux/i.test(oscpu)) { osDelta -= 35; osNotes.push(`UA khai Linux nhưng oscpu là ${oscpu}`); }
+      }
+
+      osDelta = Math.max(-55, osDelta);
+      if (osDelta < 0) {
+        score += osDelta;
+        checks.push({ name: "Hệ điều hành & Client Hints", status: "bad", delta: osDelta, note: `Lệch HĐH: ${osNotes.join("; ")}` });
+      } else {
+        checks.push({ name: "Hệ điều hành & Client Hints", status: "ok", delta: 0, note: `Đồng bộ (platform: ${platform || "ẩn"}${hintPlatform ? `, hints: ${hintPlatform}` : ""})` });
+      }
+
+      // 3. Đối chiếu Nhân trình duyệt, Nhãn (Brands), Phiên bản & Dấu vết ghi đè UA (bắt PC↔PC cùng HĐH)
+      let engDelta = 0;
+      const engNotes = [];
+      const claimsFirefox = /Firefox\/|FxiOS\//i.test(ua);
+      const claimsEdge = /Edg\/|EdgA\/|EdgiOS\//i.test(ua);
+      const claimsOpera = /OPR\/|Opera/i.test(ua);
+      const claimsSafari = /Safari\//i.test(ua) && !/Chrome\/|CriOS\/|Edg\/|EdgA\/|OPR\/|Opera|Firefox\/|FxiOS\/|SamsungBrowser|coc_coc/i.test(ua);
+      const claimsChromium = /Chrome\/|Edg\/|OPR\//i.test(ua) && !claimsIOS;
+
+      let uaTampered = false;
+      try {
+        if (Object.prototype.hasOwnProperty.call(navigator, "userAgent")) uaTampered = true;
+        const desc = Object.getOwnPropertyDescriptor(Navigator.prototype, "userAgent");
+        if (desc && typeof desc.get === "function" && !/\[native code\]/.test(Function.prototype.toString.call(desc.get))) {
+          uaTampered = true;
+        }
+      } catch {}
+
+      if (uaTampered) {
+        engDelta -= 45;
+        engNotes.push("Phát hiện thuộc tính navigator.userAgent bị ghi đè bởi tiện ích ngoài");
+      }
+
+      if (claimsIOS && vendor && !/Apple/i.test(vendor)) { engDelta -= 30; engNotes.push(`khai iOS nhưng vendor là "${vendor}"`); }
+      if (claimsIOS && hasWindowChrome) { engDelta -= 25; engNotes.push("tồn tại window.chrome trên máy khai iOS"); }
+
+      if (claimsFirefox && (isV8 || hasWindowChrome || hasUaData || /Google|Apple/i.test(vendor))) {
+        engDelta -= 50;
+        engNotes.push("UA khai Firefox nhưng nhân trình duyệt thực tế là Chromium/WebKit");
+      } else if (claimsSafari && (isV8 || hasWindowChrome || hasUaData || isGecko || (vendor && !/Apple/i.test(vendor)))) {
+        engDelta -= 50;
+        engNotes.push(`UA khai Safari nhưng nhân thực tế là ${isV8 ? "Chromium/V8" : (isGecko ? "Firefox/Gecko" : "không phải Apple WebKit")}`);
+      } else if (claimsChromium && (isGecko || isWebKit)) {
+        engDelta -= 50;
+        engNotes.push(`UA khai trình duyệt Chromium nhưng nhân thực tế là ${isGecko ? "Firefox/Gecko" : "Safari/WebKit"}`);
+      }
+
+      const brands = Array.isArray(uaHints.brands) && uaHints.brands.length
+        ? uaHints.brands
+        : (Array.isArray(navigator.userAgentData?.brands) ? navigator.userAgentData.brands : []);
+      if (brands.length > 0 && !claimsIOS) {
+        const hintHasEdge = brands.some((b) => /Microsoft Edge/i.test(b.brand || ""));
+        const hintHasOpera = brands.some((b) => /Opera/i.test(b.brand || ""));
+        if (claimsEdge && !hintHasEdge) { engDelta -= 45; engNotes.push("UA khai Microsoft Edge nhưng nhãn nhân thực không phải Edge"); }
+        if (!claimsEdge && hintHasEdge) { engDelta -= 45; engNotes.push("Trình duyệt thực là Microsoft Edge nhưng UA lại khai trình duyệt khác"); }
+        if (claimsOpera && !hintHasOpera) { engDelta -= 40; engNotes.push("UA khai Opera nhưng nhãn nhân thực không phải Opera"); }
+        if (!claimsOpera && hintHasOpera) { engDelta -= 40; engNotes.push("Trình duyệt thực là Opera nhưng UA lại khai trình duyệt khác"); }
+
+        const chromiumBrand = brands.find((b) => /^(Chromium|Google Chrome|Microsoft Edge)$/i.test((b.brand || "").trim()));
+        const uaChromeVer = ua.match(/Chrome\/(\d+)/i);
+        if (chromiumBrand && uaChromeVer) {
+          const realMajor = parseInt(String(chromiumBrand.version || "").split(".")[0], 10);
+          const uaMajor = parseInt(uaChromeVer[1], 10);
+          if (!Number.isNaN(realMajor) && !Number.isNaN(uaMajor) && Math.abs(realMajor - uaMajor) >= 4) {
+            engDelta -= 35;
+            engNotes.push(`Lệch phiên bản: UA khai Chrome v${uaMajor} nhưng nhân thực là v${realMajor}`);
+          }
+        }
+      }
+
+      engDelta = Math.max(-60, engDelta);
+      if (engDelta < 0) {
+        score += engDelta;
+        checks.push({ name: "Nhân & Nhãn trình duyệt", status: "bad", delta: engDelta, note: engNotes.join("; ") });
+      } else {
+        const engName = isV8 ? "V8/Chromium" : (isGecko ? "Gecko/Firefox" : (isWebKit ? "WebKit/Safari" : "Khác"));
+        checks.push({ name: "Nhân & Nhãn trình duyệt", status: "ok", delta: 0, note: `Khớp nhân trình duyệt (${engName})` });
+      }
+
+      // 4. Cảm ứng & Con trỏ chuột
       if (claimsMobile && maxTouch === 0) {
         score -= 25;
         checks.push({ name: "Cảm ứng & Con trỏ", status: "bad", delta: -25, note: "Khai điện thoại nhưng màn hình không hỗ trợ cảm ứng (0 điểm chạm)" });
@@ -1225,7 +1344,7 @@
         checks.push({ name: "Cảm ứng & Con trỏ", status: "ok", delta: 0, note: `Khớp (${maxTouch} điểm chạm, ${finePointer ? "con trỏ chuột" : "cảm ứng"})` });
       }
 
-      // 4. Dấu hiệu tự động hóa (WebDriver / Headless / Bot)
+      // 5. Dấu hiệu tự động hóa (WebDriver / Headless / Bot)
       if (webdriver || /HeadlessChrome/i.test(ua)) {
         score -= 50;
         checks.push({ name: "Trình duyệt tự động", status: "bad", delta: -50, note: "Phát hiện cờ điều khiển tự động (webdriver / Headless)" });
@@ -1593,6 +1712,11 @@
       const ua = navigator.userAgent || "";
       let deviceModel = "";
       let os = detectBasicOS(ua);
+      const uaHints = {
+        platform: navigator.userAgentData?.platform || "",
+        platformVersion: "",
+        brands: Array.isArray(navigator.userAgentData?.brands) ? navigator.userAgentData.brands : []
+      };
 
       const [netMeta, webRtcInfo] = await Promise.all([
         fetchNetworkMeta(),
@@ -1600,8 +1724,11 @@
         (async () => {
           if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
             try {
-              const high = await navigator.userAgentData.getHighEntropyValues(["model", "platform", "platformVersion"]);
+              const high = await navigator.userAgentData.getHighEntropyValues(["model", "platform", "platformVersion", "fullVersionList"]);
               if (high.model) deviceModel = high.model;
+              if (high.platform) uaHints.platform = high.platform;
+              if (high.platformVersion) uaHints.platformVersion = high.platformVersion;
+              if (Array.isArray(high.fullVersionList) && high.fullVersionList.length) uaHints.brands = high.fullVersionList;
               if (high.platform) {
                 if (high.platform === "Windows" && high.platformVersion) {
                   const major = parseInt(high.platformVersion.split(".")[0], 10);
@@ -1627,7 +1754,7 @@
         }
       }
 
-      const deviceTrust = evaluateDeviceTrust(ua, os);
+      const deviceTrust = evaluateDeviceTrust(ua, os, uaHints);
       const networkTrust = evaluateNetworkTrust(netMeta, webRtcInfo);
 
       // Công thức chốt điểm tổng: khống chế trần theo bên yếu hơn
@@ -1680,22 +1807,46 @@
       };
     }
 
+    function generateVisitCode() {
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const digits = "0123456789";
+      const all = letters + digits;
+      const arr = [
+        letters[Math.floor(Math.random() * letters.length)],
+        digits[Math.floor(Math.random() * digits.length)]
+      ];
+      for (let i = 0; i < 4; i++) arr.push(all[Math.floor(Math.random() * all.length)]);
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr.join("");
+    }
+
+    function buildVisitUrl(visitCode) {
+      const url = new URL(window.location.href.split("?")[0]);
+      url.searchParams.set("v", visitCode);
+      return url.toString();
+    }
+
     async function recordPageVisitOnce() {
       if (sessionStorage.getItem(VISIT_SESSION_KEY) === "1") return;
       sessionStorage.setItem(VISIT_SESSION_KEY, "1");
       try {
         const info = await getMyVisitorInfo();
+        const visitCode = generateVisitCode();
         const keys = getTimeKeys(new Date());
         runTransaction(ref(db, "analytics/counts/total"), (c) => (c || 0) + 1);
         runTransaction(ref(db, `analytics/counts/days/${keys.dayKey}`), (c) => (c || 0) + 1);
         runTransaction(ref(db, `analytics/counts/weeks/${keys.weekKey}`), (c) => (c || 0) + 1);
         runTransaction(ref(db, `analytics/counts/months/${keys.monthKey}`), (c) => (c || 0) + 1);
         runTransaction(ref(db, `analytics/counts/years/${keys.yearKey}`), (c) => (c || 0) + 1);
-        await push(ref(db, "analytics/logs"), { ...info, visitedAt: Date.now() });
+        await push(ref(db, "analytics/logs"), { ...info, visitCode, visitedAt: Date.now() });
 
         sendTelegramNotify(
-          `👀 <b>Lượt truy cập mới</b>` +
+          `👀 <b>Lượt truy cập mới (#${escapeHtml(visitCode)})</b>` +
           `${formatTrustTelegramLine(info)}\n` +
+          `• Mã lượt truy cập: <code>${escapeHtml(visitCode)}</code>\n` +
           `• Thiết bị: ${escapeHtml(info.deviceModel)} (${escapeHtml(info.os)})\n` +
           `• Trình duyệt: ${escapeHtml(info.browser)}\n` +
           `• Nguồn chuyển hướng: ${escapeHtml(info.referrer)}\n` +
@@ -1703,7 +1854,8 @@
           `• IP: <code>${escapeHtml(info.ip)}</code>\n` +
           `• Nhà mạng: ${escapeHtml(info.isp)}\n` +
           `• Khu vực: ${escapeHtml(info.location)}\n` +
-          `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>`
+          `• Mã trình duyệt: <code>${escapeHtml(info.visitorId)}</code>\n` +
+          `• Xem chi tiết (QTV): ${escapeHtml(buildVisitUrl(visitCode))}`
         );
       } catch {}
     }
@@ -1829,6 +1981,10 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     let pendingTarget = { postId: urlParams.get("p") || null, commentId: urlParams.get("c") || null, replyId: urlParams.get("r") || null };
+    let pendingVisitCode = (urlParams.get("v") || "").trim().replace(/^#/, "").toUpperCase() || null;
+    let analyticsLogsLoaded = false;
+    let visitLoginPrompted = false;
+    let visitSearchQuery = "";
     const sharedToken = urlParams.get("t");
 
     function isVisitorBanned(visitorId, fp) {
@@ -1965,6 +2121,7 @@
         const ipv4Extra = info.trust?.network?.ipv4 && info.trust.network.ipv4 !== info.ip ? info.trust.network.ipv4 : "";
         const asnExtra = info.trust?.network?.asn || "";
         const rows = [
+          ...(info.visitCode ? [["Mã lượt truy cập", `#${info.visitCode}`]] : []),
           ["Thời gian", timestamp ? formatFullDateTime(timestamp) : "Không rõ"],
           ["Nguồn chuyển hướng", info.referrer || "Truy cập trực tiếp"],
           ["Link vào trang", info.entryUrl || "Không rõ"],
@@ -2025,9 +2182,30 @@
     userInfoModal.addEventListener("click", (e) => { if (e.target === userInfoModal) userInfoModal.classList.remove("open"); });
 
     // ===== TAB LƯỢT TRUY CẬP =====
+    function matchesVisitSearch(item, normQ) {
+      const fields = [
+        item.visitCode,
+        item.ip,
+        item.trust?.network?.ipv4,
+        item.visitorId,
+        item.fp,
+        item.deviceModel,
+        item.deviceType,
+        item.os,
+        item.browser,
+        item.isp,
+        item.trust?.network?.asn,
+        item.location,
+        item.referrer,
+        item.entryUrl
+      ];
+      return fields.some((val) => val && normalizeSearch(val).includes(normQ));
+    }
+
     function renderVisitsPanel() {
       const grid = document.getElementById("statsSummaryGrid");
       const list = document.getElementById("visitLogsList");
+      const subtitle = document.getElementById("visitLogsSubtitle");
       if (!grid || !list) return;
 
       const keys = getTimeKeys(new Date());
@@ -2045,13 +2223,29 @@
         <div class="stat-card stat-year"><div class="stat-num">${analyticsCounts.years?.[keys.yearKey] || 0}</div><div class="stat-label">Năm nay</div></div>
       `;
 
-      const logs = Object.entries(analyticsLogs)
+      const allLogs = Object.entries(analyticsLogs)
         .map(([id, item]) => ({ id, ...item }))
         .sort((a, b) => (b.visitedAt || 0) - (a.visitedAt || 0))
         .slice(0, MAX_VISIT_LOGS);
 
-      if (logs.length === 0) {
+      if (allLogs.length === 0) {
+        if (subtitle) subtitle.textContent = "100 lượt truy cập gần nhất";
         list.innerHTML = `<div class="empty-comments">Chưa có dữ liệu truy cập nào được ghi nhận.</div>`;
+        return;
+      }
+
+      const rawQ = visitSearchQuery.trim();
+      const normQ = normalizeSearch(rawQ.replace(/^#/, ""));
+      const logs = normQ ? allLogs.filter((item) => matchesVisitSearch(item, normQ)) : allLogs;
+
+      if (subtitle) {
+        subtitle.textContent = normQ
+          ? `Tìm thấy ${logs.length} / ${allLogs.length} lượt truy cập`
+          : "100 lượt truy cập gần nhất";
+      }
+
+      if (logs.length === 0) {
+        list.innerHTML = `<div class="empty-comments">Không tìm thấy lượt truy cập nào khớp với "<strong>${escapeHtml(rawQ)}</strong>".</div>`;
         return;
       }
 
@@ -2066,13 +2260,14 @@
         const ipLine = item.ip && item.ip !== "Không rõ"
           ? `IP: ${item.ip}${item.isp && item.isp !== "Không rõ" ? ` • ${item.isp}` : ""}${item.location && item.location !== "Không rõ" ? ` • ${item.location}` : ""}`
           : "IP: Chưa ghi nhận";
+        const codeBadge = item.visitCode ? `<span class="visit-code-badge">#${escapeHtml(item.visitCode)}</span>` : "";
 
         return `
           <div class="visit-log-card">
             <div class="visit-log-top">
-         <span class="visit-log-main">${escapeHtml(item.deviceModel || item.deviceType || "Thiết bị")} • ${escapeHtml(item.os || "")} ${formatTrustBadgeHtml(item.trust, true)}</span>
-         <span class="comment-time">${formatTime(item.visitedAt)}</span>
-       </div>
+              <span class="visit-log-main">${codeBadge}${escapeHtml(item.deviceModel || item.deviceType || "Thiết bị")} • ${escapeHtml(item.os || "")} ${formatTrustBadgeHtml(item.trust, true)}</span>
+              <span class="comment-time">${formatTime(item.visitedAt)}</span>
+            </div>
             <div class="visit-log-sub">
               ${escapeHtml(ipLine)}<br/>
               ${escapeHtml(item.browser || "")} • Mã: ${escapeHtml(item.visitorId || "Không rõ")}
@@ -2086,11 +2281,27 @@
       }).join("");
     }
 
+    const visitSearchInputEl = document.getElementById("visitSearchInput");
+    const clearVisitSearchBtnEl = document.getElementById("clearVisitSearchBtn");
+    if (visitSearchInputEl && clearVisitSearchBtnEl) {
+      visitSearchInputEl.addEventListener("input", () => {
+        visitSearchQuery = visitSearchInputEl.value;
+        clearVisitSearchBtnEl.classList.toggle("show", visitSearchQuery.trim().length > 0);
+        renderVisitsPanel();
+      });
+      clearVisitSearchBtnEl.addEventListener("click", () => {
+        visitSearchInputEl.value = "";
+        visitSearchQuery = "";
+        clearVisitSearchBtnEl.classList.remove("show");
+        renderVisitsPanel();
+      });
+    }
+
     document.getElementById("visitLogsList").addEventListener("click", async (e) => {
       const viewBtn = e.target.closest("[data-view-visit-log]");
       if (viewBtn && isAdmin) {
         const log = analyticsLogs[viewBtn.dataset.viewVisitLog];
-        if (log) showUserInfoModal(log, "Chi tiết lượt truy cập", log.visitedAt);
+        if (log) showUserInfoModal(log, log.visitCode ? `Chi tiết lượt truy cập #${log.visitCode}` : "Chi tiết lượt truy cập", log.visitedAt);
         return;
       }
       const banBtn = e.target.closest("[data-ban-visit-log]");
@@ -2384,6 +2595,42 @@
       }
     });
 
+    function tryOpenPendingVisit() {
+      if (!pendingVisitCode || !authReady) return;
+
+      // Chưa đăng nhập Quản trị viên -> không hiển thị dữ liệu, yêu cầu đăng nhập QTV trước
+      if (!isAdmin) {
+        if (!visitLoginPrompted) {
+          visitLoginPrompted = true;
+          showToast(`Vui lòng đăng nhập Quản trị viên để xem lượt truy cập #${pendingVisitCode}`);
+          openAdminModal();
+        }
+        return;
+      }
+
+      // Đã đăng nhập QTV -> chờ analytics/logs tải xong rồi mở chi tiết
+      if (!analyticsLogsLoaded) return;
+
+      const targetCode = pendingVisitCode;
+      pendingVisitCode = null;
+      try {
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete("v");
+        window.history.replaceState({}, "", cleanUrl.toString());
+      } catch {}
+
+      const foundLog = Object.values(analyticsLogs).find(
+        (item) => item && String(item.visitCode || "").toUpperCase() === targetCode
+      );
+
+      if (foundLog) {
+        adminModal.classList.remove("open");
+        showUserInfoModal(foundLog, `Chi tiết lượt truy cập #${foundLog.visitCode}`, foundLog.visitedAt);
+      } else {
+        showToast(`Không tìm thấy lượt truy cập mã #${targetCode} (có thể đã quá 100 lượt gần nhất).`);
+      }
+    }
+
     function subscribeAnalyticsForAdmin() {
       if (analyticsSubscribed) return;
       analyticsSubscribed = true;
@@ -2395,13 +2642,17 @@
 
       onValue(ref(db, "analytics/logs"), (snap) => {
         analyticsLogs = snap.val() || {};
+        analyticsLogsLoaded = true;
         const entries = Object.entries(analyticsLogs).map(([id, item]) => ({ id, visitedAt: item?.visitedAt || 0 })).sort((a, b) => b.visitedAt - a.visitedAt);
         if (isAdmin && entries.length > MAX_VISIT_LOGS) {
           const removals = {};
           entries.slice(MAX_VISIT_LOGS).forEach((old) => { removals[old.id] = null; });
           update(ref(db, "analytics/logs"), removals);
         }
-        if (isAdmin) renderVisitsPanel();
+        if (isAdmin) {
+          renderVisitsPanel();
+          tryOpenPendingVisit();
+        }
       });
 
       onValue(ref(db, "analytics/likeLogs"), (snap) => {
@@ -2419,6 +2670,7 @@
     function unsubscribeAnalyticsForAdmin() {
       if (!analyticsSubscribed) return;
       analyticsSubscribed = false;
+      analyticsLogsLoaded = false;
       off(ref(db, "analytics/counts"));
       off(ref(db, "analytics/logs"));
       off(ref(db, "analytics/likeLogs"));
@@ -4129,6 +4381,7 @@
 
       evaluateAccess();
       if (prevAdmin !== isAdmin && albumOpened) scheduleRenderFeed();
+      tryOpenPendingVisit();
       recordPageVisitOnce();
     });
   </script>
