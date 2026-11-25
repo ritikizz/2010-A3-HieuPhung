@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     /* ==========================================================================
-       MẪU 14 (V3): NEO-BRUTALISM NĂNG ĐỘNG — TỐI ƯU KHUNG VIDEO ĐỨNG & GIAO DIỆN GỌN SẠCH
+       MẪU 14 (V4): NEO-BRUTALISM NĂNG ĐỘNG — LƯU FULL TRUY CẬP, MÃ LƯỚI #ID, CHẶN THEO MỤC TIÊU
        ========================================================================== */
     :root {
       --nb-bg: #FFFBEB;
@@ -203,8 +203,10 @@
       border-radius: var(--nb-radius); color: var(--nb-ink);
       font-size: 0.94rem; font-weight: 500; outline: none;
       box-shadow: var(--nb-shadow-xs);
+      text-overflow: ellipsis;
       transition: box-shadow 0.12s ease, background 0.12s ease;
     }
+    .text-input::placeholder { color: #6B7280; text-overflow: ellipsis; overflow: hidden; }
     .text-input:focus { background: #FFFFFF; box-shadow: 3px 3px 0 var(--nb-cyan); }
 
     .submit-btn {
@@ -351,8 +353,9 @@
       border-radius: 9px; color: var(--nb-ink);
       font-size: 0.88rem; font-weight: 600; outline: none;
       box-shadow: var(--nb-shadow-xs);
+      text-overflow: ellipsis;
     }
-    .search-input::placeholder { color: #6B7280; font-weight: 500; }
+    .search-input::placeholder { color: #6B7280; font-weight: 500; text-overflow: ellipsis; overflow: hidden; }
     .search-input:focus { background: #FFFFFF; box-shadow: 3px 3px 0 var(--nb-yellow); }
 
     .search-clear-btn {
@@ -437,18 +440,30 @@
       width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
       background: var(--nb-media-bg); color: var(--nb-ink);
     }
+    .grid-num-badge {
+      position: absolute; top: 7px; left: 7px;
+      min-width: 28px; height: 26px; padding: 0 6px;
+      border-radius: 7px;
+      background: var(--nb-surface); border: 2px solid var(--nb-ink);
+      color: var(--nb-ink);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 800; line-height: 1;
+      font-variant-numeric: tabular-nums;
+      pointer-events: none; z-index: 2;
+      box-shadow: 2px 2px 0 var(--nb-ink);
+    }
     .grid-video-badge {
-      position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 8px;
+      position: absolute; top: 7px; right: 7px; width: 28px; height: 28px; border-radius: 7px;
       background: var(--nb-yellow); border: 2px solid var(--nb-ink); color: var(--nb-ink);
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.78rem; font-weight: 800; padding-left: 2px;
-      pointer-events: none; box-shadow: 2px 2px 0 var(--nb-ink);
+      font-size: 0.75rem; font-weight: 800; padding-left: 2px;
+      pointer-events: none; z-index: 2; box-shadow: 2px 2px 0 var(--nb-ink);
     }
     .grid-hidden-tag {
-      position: absolute; top: 8px; left: 8px; font-size: 0.68rem; font-weight: 800;
+      position: absolute; bottom: 7px; left: 7px; font-size: 0.68rem; font-weight: 800;
       padding: 2px 7px; border-radius: 6px;
       background: var(--nb-orange); border: 1.5px solid var(--nb-ink);
-      color: var(--nb-ink); pointer-events: none;
+      color: var(--nb-ink); pointer-events: none; z-index: 2;
       box-shadow: 2px 2px 0 var(--nb-ink);
     }
     .grid-hidden-placeholder {
@@ -1035,7 +1050,18 @@
       background: var(--nb-surface); border: var(--nb-border-thin);
       border-radius: var(--nb-radius); padding: 11px 13px; margin-bottom: 10px;
       font-size: 0.84rem; box-shadow: var(--nb-shadow-xs);
+      content-visibility: auto;
+      contain-intrinsic-size: auto 108px;
     }
+    .ban-target-badge {
+      display: inline-block; font-size: 0.72rem; font-weight: 800;
+      padding: 2px 7px; border-radius: 6px; margin-right: 6px;
+      border: 1.5px solid var(--nb-ink); color: var(--nb-ink);
+      background: var(--nb-orange-soft); vertical-align: middle;
+    }
+    .ban-target-badge.ip { background: var(--nb-red-soft); color: #991B1B; }
+    .ban-target-badge.fp { background: var(--nb-violet-soft); }
+    .ban-target-badge.visitorId { background: var(--nb-cyan-soft); }
     .visit-log-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
     .visit-log-main { font-weight: 800; color: var(--nb-ink); display: inline-flex; align-items: center; flex-wrap: wrap; gap: 5px; }
     .visit-log-sub { color: var(--nb-muted) !important; font-size: 0.79rem; font-weight: 500; line-height: 1.48; }
@@ -1105,6 +1131,9 @@
       .post-media { padding: 11px; min-height: 190px; }
       .action-btn { font-size: 0.82rem; gap: 5px; padding: 8px 4px; }
       .feed.grid-mode { gap: 8px; }
+      .grid-num-badge { top: 5px; left: 5px; min-width: 24px; height: 22px; padding: 0 5px; font-size: 0.65rem; border-radius: 6px; }
+      .grid-video-badge { top: 5px; right: 5px; width: 24px; height: 24px; font-size: 0.68rem; border-radius: 6px; }
+      .grid-hidden-tag { bottom: 5px; left: 5px; font-size: 0.62rem; padding: 2px 5px; }
     }
 
     /* ===== ĐỘ TIN CẬY PHIÊN (ICON 2D SẮC NÉT — KHÔNG DÙNG EMOJI TRÒN) ===== */
@@ -1269,7 +1298,7 @@
       </div>
       <div class="toolbar-row">
         <div class="search-bar">
-          <input type="text" id="postSearchInput" class="search-input" placeholder="Tìm số bài hoặc nội dung caption..." />
+          <input type="text" id="postSearchInput" class="search-input" placeholder="Tìm số bài hoặc nội dung caption..." data-full-placeholder="Tìm số bài hoặc nội dung caption..." />
           <button type="button" class="search-clear-btn" id="clearSearchBtn" title="Xóa tìm kiếm">&times;</button>
         </div>
         <div class="view-switcher">
@@ -1425,10 +1454,10 @@
         <div class="admin-panel" id="tabVisits">
           <div class="stats-grid" id="statsSummaryGrid"></div>
           <div class="visit-search-wrap">
-            <input type="text" id="visitSearchInput" class="search-input" placeholder="Tìm mã truy cập (6 ký tự), IP, mã thiết bị (fp_), mã trình duyệt (v_)..." />
+            <input type="text" id="visitSearchInput" class="search-input" placeholder="Tìm mã truy cập (6 ký tự), IP, mã thiết bị (fp_), mã trình duyệt (v_)..." data-full-placeholder="Tìm mã truy cập (6 ký tự), IP, mã thiết bị (fp_), mã trình duyệt (v_)..." />
             <button type="button" class="search-clear-btn" id="clearVisitSearchBtn" title="Xóa tìm kiếm">&times;</button>
           </div>
-          <div class="section-subtitle" id="visitLogsSubtitle">100 lượt truy cập gần nhất</div>
+          <div class="section-subtitle" id="visitLogsSubtitle">Tất cả lượt truy cập</div>
           <div id="visitLogsList"></div>
         </div>
 
@@ -1440,11 +1469,11 @@
         <!-- Tab 4: Mục truy xuất -->
         <div class="admin-panel" id="tabLookup">
           <form class="lookup-form" id="lookupForm">
-            <input type="text" id="lookupInput" class="text-input" placeholder="Nhập địa chỉ IP hoặc Mã trình duyệt (v_...)..." required />
+            <input type="text" id="lookupInput" class="text-input" placeholder="Nhập IP, mã thiết bị (fp_...) hoặc mã trình duyệt (v_...)..." data-full-placeholder="Nhập IP, mã thiết bị (fp_...) hoặc mã trình duyệt (v_...)..." required />
             <button type="submit" class="extract-btn" style="white-space: nowrap;">Truy xuất</button>
           </form>
           <div id="lookupResults">
-            <div class="empty-comments">Nhập IP mạng hoặc Mã trình duyệt để xem toàn bộ lịch sử truy cập, tim bài và bình luận.</div>
+            <div class="empty-comments">Nhập địa chỉ IP, Mã thiết bị (fp_...) hoặc Mã trình duyệt (v_...) để xem toàn bộ lịch sử truy cập, tim bài và bình luận.</div>
           </div>
         </div>
 
@@ -1527,7 +1556,6 @@
     const LIKED_COMMENTS_KEY = "album_liked_comments";
     const VISITOR_ID_KEY = "kyuc_a3_visitor_id";
     const VISIT_SESSION_KEY = "kyuc_a3_visit_logged";
-    const MAX_VISIT_LOGS = 100;
     const MAX_LIKE_LOGS = 200;
     const POSTS_PER_PAGE_FEED = 10;
     const POSTS_PER_PAGE_GRID = 24;
@@ -2382,9 +2410,20 @@
         }
       };
     }
+    let myVisitorIp = "";
+    let myVisitorIpv4 = "";
     let cachedVisitorInfoPromise = null;
     function getMyVisitorInfo() {
-      if (!cachedVisitorInfoPromise) cachedVisitorInfoPromise = collectVisitorInfo();
+      if (!cachedVisitorInfoPromise) {
+        cachedVisitorInfoPromise = collectVisitorInfo().then((info) => {
+          myVisitorIp = (info.ip && info.ip !== "Không rõ") ? String(info.ip).trim() : "";
+          myVisitorIpv4 = info.trust?.network?.ipv4 ? String(info.trust.network.ipv4).trim() : "";
+          if (!isAdmin && bannedReady && isCurrentVisitorBanned()) {
+            evaluateAccess();
+          }
+          return info;
+        });
+      }
       return cachedVisitorInfoPromise;
     }
 
@@ -2586,15 +2625,40 @@
     let visitSearchQuery = "";
     const sharedToken = urlParams.get("t");
 
-    function isVisitorBanned(visitorId, fp) {
+    function normalizeIpStr(ip) {
+      const s = String(ip || "").trim().toLowerCase();
+      return (!s || s === "không rõ") ? "" : s;
+    }
+
+    function isVisitorBanned(visitorId, fp, ip = "", ipv4 = "") {
+      const normIp = normalizeIpStr(ip);
+      const normIpv4 = normalizeIpStr(ipv4);
       return Object.values(bannedData).some((b) => {
         if (!b) return false;
         if (visitorId && b.visitorId && b.visitorId === visitorId) return true;
         if (fp && fp !== "fp_unknown" && b.fp && b.fp === fp) return true;
+        const bIp = normalizeIpStr(b.ip);
+        if (bIp && ((normIp && bIp === normIp) || (normIpv4 && bIp === normIpv4))) return true;
         return false;
       });
     }
-    function isCurrentVisitorBanned() { return isAdmin ? false : isVisitorBanned(myVisitorId, myVisitorFp); }
+
+    function isSpecificTargetBanned(banType, banValue) {
+      const val = String(banValue || "").trim();
+      if (!banType || !val) return false;
+      const valLower = val.toLowerCase();
+      return Object.values(bannedData).some((b) => {
+        if (!b) return false;
+        if (banType === "ip") return normalizeIpStr(b.ip) === valLower;
+        if (banType === "fp") return Boolean(b.fp && b.fp !== "fp_unknown" && b.fp.toLowerCase() === valLower);
+        if (banType === "visitorId") return Boolean(b.visitorId && b.visitorId.toLowerCase() === valLower);
+        return false;
+      });
+    }
+
+    function isCurrentVisitorBanned() {
+      return isAdmin ? false : isVisitorBanned(myVisitorId, myVisitorFp, myVisitorIp, myVisitorIpv4);
+    }
 
     let toastTimer = null;
     function showToast(msg) {
@@ -2824,11 +2888,10 @@
 
       const allLogs = Object.entries(analyticsLogs)
         .map(([id, item]) => ({ id, ...item }))
-        .sort((a, b) => (b.visitedAt || 0) - (a.visitedAt || 0))
-        .slice(0, MAX_VISIT_LOGS);
+        .sort((a, b) => (b.visitedAt || 0) - (a.visitedAt || 0));
 
       if (allLogs.length === 0) {
-        if (subtitle) subtitle.textContent = "100 lượt truy cập gần nhất";
+        if (subtitle) subtitle.textContent = "Tất cả lượt truy cập (0)";
         list.innerHTML = `<div class="empty-comments">Chưa có dữ liệu truy cập nào được ghi nhận.</div>`;
         return;
       }
@@ -2840,7 +2903,7 @@
       if (subtitle) {
         subtitle.textContent = normQ
           ? `Tìm thấy ${logs.length} / ${allLogs.length} lượt truy cập`
-          : "100 lượt truy cập gần nhất";
+          : `Tất cả lượt truy cập (${allLogs.length})`;
       }
 
       if (logs.length === 0) {
@@ -2849,7 +2912,7 @@
       }
 
       list.innerHTML = logs.map((item) => {
-        const alreadyBanned = isVisitorBanned(item.visitorId, item.fp);
+        const alreadyBanned = isVisitorBanned(item.visitorId, item.fp, item.ip, item.trust?.network?.ipv4);
         const canBan = Boolean(item.visitorId || (item.fp && item.fp !== "fp_unknown"));
         const banBtnHtml = !canBan ? "" : (
           alreadyBanned
@@ -2974,7 +3037,7 @@
 
       container.innerHTML = flat.slice(0, 80).map((item) => {
         if (item.kind === "like") {
-          const alreadyBanned = isVisitorBanned(item.authorId, item.authorFp);
+          const alreadyBanned = isVisitorBanned(item.authorId, item.authorFp, item.authorInfo?.ip, item.authorInfo?.trust?.network?.ipv4);
           const canBan = Boolean(item.authorId || (item.authorFp && item.authorFp !== "fp_unknown"));
           const banBtn = !canBan ? "" : (
             alreadyBanned
@@ -3027,16 +3090,62 @@
 
     // ===== TAB TRUY XUẤT =====
     function matchesLookupQuery(info, authorId, authorFp, qLower) {
-      const candidates = [info?.ip, info?.visitorId, info?.fp, authorId, authorFp]
+      const candidates = [info?.ip, info?.trust?.network?.ipv4, info?.visitorId, info?.fp, authorId, authorFp]
         .filter(Boolean).map((s) => String(s).toLowerCase().trim());
       return candidates.some((c) => c === qLower || c.includes(qLower));
+    }
+
+    function looksLikeIpAddress(str) {
+      const s = String(str || "").trim();
+      if (/^(\d{1,3}\.){3}\d{1,3}$/.test(s)) return true;
+      if (s.includes(":") && /^[0-9a-f:]+$/i.test(s) && s.split(":").length >= 3) return true;
+      return false;
+    }
+
+    function detectLookupBanTarget(rawQ, matchedBuckets) {
+      const q = String(rawQ || "").trim();
+      const qLower = q.toLowerCase();
+      if (!q) return null;
+
+      // 1. Nhập trực tiếp Mã trình duyệt (v_...)
+      if (/^v_/i.test(q)) {
+        const exact = [...matchedBuckets.visitorIds].find((v) => v.toLowerCase() === qLower);
+        const resolved = exact || (matchedBuckets.visitorIds.size === 1 ? [...matchedBuckets.visitorIds][0] : q);
+        return { type: "visitorId", label: "Mã trình duyệt", value: resolved };
+      }
+
+      // 2. Nhập trực tiếp Mã thiết bị (fp_...)
+      if (/^fp_/i.test(q)) {
+        const exact = [...matchedBuckets.fps].find((v) => v.toLowerCase() === qLower);
+        const resolved = exact || (matchedBuckets.fps.size === 1 ? [...matchedBuckets.fps][0] : q);
+        if (resolved.toLowerCase() === "fp_unknown") return null;
+        return { type: "fp", label: "Mã thiết bị", value: resolved };
+      }
+
+      // 3. Nhập Địa chỉ IP (IPv4 / IPv6 đầy đủ)
+      if (looksLikeIpAddress(q)) {
+        const exact = [...matchedBuckets.ips].find((v) => v.toLowerCase() === qLower);
+        return { type: "ip", label: "Địa chỉ IP", value: exact || q };
+      }
+
+      // 4. Người dùng gõ một phần mã/IP -> tự xác định nếu khớp rõ ràng duy nhất 1 loại & 1 giá trị
+      const matchedTypes = [];
+      if (matchedBuckets.ips.size === 1) matchedTypes.push({ type: "ip", label: "Địa chỉ IP", value: [...matchedBuckets.ips][0] });
+      if (matchedBuckets.fps.size === 1) {
+        const fpVal = [...matchedBuckets.fps][0];
+        if (fpVal !== "fp_unknown") matchedTypes.push({ type: "fp", label: "Mã thiết bị", value: fpVal });
+      }
+      if (matchedBuckets.visitorIds.size === 1) matchedTypes.push({ type: "visitorId", label: "Mã trình duyệt", value: [...matchedBuckets.visitorIds][0] });
+
+      if (matchedTypes.length === 1) return matchedTypes[0];
+      return null;
     }
 
     function runLookup(rawQuery) {
       const container = document.getElementById("lookupResults");
       const q = (rawQuery || "").trim();
       if (!q) {
-        container.innerHTML = `<div class="empty-comments">Vui lòng nhập IP mạng hoặc Mã trình duyệt để truy xuất.</div>`;
+        container.innerHTML = `<div class="empty-comments">Vui lòng nhập Địa chỉ IP, Mã thiết bị (fp_...) hoặc Mã trình duyệt (v_...) để truy xuất.</div>`;
         return;
       }
 
@@ -3044,11 +3153,22 @@
       const events = [];
       let sampleInfo = null, sampleVisitorId = "", sampleFp = "";
       let visitCount = 0, likeCount = 0, commentCount = 0;
+      const matchedBuckets = { ips: new Set(), fps: new Set(), visitorIds: new Set() };
+
+      const collectMatchedValues = (info, authorId, authorFp) => {
+        const ipCandidates = [info?.ip, info?.trust?.network?.ipv4].filter((v) => v && v !== "Không rõ");
+        ipCandidates.forEach((v) => { if (String(v).toLowerCase().includes(qLower)) matchedBuckets.ips.add(String(v).trim()); });
+        const vidCandidates = [info?.visitorId, authorId].filter(Boolean);
+        vidCandidates.forEach((v) => { if (String(v).toLowerCase().includes(qLower)) matchedBuckets.visitorIds.add(String(v).trim()); });
+        const fpCandidates = [info?.fp, authorFp].filter((v) => v && v !== "fp_unknown");
+        fpCandidates.forEach((v) => { if (String(v).toLowerCase().includes(qLower)) matchedBuckets.fps.add(String(v).trim()); });
+      };
 
       Object.values(analyticsLogs).forEach((l) => {
         if (!l) return;
         if (matchesLookupQuery(l, l.visitorId, l.fp, qLower)) {
           visitCount++;
+          collectMatchedValues(l, l.visitorId, l.fp);
           if (!sampleInfo) sampleInfo = l;
           if (!sampleVisitorId && l.visitorId) sampleVisitorId = l.visitorId;
           if (!sampleFp && l.fp) sampleFp = l.fp;
@@ -3073,6 +3193,7 @@
         if (!l) return;
         if (matchesLookupQuery(l.authorInfo, l.authorId, l.authorFp, qLower)) {
           likeCount++;
+          collectMatchedValues(l.authorInfo, l.authorId, l.authorFp);
           if (!sampleInfo && l.authorInfo) sampleInfo = l.authorInfo;
           if (!sampleVisitorId && (l.authorId || l.authorInfo?.visitorId)) sampleVisitorId = l.authorId || l.authorInfo.visitorId;
           if (!sampleFp && (l.authorFp || l.authorInfo?.fp)) sampleFp = l.authorFp || l.authorInfo.fp;
@@ -3085,13 +3206,12 @@
         }
       });
 
-      
-
       Object.entries(commentsData).forEach(([postId, postComments]) => {
         if (!postComments) return;
         Object.entries(postComments).forEach(([cId, c]) => {
           if (matchesLookupQuery(c.authorInfo, c.authorId, c.authorFp, qLower)) {
             commentCount++;
+            collectMatchedValues(c.authorInfo, c.authorId, c.authorFp);
             if (!sampleInfo && c.authorInfo) sampleInfo = c.authorInfo;
             if (!sampleVisitorId && c.authorId) sampleVisitorId = c.authorId;
             if (!sampleFp && c.authorFp) sampleFp = c.authorFp;
@@ -3101,6 +3221,7 @@
             Object.entries(c.replies).forEach(([rId, r]) => {
               if (matchesLookupQuery(r.authorInfo, r.authorId, r.authorFp, qLower)) {
                 commentCount++;
+                collectMatchedValues(r.authorInfo, r.authorId, r.authorFp);
                 if (!sampleInfo && r.authorInfo) sampleInfo = r.authorInfo;
                 if (!sampleVisitorId && r.authorId) sampleVisitorId = r.authorId;
                 if (!sampleFp && r.authorFp) sampleFp = r.authorFp;
@@ -3118,8 +3239,22 @@
         return;
       }
 
-      const alreadyBanned = isVisitorBanned(sampleVisitorId, sampleFp);
-      const canBan = Boolean(sampleVisitorId || (sampleFp && sampleFp !== "fp_unknown"));
+      const banTarget = detectLookupBanTarget(q, matchedBuckets);
+      const alreadyBannedTarget = banTarget ? isSpecificTargetBanned(banTarget.type, banTarget.value) : false;
+
+      let banAreaHtml = "";
+      if (banTarget) {
+        banAreaHtml = `
+          <div style="margin-top:10px;">
+            ${alreadyBannedTarget
+              ? `<button type="button" class="mini-btn muted" disabled>${escapeHtml(banTarget.label)} này đã bị chặn</button>`
+              : `<button type="button" class="mini-btn ban" id="lookupBanBtn">Chặn theo ${escapeHtml(banTarget.label)}: ${escapeHtml(banTarget.value)}</button>`
+            }
+          </div>
+        `;
+      } else {
+        banAreaHtml = `<div class="form-hint" style="margin-top:8px;">Nhập chính xác Địa chỉ IP, Mã thiết bị (fp_...) hoặc Mã trình duyệt (v_...) để chặn riêng đúng mục tiêu đó.</div>`;
+      }
 
       const summaryHtml = `
         <div class="lookup-summary">
@@ -3128,17 +3263,10 @@
           ${sampleInfo ? `
             <div style="color:#94a3b8;font-size:0.8rem;margin-top:4px;">
               IP: ${escapeHtml(sampleInfo.ip || "Không rõ")} • ${escapeHtml(sampleInfo.isp || "")} • ${escapeHtml(sampleInfo.location || "")}<br/>
-              Thiết bị: ${escapeHtml(sampleInfo.deviceModel || "Không rõ")} (${escapeHtml(sampleInfo.os || "")}) • Mã: ${escapeHtml(sampleVisitorId || "Không rõ")}
+              Thiết bị: ${escapeHtml(sampleInfo.deviceModel || "Không rõ")} (${escapeHtml(sampleInfo.os || "")}) • Mã thiết bị: ${escapeHtml(sampleFp || "Không rõ")} • Mã trình duyệt: ${escapeHtml(sampleVisitorId || "Không rõ")}
             </div>
           ` : ""}
-          ${canBan ? `
-            <div style="margin-top:10px;">
-              ${alreadyBanned
-                ? `<button type="button" class="mini-btn muted" disabled>Thiết bị này đã bị chặn</button>`
-                : `<button type="button" class="mini-btn ban" id="lookupBanBtn">Chặn người dùng này</button>`
-              }
-            </div>
-          ` : ""}
+          ${banAreaHtml}
         </div>
       `;
 
@@ -3159,22 +3287,26 @@
       container.innerHTML = summaryHtml + listHtml;
 
       const banBtn = document.getElementById("lookupBanBtn");
-      if (banBtn) {
+      if (banBtn && banTarget) {
         banBtn.addEventListener("click", async () => {
-          if (!confirm(`Chặn toàn bộ lượt truy cập từ ${q}?`)) return;
-          await push(ref(db, "banned"), {
-            visitorId: sampleVisitorId || "",
-            fp: sampleFp || "",
-            reasonText: `Truy xuất: ${q} (${sampleInfo?.deviceModel || "Thiết bị"} • ${sampleInfo?.isp || ""})`,
-            postLabel: "Chặn từ Mục truy xuất",
+          if (!confirm(`Chặn truy cập chỉ theo ${banTarget.label}: ${banTarget.value}?`)) return;
+          const banPayload = {
+            visitorId: banTarget.type === "visitorId" ? banTarget.value : "",
+            fp: banTarget.type === "fp" ? banTarget.value : "",
+            ip: banTarget.type === "ip" ? banTarget.value : "",
+            banType: banTarget.type,
+            banValue: banTarget.value,
+            reasonText: `${banTarget.label}: ${banTarget.value}${sampleInfo ? ` (${sampleInfo.deviceModel || "Thiết bị"}${sampleInfo.isp && sampleInfo.isp !== "Không rõ" ? ` • ${sampleInfo.isp}` : ""})` : ""}`,
+            postLabel: `Chặn từ Truy xuất (${banTarget.label})`,
             bannedAt: Date.now()
-          });
-          showToast("Đã chặn người dùng này!");
+          };
+          await push(ref(db, "banned"), banPayload);
+          showToast(`Đã chặn theo ${banTarget.label}!`);
           sendTelegramNotify(
-            `🚫 <b>Chặn người dùng từ Mục truy xuất</b>\n` +
-            `• Từ khóa truy xuất: <code>${escapeHtml(q)}</code>\n` +
-            `• Thiết bị: ${escapeHtml(sampleInfo?.deviceModel || "Không rõ")} • IP: <code>${escapeHtml(sampleInfo?.ip || "Không rõ")}</code>\n` +
-            `• Mã trình duyệt: <code>${escapeHtml(sampleVisitorId || "Không rõ")}</code>`
+            `🚫 <b>Chặn theo ${escapeHtml(banTarget.label)} từ Mục truy xuất</b>\n` +
+            `• Mục tiêu bị chặn: <code>${escapeHtml(banTarget.value)}</code>\n` +
+            `• Phạm vi: Chỉ chặn đúng ${escapeHtml(banTarget.label.toLowerCase())} này\n` +
+            `• Tham chiếu thiết bị: ${escapeHtml(sampleInfo?.deviceModel || "Không rõ")} • ${escapeHtml(sampleInfo?.isp || "Không rõ")}`
           );
           runLookup(q);
         });
@@ -3227,7 +3359,7 @@
         adminModal.classList.remove("open");
         showUserInfoModal(foundLog, `Chi tiết lượt truy cập #${foundLog.visitCode}`, foundLog.visitedAt);
       } else {
-        showToast(`Không tìm thấy lượt truy cập mã #${targetCode} (có thể đã quá 100 lượt gần nhất).`);
+        showToast(`Không tìm thấy lượt truy cập mã #${targetCode}.`);
       }
     }
 
@@ -3243,12 +3375,6 @@
       onValue(ref(db, "analytics/logs"), (snap) => {
         analyticsLogs = snap.val() || {};
         analyticsLogsLoaded = true;
-        const entries = Object.entries(analyticsLogs).map(([id, item]) => ({ id, visitedAt: item?.visitedAt || 0 })).sort((a, b) => b.visitedAt - a.visitedAt);
-        if (isAdmin && entries.length > MAX_VISIT_LOGS) {
-          const removals = {};
-          entries.slice(MAX_VISIT_LOGS).forEach((old) => { removals[old.id] = null; });
-          update(ref(db, "analytics/logs"), removals);
-        }
         if (isAdmin) {
           renderVisitsPanel();
           tryOpenPendingVisit();
@@ -3632,15 +3758,20 @@
       return card;
     }
 
-    // ===== TẠO Ô LƯỚI (QTV VẪN THẤY ẢNH/VIDEO + NHÃN ĐANG ẨN) =====
+    // ===== TẠO Ô LƯỚI (Ô VUÔNG #MÃ BÀI GÓC TRÁI + QTV VẪN THẤY BÀI ĐANG ẨN) =====
     function createGridTile(post) {
       const tile = document.createElement("div");
       tile.className = "grid-tile";
       tile.dataset.openPostDetail = post.id;
       tile.title = `Bài đăng ${post.postNumber}`;
 
+      const numBadge = document.createElement("div");
+      numBadge.className = "grid-num-badge";
+      numBadge.textContent = `#${post.postNumber}`;
+
       if (post.hidden && !isAdmin) {
         tile.innerHTML = `<div class="grid-hidden-placeholder">Bài đăng ${post.postNumber}<br/>(Đang ẩn)</div>`;
+        tile.appendChild(numBadge);
         return tile;
       }
 
@@ -3670,6 +3801,8 @@
         img.addEventListener("error", () => { if (img.dataset.fb !== "1") { img.dataset.fb = "1"; img.src = media.src; } });
         tile.appendChild(img);
       }
+
+      tile.appendChild(numBadge);
 
       if (post.hidden && isAdmin) {
         const tag = document.createElement("div");
@@ -4031,32 +4164,52 @@
       });
     }
 
+    function describeBanScope(b) {
+      if (b.banType === "ip" || (b.ip && !b.visitorId && !b.fp)) {
+        return { cls: "ip", tag: "Chặn IP", val: b.ip || b.banValue || "" };
+      }
+      if (b.banType === "fp" || (b.fp && !b.visitorId && !b.ip)) {
+        return { cls: "fp", tag: "Chặn Mã thiết bị", val: b.fp || b.banValue || "" };
+      }
+      if (b.banType === "visitorId" || (b.visitorId && !b.fp && !b.ip)) {
+        return { cls: "visitorId", tag: "Chặn Mã trình duyệt", val: b.visitorId || b.banValue || "" };
+      }
+      return { cls: "", tag: "Chặn Thiết bị & Trình duyệt", val: [b.visitorId, b.fp, b.ip].filter(Boolean).join(" • ") };
+    }
+
     function renderBannedUsers() {
       const container = document.getElementById("bannedUsersList");
       if (!container) return;
       const entries = Object.entries(bannedData).map(([id, b]) => ({ id, ...b })).sort((a, b) => (b.bannedAt || 0) - (a.bannedAt || 0));
-      if (entries.length === 0) { container.innerHTML = `<div class="empty-comments">Chưa có trình duyệt nào bị chặn.</div>`; return; }
-      container.innerHTML = entries.map((b) => `
-        <div class="recent-comment-card">
-          <div class="rc-top"><span>${escapeHtml(b.postLabel || "Bình luận")}</span><span class="comment-time">${formatTime(b.bannedAt)}</span></div>
-          <div class="rc-text">${escapeHtml(b.reasonText || "")}</div>
-          <div class="rc-actions"><button type="button" class="mini-btn" data-unban-id="${b.id}">Bỏ chặn</button></div>
-        </div>
-      `).join("");
+      if (entries.length === 0) { container.innerHTML = `<div class="empty-comments">Chưa có mục nào bị chặn.</div>`; return; }
+      container.innerHTML = entries.map((b) => {
+        const scope = describeBanScope(b);
+        return `
+          <div class="recent-comment-card">
+            <div class="rc-top">
+              <span><span class="ban-target-badge ${scope.cls}">${escapeHtml(scope.tag)}</span>${escapeHtml(b.postLabel || "Bình luận")}</span>
+              <span class="comment-time">${formatTime(b.bannedAt)}</span>
+            </div>
+            <div class="rc-text">${escapeHtml(b.reasonText || "")}${scope.val ? `\nMục tiêu: ${escapeHtml(scope.val)}` : ""}</div>
+            <div class="rc-actions"><button type="button" class="mini-btn" data-unban-id="${b.id}">Bỏ chặn</button></div>
+          </div>
+        `;
+      }).join("");
     }
 
     document.getElementById("bannedUsersList").addEventListener("click", async (e) => {
       const btn = e.target.closest("[data-unban-id]");
       if (btn && isAdmin) {
-        if (!confirm("Bỏ chặn trình duyệt này?")) return;
+        if (!confirm("Bỏ chặn mục này?")) return;
         const bObj = bannedData[btn.dataset.unbanId];
+        const scope = bObj ? describeBanScope(bObj) : { tag: "Không rõ", val: "Không rõ" };
         await remove(ref(db, `banned/${btn.dataset.unbanId}`));
         showToast("Đã bỏ chặn!");
         sendTelegramNotify(
-          `🔓 <b>Đã bỏ chặn thiết bị</b>\n` +
+          `🔓 <b>Đã bỏ chặn (${escapeHtml(scope.tag)})</b>\n` +
+          `• Mục tiêu: <code>${escapeHtml(scope.val || "Không rõ")}</code>\n` +
           `• Nguồn chặn cũ: ${escapeHtml(bObj?.postLabel || "Không rõ")}\n` +
-          `• Chi tiết: ${escapeHtml(bObj?.reasonText || "Không rõ")}\n` +
-          `• Mã trình duyệt: <code>${escapeHtml(bObj?.visitorId || "Không rõ")}</code>`
+          `• Chi tiết: ${escapeHtml(bObj?.reasonText || "Không rõ")}`
         );
       }
     });
@@ -4712,6 +4865,7 @@
     function openAdminModal() {
       adminModal.classList.add("open");
       if (isAdmin) { renderVisitsPanel(); renderActivityPanel(); renderBannedUsers(); }
+      requestAnimationFrame(fitAllSmartPlaceholders);
     }
     ["openAdminBtn", "gateAdminBtn", "maintenanceAdminBtn", "bannedAdminBtn", "pinLockedAdminBtn"].forEach((id) => {
       document.getElementById(id).addEventListener("click", openAdminModal);
@@ -4988,7 +5142,74 @@
       evaluateAccess();
       if (prevAdmin !== isAdmin && albumOpened) scheduleRenderFeed();
       tryOpenPendingVisit();
+      getMyVisitorInfo();
       recordPageVisitOnce();
+      requestAnimationFrame(fitAllSmartPlaceholders);
+    });
+
+    // ===== TỰ ĐỘNG RÚT GỌN PLACEHOLDER THANH TÌM KIẾM CÓ DẤU "..." THEO KÍCH THƯỚC MÀN HÌNH =====
+    const placeholderMeasureCtx = (() => {
+      try { return document.createElement("canvas").getContext("2d"); } catch { return null; }
+    })();
+
+    function fitSmartPlaceholder(inputEl) {
+      if (!inputEl || !placeholderMeasureCtx) return;
+      const fullText = inputEl.dataset.fullPlaceholder;
+      if (!fullText) return;
+      const rect = inputEl.getBoundingClientRect();
+      if (rect.width <= 0) return;
+
+      const cs = window.getComputedStyle(inputEl);
+      const padL = parseFloat(cs.paddingLeft) || 12;
+      const padR = parseFloat(cs.paddingRight) || 32;
+      const maxWidth = rect.width - padL - padR - 6;
+      if (maxWidth <= 20) return;
+
+      placeholderMeasureCtx.font = `${cs.fontWeight || 500} ${cs.fontSize || "14px"} ${cs.fontFamily || "sans-serif"}`;
+      if (placeholderMeasureCtx.measureText(fullText).width <= maxWidth) {
+        if (inputEl.placeholder !== fullText) inputEl.placeholder = fullText;
+        return;
+      }
+
+      const cleanBase = fullText.replace(/\.{2,}$/, "").trim();
+      const words = cleanBase.split(/\s+/);
+      let fitted = "";
+
+      for (let i = words.length - 1; i >= 1; i--) {
+        const candidate = words.slice(0, i).join(" ").replace(/[,.;:(\-\/]+$/, "").trim() + "...";
+        if (placeholderMeasureCtx.measureText(candidate).width <= maxWidth) {
+          fitted = candidate;
+          break;
+        }
+      }
+
+      if (!fitted) {
+        let chars = cleanBase;
+        while (chars.length > 1 && placeholderMeasureCtx.measureText(chars + "...").width > maxWidth) {
+          chars = chars.slice(0, -1).trimEnd();
+        }
+        fitted = chars ? (chars + "...") : "...";
+      }
+
+      if (inputEl.placeholder !== fitted) inputEl.placeholder = fitted;
+    }
+
+    function fitAllSmartPlaceholders() {
+      document.querySelectorAll("[data-full-placeholder]").forEach(fitSmartPlaceholder);
+    }
+
+    if (typeof ResizeObserver !== "undefined") {
+      const phObserver = new ResizeObserver((entries) => {
+        entries.forEach((entry) => fitSmartPlaceholder(entry.target));
+      });
+      document.querySelectorAll("[data-full-placeholder]").forEach((el) => phObserver.observe(el));
+    }
+    window.addEventListener("resize", fitAllSmartPlaceholders);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(fitAllSmartPlaceholders).catch(() => {});
+    }
+    document.querySelectorAll(".admin-tab").forEach((btn) => {
+      btn.addEventListener("click", () => requestAnimationFrame(fitAllSmartPlaceholders));
     });
   </script>
 </body>
